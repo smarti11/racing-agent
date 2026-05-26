@@ -77,9 +77,9 @@ The agent runs as a single long-lived Python process with no external task queue
 
 1. **Entries** — `data/equibase.py` scrapes Equibase mobile → `db/database.save_race()` / `save_entry()`
 2. **Handicapping** — `core/handicapper.handicap_race()` scores each horse → `core/probabilities.scores_to_probabilities()` → softmax win probs → `core/calibrator` applies isotonic calibration if `models/calibrator_pick1.json` exists
-3. **Picks saved** — `save_agent_picks()` writes ranked picks with score, win_prob, morning_line, calibrated_prob, and data_quality flag
+3. **Picks saved** — `save_agent_picks()` writes ranked picks with score, win_prob, morning_line, calibrated_prob, and data_quality flag; `save_agent_entry_scores()` writes full per-horse handicap output for all active runners; `save_agent_race_analysis()` writes race-level pace scenario — all three in the same freeze-gated block
 4. **Results** — `data/results.py` → `db.save_result()` → `db.grade_agent_picks()` retroactively scores pick accuracy
-5. **Dashboard** — `dashboard/builder.py` reads all today's data from DB and renders `dashboard/racing.html`
+5. **Dashboard** — `dashboard/builder.py` reads all today's data from DB (picks from `agent_picks`, rich display data from `agent_entry_scores` + `agent_race_analysis`) and renders `dashboard/racing.html`. No computation or writes occur at render time.
 
 ### Key Design Decisions
 
@@ -87,7 +87,13 @@ The agent runs as a single long-lived Python process with no external task queue
 
 **POST_TIME_FREEZE** — picks are not saved or updated within 30 minutes of a race's post time. Races with results already in DB are also skipped. This prevents stale/tainted picks from appearing post-race. **Post time AM/PM assumption (fixed 2026-05-25):** Equibase stores post times without AM/PM (e.g., `"1:30"`). The freeze parser now treats bare times with `_hr < 8` as PM (`_hr += 12`), so `"1:30"` → 13:30 and the freeze fires at 13:00 instead of 01:00 AM. Before this fix, all picks for afternoon races were effectively frozen from ~01:00 AM onward, leaving stale overnight picks in `agent_picks` all day and causing the dashboard summary and per-race drill-in to show different horses and confidence levels.
 
-**Dashboard render / agent_picks_history write gate (fixed 2026-05-26):** `dashboard/builder.py` re-runs `handicap_race()` live at render time for every race, including completed ones. Before this fix, the result was always written to `agent_picks_history` regardless — the `_race_done` flag only changed the trigger label from `"dashboard_render"` to `"dashboard_render_postrace"`, it did not prevent the write. This caused post-race re-computations (on shifted entry odds or transient scratch states) to overwrite the actual pre-race pick record in `agent_picks_history`, making the drill-in show the wrong horse as the historical pick. Fix: `agent_picks_history` is now only written when `not _race_done`. Completed races still re-render for display but no longer persist. The `"dashboard_render_postrace"` trigger string no longer appears in new writes; rows with that trigger in the DB are pre-fix artifacts.
+**Dashboard render / agent_picks_history write gate (fixed 2026-05-26):** `dashboard/builder.py` previously re-ran `handicap_race()` live at render time for every race. This caused post-race re-computations to overwrite the actual pre-race pick record in `agent_picks_history`, making the drill-in show the wrong horse as the historical pick. Fix (2026-05-26, commit 2cb2840): the live re-handicap was removed entirely from the renderer. `dashboard/builder.py` is now fully read-only — it reads picks from `agent_picks` and rich handicap data from `agent_entry_scores` / `agent_race_analysis` (see Option C below). No writes to `agent_picks_history` occur from the renderer under any circumstances. The `"dashboard_render"` and `"dashboard_render_postrace"` trigger strings no longer appear in new writes; rows with those triggers in the DB are pre-fix artifacts.
+
+**Option C — Persist handicap output for read-only dashboard (2026-05-26, commit ea72513):** Removing the live re-handicap from the renderer initially caused the loss of per-horse display fields (pace role, form, days since last race, J%/T%, score bars, value/class/trainer-hot flags) and race-level pace scenario banners. Option C restores full information density without re-introducing any writeback path. Two new tables persist the `handicap_race()` output alongside `save_agent_picks()`:
+- `agent_entry_scores` — one row per active runner per race; stores `score`, `speed_fig`, `pace_role`, `form`, `days_since`, `layoff_flag`, `class_change`, `trainer_hot`, `value`, `j_win_pct`, `t_win_pct`. Written by `save_agent_entry_scores()` in `db/database.py`, called from `racing_agent.py` inside the same freeze-gated block as `save_agent_picks()`.
+- `agent_race_analysis` — one row per race; stores `pace_scenario_name`, `pace_scenario_notes`, `pace_post_bias`, `lone_speed`. Written by `save_agent_race_analysis()`, same gating.
+- `dashboard/builder.py` reads both tables via `get_todays_entry_scores()` and `get_todays_race_analyses()` (one query each per dashboard render). The renderer contains zero write calls.
+- Rows in both tables are empty for races handicapped before this commit; they populate on subsequent `save_todays_picks()` cycles.
 
 **DATA_QUALITY flags** — every set of picks is tagged `OK`, `TAINTED_SCRATCH` (fewer than 3 active horses), or `TAINTED_PARSE` (fewer than 4 total entries). These propagate to the dashboard.
 
@@ -108,7 +114,7 @@ May 14, 2026 snapshot (tainted — retained for reference only): 131 races, $522
 
 ### Database Schema (db/racing.db)
 
-Tables: `races`, `entries`, `odds`, `picks`, `jockey_stats`, `agent_picks`, `results`, `pick_payouts`, `manual_scratches`. Schema is in `db/database.init_db()`.
+Tables: `races`, `entries`, `odds`, `picks`, `jockey_stats`, `agent_picks`, `agent_picks_history`, `agent_entry_scores`, `agent_race_analysis`, `results`, `pick_payouts`, `manual_scratches`. Schema is in `db/database.init_db()`.
 
 The `entries` table has two timestamp columns: `fetched_ts` (overwritten on every re-fetch) and `first_fetched_ts` (TEXT, nullable — set on initial INSERT, intentionally excluded from the `ON CONFLICT DO UPDATE` clause so it is never overwritten). Rows inserted before 2026-05-25 have `first_fetched_ts` backfilled to match `fetched_ts`; true first-fetch timestamps for those rows were lost to the prior overwrite behavior.
 
