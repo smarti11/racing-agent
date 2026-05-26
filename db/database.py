@@ -139,6 +139,37 @@ def init_db():
             updated_ts  TEXT NOT NULL,
             UNIQUE(trainer, track_code)
         );
+
+        CREATE TABLE IF NOT EXISTS agent_entry_scores (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id      INTEGER NOT NULL,
+            program_num  TEXT NOT NULL,
+            score        REAL,
+            speed_fig    REAL,
+            pace_role    TEXT,
+            form         TEXT,
+            days_since   INTEGER,
+            layoff_flag  TEXT,
+            class_change TEXT,
+            trainer_hot  TEXT,
+            value        REAL,
+            j_win_pct    REAL,
+            t_win_pct    REAL,
+            created_ts   TEXT NOT NULL,
+            FOREIGN KEY(race_id) REFERENCES races(id),
+            UNIQUE(race_id, program_num) ON CONFLICT REPLACE
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_race_analysis (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id             INTEGER NOT NULL UNIQUE ON CONFLICT REPLACE,
+            pace_scenario_name  TEXT,
+            pace_scenario_notes TEXT,
+            pace_post_bias      TEXT,
+            lone_speed          INTEGER,
+            created_ts          TEXT NOT NULL,
+            FOREIGN KEY(race_id) REFERENCES races(id)
+        );
         """)
         try:
             conn.execute("ALTER TABLE entries ADD COLUMN first_fetched_ts TEXT")
@@ -450,6 +481,91 @@ def save_agent_picks(race_id: int, picks: list):
                 pick.get("calibrated_prob"),
                 pick.get("data_quality", "OK"),
             ))
+
+
+def save_agent_entry_scores(race_id: int, scored: list):
+    """Persist score_horse() output for all active entries.
+    Written alongside save_agent_picks() — skipped automatically when freeze fires."""
+    if not scored:
+        return
+    now_iso = datetime.now().isoformat()
+    with get_conn() as conn:
+        for h in scored:
+            conn.execute("""
+                INSERT INTO agent_entry_scores
+                (race_id, program_num, score, speed_fig, pace_role, form,
+                 days_since, layoff_flag, class_change, trainer_hot, value,
+                 j_win_pct, t_win_pct, created_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                race_id,
+                str(h.get("program_num", "")),
+                h.get("score"),
+                h.get("speed_fig"),
+                h.get("pace_role", ""),
+                h.get("form"),
+                h.get("days_since"),
+                h.get("layoff_flag", ""),
+                h.get("class_change", ""),
+                h.get("trainer_hot", ""),
+                h.get("value"),
+                h.get("j_win_pct_db"),
+                h.get("t_win_pct_db"),
+                now_iso,
+            ))
+
+
+def save_agent_race_analysis(race_id: int, pace_scenario: dict):
+    """Persist race-level pace scenario. Written alongside save_agent_picks()."""
+    if not pace_scenario:
+        return
+    now_iso = datetime.now().isoformat()
+    with get_conn() as conn:
+        conn.execute("""
+            INSERT INTO agent_race_analysis
+            (race_id, pace_scenario_name, pace_scenario_notes,
+             pace_post_bias, lone_speed, created_ts)
+            VALUES (?,?,?,?,?,?)
+        """, (
+            race_id,
+            pace_scenario.get("scenario", ""),
+            pace_scenario.get("notes", ""),
+            pace_scenario.get("post_bias", ""),
+            1 if pace_scenario.get("lone_speed") else 0,
+            now_iso,
+        ))
+
+
+def get_todays_entry_scores() -> dict:
+    """Return {race_id: {program_num: score_dict}} for today's races."""
+    today = datetime.now(EASTERN).date().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT aes.*
+            FROM agent_entry_scores aes
+            JOIN races r ON r.id = aes.race_id
+            WHERE r.race_date = ?
+        """, (today,)).fetchall()
+    result = {}
+    for r in rows:
+        rid = r["race_id"]
+        if rid not in result:
+            result[rid] = {}
+        result[rid][r["program_num"]] = dict(r)
+    return result
+
+
+def get_todays_race_analyses() -> dict:
+    """Return {race_id: analysis_dict} for today's races."""
+    today = datetime.now(EASTERN).date().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT ara.*
+            FROM agent_race_analysis ara
+            JOIN races r ON r.id = ara.race_id
+            WHERE r.race_date = ?
+        """, (today,)).fetchall()
+    return {r["race_id"]: dict(r) for r in rows}
 
 
 def grade_agent_picks(race_id: int, result_data: dict):

@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 import logging
 from pathlib import Path
-from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence
+from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -396,6 +396,9 @@ def build_dashboard():
         if rid not in picks_map:
             picks_map[rid] = {}
         picks_map[rid][p["rank"]] = dict(p)
+
+    entry_scores  = get_todays_entry_scores()   # {race_id: {program_num: score_dict}}
+    race_analyses = get_todays_race_analyses()  # {race_id: analysis_dict}
 
     tracks = {}
     for race in races:
@@ -828,11 +831,15 @@ def build_dashboard():
                 if top_pick:
                     top_picks_count += 1
 
-                # Pace scenario from first scored horse (same for all)
-                pace_scenario_name  = ""
-                pace_scenario_notes = ""
-                pace_post_bias      = ""
-                lone_speed          = None
+                # Per-race score map from stored entry scores (all active runners)
+                score_map = entry_scores.get(race["id"], {})
+
+                # Pace scenario from stored race analysis
+                _ra = race_analyses.get(race["id"], {})
+                pace_scenario_name  = _ra.get("pace_scenario_name", "")
+                pace_scenario_notes = _ra.get("pace_scenario_notes", "")
+                pace_post_bias      = _ra.get("pace_post_bias", "")
+                lone_speed          = bool(_ra.get("lone_speed"))
 
                 scenario_colors = {
                     "LONE_SPEED":   "#ff4d6d",
@@ -877,11 +884,12 @@ def build_dashboard():
                     conf_str = f'<span style="background:{cc(top_pick["confidence"])}22;color:{cc(top_pick["confidence"])};padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;border:0.5px solid {cc(top_pick["confidence"])}44">{top_pick["confidence"]} CONF</span>' if top_pick else ""
                     picks_html = ""
                     for i, p in enumerate(top3):
-                        vb = value_badge(p.get("value",0))
+                        _psc = score_map.get(str(p.get("program_num", "")), {})
+                        vb = value_badge(_psc.get("value", 0))
                         star = "★" if i==0 else "·"
                         fw = "700" if i==0 else "400"
                         fc = "#fff" if i==0 else "#c8d8f0"
-                        cb = class_badge(p.get("class_change",""))
+                        cb = class_badge(_psc.get("class_change", ""))
                         # Grade badge + P&L from saved picks
                         saved_pick = race_picks.get(i+1, {})
                         grade = saved_pick.get('result', '')
@@ -925,7 +933,7 @@ def build_dashboard():
                             f'<span style="font-size:10px;color:#ffd60a">{p["morning_line"] or "—"}</span>'
                             + role_html + bet_html
                             + grade_html + pnl_html
-                            + form_badge(p.get("form","---")) + cb + vb
+                            + form_badge(_psc.get("form","---")) + cb + vb
                             + "</div>"
                         )
 
@@ -1018,8 +1026,6 @@ def build_dashboard():
 
                 # Table header
                 race_html += '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#162038"><th style="padding:5px 8px;text-align:left;color:#4a6080;font-size:9px;font-weight:400;width:20px">#</th><th style="padding:5px 8px;text-align:left;color:#4a6080;font-size:9px;font-weight:400">HORSE</th><th style="padding:5px 8px;text-align:left;color:#4a6080;font-size:9px;font-weight:400">JOCKEY</th><th style="padding:5px 8px;text-align:left;color:#4a6080;font-size:9px;font-weight:400">TRAINER</th><th style="padding:5px 8px;text-align:right;color:#4a6080;font-size:9px;font-weight:400">ML</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">PACE</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">FORM</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">DAYS</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">J%</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">T%</th><th style="padding:5px 8px;text-align:left;color:#4a6080;font-size:9px;font-weight:400">SCORE</th><th style="padding:5px 8px;text-align:center;color:#4a6080;font-size:9px;font-weight:400">FLAGS</th></tr></thead><tbody>'
-
-                score_map = {s["program_num"]: s for s in scored}
 
                 for entry in entries:
                     entry = dict(entry)

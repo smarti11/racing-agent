@@ -29,7 +29,8 @@ from data.chart_fetcher import fetch_all_todays_charts
 from db.database import (
     init_db, save_race, save_entry, mark_scratched,
     save_odds, save_result, save_agent_picks, grade_agent_picks, get_conn,
-    get_agent_pick_stats, get_todays_races, get_race_entries as db_get_race_entries
+    get_agent_pick_stats, get_todays_races, get_race_entries as db_get_race_entries,
+    save_agent_entry_scores, save_agent_race_analysis
 )
 
 # ── Logging ────────────────────────────────────────────────────────────
@@ -359,6 +360,9 @@ def save_todays_picks():
             for _p in picks:
                 _p["data_quality"] = _data_quality
             save_agent_picks(race["id"], picks)
+            save_agent_entry_scores(race["id"], scored)
+            if scored:
+                save_agent_race_analysis(race["id"], scored[0].get("pace_scenario") or {})
             if _force_regen:
                 logger.info(
                     f"Regenerating picks {race['track_code']} R{race['race_num']}: "
