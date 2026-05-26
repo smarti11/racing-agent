@@ -389,6 +389,8 @@ def save_agent_picks(race_id: int, picks: list):
                             _hr += 12
                         elif _ampm == "AM" and _hr == 12:
                             _hr = 0
+                        elif not _ampm and _hr < 8:
+                            _hr += 12  # no AM/PM stored; times < 8 are PM (no US racing at 1-7 AM)
                         from datetime import datetime as _dt
                         _post_dt = _et.localize(
                             _dt.strptime(_rd, "%Y-%m-%d").replace(

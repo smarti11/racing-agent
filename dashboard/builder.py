@@ -7,7 +7,6 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence
-from core.handicapper import handicap_race, get_top_pick, get_value_picks
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -821,67 +820,19 @@ def build_dashboard():
                 distance   = race["distance"] or ""
                 track_code = race["track_code"] or ""
 
-                # BUILDER_FREEZE_APPLIED: do not re-handicap completed races.
-                # The agent_picks table is frozen post-race; the builder must
-                # read the frozen picks from agent_picks instead of recomputing.
-                try:
-                    from db.database import get_conn as _gc
-                    with _gc() as _c:
-                        _race_done = _c.execute(
-                            "SELECT 1 FROM results WHERE race_id=? LIMIT 1",
-                            (race["id"],),
-                        ).fetchone() is not None
-                except Exception:
-                    _race_done = False
-
-                scored      = handicap_race([dict(e) for e in entries], conditions, track_code, distance)
-                top_pick    = get_top_pick(scored)
-                value_picks = get_value_picks(scored)
-                if top_pick and scored:
-                    scored[0]["confidence"] = top_pick.get("confidence","LOW")
+                # Renderer reads from agent_picks (frozen by the agent loop).
+                # No live re-handicap; no writes to agent_picks_history.
+                _rp = picks_map.get(race["id"], {})
+                role_top3 = [v for _, v in sorted(_rp.items())]
+                top_pick = role_top3[0] if role_top3 else None
+                if top_pick:
                     top_picks_count += 1
-                # Top-2 picker (Phase 2A). TOP2_CALLER_APPLIED.
-                # PLACE/SHOW have been retired; we use top 2 by base score
-                # for WIN / Exacta / Pick 3 / Pick 4 bets.
-                from core.handicapper import top2_picks
-                roles = top2_picks(scored)
-                role_top3 = roles["all"] if roles["all"] else scored[:2]
-
-                # Audit log: pre-race renders only. Skip post-race to prevent
-                # the live re-handicap from overwriting the actual pre-race pick record.
-                if not _race_done:
-                    try:
-                        from db.database import get_conn as _get_conn
-                        _now_iso = datetime.now().isoformat()
-                        _role_names = ["WIN", "BACKUP"]  # TOP2_HISTORY_APPLIED
-                        with _get_conn() as _conn:
-                            for _idx, _pick in enumerate(role_top3[:2]):
-                                _conn.execute(
-                                    "INSERT INTO agent_picks_history "
-                                    "(race_id, rank, program_num, horse_name, confidence, role, rendered_ts, trigger) "
-                                    "VALUES (?,?,?,?,?,?,?,?)",
-                                    (
-                                        race["id"],
-                                        _idx + 1,
-                                        str(_pick.get("program_num", "")),
-                                        _pick.get("horse_name", ""),
-                                        _pick.get("confidence", ""),
-                                        _role_names[_idx],
-                                        _now_iso,
-                                        "dashboard_render",
-                                    ),
-                                )
-                    except Exception as _e:
-                        logging.getLogger(__name__).warning(
-                            f"agent_picks_history insert failed: {_e}"
-                        )
 
                 # Pace scenario from first scored horse (same for all)
-                pace_scenario = scored[0].get("pace_scenario", {}) if scored else {}
-                pace_scenario_name  = pace_scenario.get("scenario", "")
-                pace_scenario_notes = pace_scenario.get("notes", "")
-                pace_post_bias      = pace_scenario.get("post_bias", "")
-                lone_speed          = pace_scenario.get("lone_speed")
+                pace_scenario_name  = ""
+                pace_scenario_notes = ""
+                pace_post_bias      = ""
+                lone_speed          = None
 
                 scenario_colors = {
                     "LONE_SPEED":   "#ff4d6d",
@@ -921,7 +872,7 @@ def build_dashboard():
                 race_picks = picks_map.get(race["id"], {})
 
                 pick_banner = ""
-                if scored:
+                if role_top3:
                     top3 = role_top3
                     conf_str = f'<span style="background:{cc(top_pick["confidence"])}22;color:{cc(top_pick["confidence"])};padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;border:0.5px solid {cc(top_pick["confidence"])}44">{top_pick["confidence"]} CONF</span>' if top_pick else ""
                     picks_html = ""
