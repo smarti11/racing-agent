@@ -1,0 +1,35 @@
+# Runtime data
+db/*.db
+db/*.db-shm
+db/*.db-wal
+backups/
+logs/
+files/
+
+# Generated output
+dashboard/racing.html
+
+# Models (trained artifacts — rebuild from tools/)
+models/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# macOS
+.DS_Store
+
+# Backup files
+*.bak
+*.bak.*
+*.bak2
+
+# Downloaded chart PDFs (runtime data)
+data/charts/*.pdf
+
+# Claude internal
+.claude/
