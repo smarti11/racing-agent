@@ -9,7 +9,7 @@ PRIORITY_TRACKS = [
     "Saratoga", "Gulfstream Park", "Santa Anita", "Del Mar",
     "Oaklawn Park", "Fair Grounds", "Pimlico", "Laurel Park",
     "Tampa Bay", "Parx Racing", "Monmouth Park", "Sam Houston",
-    "Remington Park", "Sunland Park", "Turf Paradise", "Charles Town",
+    "Sunland Park", "Turf Paradise", "Charles Town",
 ]
 
 # Tracks to permanently exclude (even if Equibase shows them as active)
@@ -35,6 +35,7 @@ EXCLUDED_TRACKS = [
     "Willowdale Stp",        # WIL - Steeplechase, not on NYRA Bets
     "Legacy Downs",          # LEG - Not on NYRA Bets
     "Bes Preakness Double",  # EQM - Exotic wager, not a real track
+    "Remington Park",       # RP  - Short races, not worth tracking
 ]
 
 # Set to True to only fetch priority tracks (faster)
