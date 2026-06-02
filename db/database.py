@@ -236,10 +236,9 @@ def save_entry(race_id, program_num, horse_name, details={}):
               morning_line     = excluded.morning_line,
               weight           = excluded.weight,
               fetched_ts       = excluded.fetched_ts,
-              scratched        = 0,
-              scratch_time     = NULL
+              scratched        = entries.scratched,
+              scratch_time     = entries.scratch_time
             /* first_fetched_ts intentionally omitted — frozen on first insert */
-            /* ENTRIES_UPSERT_APPLIED_V3_UNSCRATCH */
         """, (
             race_id, program_num, horse_name,
             details.get("jockey"), details.get("trainer"),
