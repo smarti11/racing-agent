@@ -827,6 +827,9 @@ def build_dashboard():
                 # No live re-handicap; no writes to agent_picks_history.
                 _rp = picks_map.get(race["id"], {})
                 role_top3 = [v for _, v in sorted(_rp.items())]
+                # Drop any picks whose horse was scratched after the freeze
+                _scr_nums = {e["program_num"] for e in scratched}
+                role_top3 = [p for p in role_top3 if p.get("program_num") not in _scr_nums]
                 top_pick = role_top3[0] if role_top3 else None
                 if top_pick:
                     top_picks_count += 1

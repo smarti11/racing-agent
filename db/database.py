@@ -1781,6 +1781,12 @@ def get_todays_bet_slate():
                 WHERE r.race_date = ?
                   AND aph.rank = 1
                   AND 1=1  /* HISTORY_REENABLED */
+                  AND NOT EXISTS (
+                      SELECT 1 FROM entries e
+                      WHERE e.race_id = aph.race_id
+                        AND e.program_num = aph.program_num
+                        AND e.scratched = 1
+                  )
             )
             SELECT 
                 r.id AS race_id,
@@ -1834,6 +1840,12 @@ def get_todays_bet_slate():
                 WHERE r.race_date = ?
                   AND ap.rank = 1
                   AND ap.confidence IN ('HIGH', 'MEDIUM')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM entries e
+                      WHERE e.race_id = ap.race_id
+                        AND e.program_num = ap.program_num
+                        AND e.scratched = 1
+                  )
                 ORDER BY r.track_name, r.race_num
             """, (today,)).fetchall()
         
