@@ -485,7 +485,7 @@ def main():
     subprocess.Popen(
         ["python3", "-m", "http.server", "8081",
          "--bind", "0.0.0.0",
-         "--directory", os.path.expanduser("~/Documents/racing-agent/dashboard")],
+         "--directory", os.path.expanduser("~/agents/racing-agent/dashboard")],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     logger.info("Dashboard server started on port 8081")
@@ -493,7 +493,7 @@ def main():
     # Start scratch override server on port 8082
     os.system("lsof -ti:8082 | xargs kill -9 2>/dev/null")
     subprocess.Popen(
-        ["python3", os.path.expanduser("~/Documents/racing-agent/scratch_server.py")],
+        ["python3", os.path.expanduser("~/agents/racing-agent/scratch_server.py")],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     logger.info("Scratch override server started on port 8082")
@@ -502,9 +502,9 @@ def main():
     import shutil
     from pathlib import Path
     try:
-        backup_dir = Path.home() / "Documents/racing-agent/backups"
+        backup_dir = Path.home() / "agents/racing-agent/backups"
         backup_dir.mkdir(exist_ok=True)
-        db_path = Path.home() / "Documents/racing-agent/db/racing.db"
+        db_path = Path.home() / "agents/racing-agent/db/racing.db"
         if db_path.exists():
             backup_path = backup_dir / f"racing_{datetime.now().strftime('%Y-%m-%d')}.db"
             if not backup_path.exists():
@@ -557,7 +557,7 @@ def main():
             logger.info(f"Dashboard updated — scan #{scan_count}")
             
             # Sleep in 30s slices, watching for manual-scratch regen flag
-            regen_flag = Path.home() / "Documents/racing-agent/.regen_now"
+            regen_flag = Path.home() / "agents/racing-agent/.regen_now"
             sleep_total = ODDS_INTERVAL_MIN * 60
             slice_seconds = 30
             slept = 0

@@ -5,7 +5,7 @@ from datetime import datetime
 logger = logging.getLogger("racing_agent")
 BASE_URL = "https://www.equibase.com/static/chart/PDF"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
-CACHE_DIR = Path.home() / "Documents/racing-agent/data/charts"
+CACHE_DIR = Path.home() / "agents/racing-agent/data/charts"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def fetch_chart_pdf(track_code, date_str, force=False):
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
 def fetch_all_todays_charts():
     import sys
-    sys.path.insert(0, str(Path.home() / "Documents/racing-agent"))
+    sys.path.insert(0, str(Path.home() / "agents/racing-agent"))
     from db.database import get_todays_races, save_chart_time
     from data.chart_parser import parse_chart_text
     import pytz

@@ -14,9 +14,9 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
-DB_PATH = Path.home() / "Documents/racing-agent/db/racing.db"
-REGEN_FLAG = Path.home() / "Documents/racing-agent/.regen_now"
-LOG_PATH = Path.home() / "Documents/racing-agent/logs/scratch_server.log"
+DB_PATH = Path.home() / "agents/racing-agent/db/racing.db"
+REGEN_FLAG = Path.home() / "agents/racing-agent/.regen_now"
+LOG_PATH = Path.home() / "agents/racing-agent/logs/scratch_server.log"
 
 
 def log(msg):

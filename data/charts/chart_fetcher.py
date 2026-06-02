@@ -10,7 +10,7 @@ The PDF contains ALL races for that track on that date, with full charts
 including finishing times, fractional times, margins, and past performance
 data — none of which is available in the mobile HTML results.
 
-Cache location: ~/Documents/racing-agent/data/charts/{TRACK}_{YYYYMMDD}.pdf
+Cache location: ~/agents/racing-agent/data/charts/{TRACK}_{YYYYMMDD}.pdf
 """
 
 import os
@@ -29,7 +29,7 @@ HEADERS = {
     "Accept": "application/pdf,*/*",
 }
 
-CACHE_DIR = Path.home() / "Documents/racing-agent/data/charts"
+CACHE_DIR = Path.home() / "agents/racing-agent/data/charts"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
