@@ -545,10 +545,16 @@ def main():
 
             if (now - last_scratch).seconds >= SCRAPE_INTERVAL_MIN * 60:
                 check_scratches()
-                # Real-time scratches from Equibase late-changes feed (faster than entries refresh)
+                # Real-time scratches from Equibase late-changes feed.
+                # Gated at 10 AM ET: before that the page still shows prior-day
+                # scratches which would be false positives for today's horses.
                 try:
-                    from core.scratch_fetcher import fetch_and_mark_scratches_for_today
-                    fetch_and_mark_scratches_for_today()
+                    _et_hr = datetime.now(pytz.timezone("US/Eastern")).hour
+                    if _et_hr >= 10:
+                        from core.scratch_fetcher import fetch_and_mark_scratches_for_today
+                        fetch_and_mark_scratches_for_today()
+                    else:
+                        logger.info(f"Late-changes fetch skipped — before 10 AM ET ({_et_hr}:xx ET)")
                 except Exception as e:
                     logger.warning(f"Scratch fetcher error: {e}")
                 fetch_todays_race_results()
