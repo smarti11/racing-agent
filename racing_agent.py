@@ -26,6 +26,7 @@ from data.equibase import get_todays_tracks, get_all_entries_today, get_scratche
 from data.results import get_todays_results_all_tracks, get_results_for_race
 from data.odds import get_best_odds
 from data.chart_fetcher import fetch_all_todays_charts
+from core.scratch_fetcher import fetch_track_scratches
 from db.database import (
     init_db, save_race, save_entry, mark_scratched,
     save_odds, save_result, save_agent_picks, grade_agent_picks, get_conn,
@@ -151,6 +152,15 @@ def check_scratches():
                 scratch_count += 1
             else:
                 logger.warning(f"Scratch not matched: {track_code} R{race_num} #{prog_num}")
+
+        # Supplement with late-changes page — catches tracks like SAR whose entry
+        # pages carry no class="scratch" markers (no TR class attributes at all).
+        lc_scratches = fetch_track_scratches(track_code)
+        for race_num, prog_num, horse_name, _reason in lc_scratches:
+            matched_race_id = race_lookup.get((track_code, race_num))
+            if matched_race_id and prog_num:
+                mark_scratched(matched_race_id, prog_num)
+                scratch_count += 1
 
     logger.info(f"Found {scratch_count} scratches")
     return scratch_count
