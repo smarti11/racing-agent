@@ -810,9 +810,9 @@ def build_dashboard():
                 f'<span>{track_name}</span>'
                 '<div style="display:flex;align-items:center;gap:10px">'
                 f'<span style="font-size:10px;font-weight:400;color:#4a6080">{len(track_races)} races</span>'
-                f'<span id="arrow_{track_id}" style="color:#4a6080;font-size:12px;transition:transform .2s">&#9660;</span>'
+                f'<span id="arrow_{track_id}" style="color:#4a6080;font-size:12px;transition:transform .2s">&#9654;</span>'
                 '</div></div>'
-                f'<div id="track_{track_id}">'
+                f'<div id="track_{track_id}" style="display:none">'
             )
 
             for race in track_races:
@@ -1084,7 +1084,7 @@ def build_dashboard():
     # COLLAPSIBLE_SECTIONS: wrap each section with <details><summary>
     if bet_slate_html:
         bet_slate_html = (
-            "<details open style='margin:8px 0'>"
+            "<details style='margin:8px 0'>"
             "<summary style='cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;"
             "border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;"
             "color:#00c896;letter-spacing:.05em;list-style:none;"
@@ -1118,7 +1118,7 @@ def build_dashboard():
     opt_html = locals().get('opt_html') or ''
     if opt_html:
         opt_html = (
-            "<details open style='margin:8px 0'>"
+            "<details style='margin:8px 0'>"
             "<summary style='cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;"
             "border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;"
             "color:#00c896;letter-spacing:.05em;list-style:none;"
