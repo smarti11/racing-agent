@@ -1209,6 +1209,24 @@ body{{background:#0a0f1e;color:#c8d8f0;font-family:-apple-system,BlinkMacSystemF
 </div>
 <div class="main">{opt_html or ""}{('<details style="margin:8px 0"><summary style="cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;color:#00c896;letter-spacing:.05em;list-style:none;user-select:none">📈 PERFORMANCE BY TRACK & FIELD SIZE <span style="font-size:9px;font-weight:400;color:#4a6080">(click to expand/collapse)</span></summary>' + analysis_html + '</details>') if analysis_html else ''}{('<details style="margin:8px 0"><summary style="cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;color:#00c896;letter-spacing:.05em;list-style:none;user-select:none">💵 TRACK ROI BY CONFIDENCE <span style="font-size:9px;font-weight:400;color:#4a6080">(click to expand/collapse)</span></summary>' + track_roi_html + '</details>') if track_roi_html else ''}{('<details style="margin:8px 0"><summary style="cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;color:#00c896;letter-spacing:.05em;list-style:none;user-select:none">🎲 EXACTA-WORTHY & DAILY DOUBLE <span style="font-size:9px;font-weight:400;color:#4a6080">(click to expand/collapse)</span></summary>' + roi_html + '</details>') if roi_html else ''}{race_html}</div>
 <script>
+var STORAGE_KEY = "racing_open_tracks";
+function _saveState() {{
+  var open = [];
+  document.querySelectorAll('[id^="track_"]').forEach(function(el) {{
+    if (el.style.display !== "none") open.push(el.id.replace("track_", ""));
+  }});
+  try {{ localStorage.setItem(STORAGE_KEY, JSON.stringify(open)); }} catch(e) {{}}
+}}
+function _restoreState() {{
+  var saved;
+  try {{ saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }} catch(e) {{ return; }}
+  saved.forEach(function(id) {{
+    var el = document.getElementById("track_" + id);
+    var arrow = document.getElementById("arrow_" + id);
+    if (el) {{ el.style.display = "block"; }}
+    if (arrow) {{ arrow.innerHTML = "&#9660;"; }}
+  }});
+}}
 function toggleTrack(id) {{
   var el = document.getElementById("track_" + id);
   var arrow = document.getElementById("arrow_" + id);
@@ -1220,6 +1238,7 @@ function toggleTrack(id) {{
     el.style.display = "none";
     if (arrow) arrow.innerHTML = "&#9654;";
   }}
+  _saveState();
 }}
 function collapseAll() {{
   document.querySelectorAll('[id^="track_"]').forEach(function(el) {{
@@ -1228,6 +1247,7 @@ function collapseAll() {{
   document.querySelectorAll('[id^="arrow_"]').forEach(function(el) {{
     el.innerHTML = "&#9654;";
   }});
+  _saveState();
 }}
 function expandAll() {{
   document.querySelectorAll('[id^="track_"]').forEach(function(el) {{
@@ -1236,7 +1256,9 @@ function expandAll() {{
   document.querySelectorAll('[id^="arrow_"]').forEach(function(el) {{
     el.innerHTML = "&#9660;";
   }});
+  _saveState();
 }}
+document.addEventListener("DOMContentLoaded", _restoreState);
 </script>
 {jockey_html}</body></html>"""
 
