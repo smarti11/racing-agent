@@ -1,4 +1,5 @@
 import os, logging, subprocess, requests
+import pytz
 from pathlib import Path
 from datetime import datetime
 
@@ -60,15 +61,12 @@ if __name__ == "__main__":
 
 
 def fetch_all_todays_charts():
-    import sys
-    sys.path.insert(0, str(Path.home() / "agents/racing-agent"))
     from db.database import get_todays_races, save_chart_time
     from data.chart_parser import parse_chart_text
-    import pytz
-    EASTERN = pytz.timezone("US/Eastern")
-    today = datetime.now(EASTERN).strftime("%Y%m%d")
+    today = datetime.now(pytz.timezone("US/Eastern")).strftime("%Y%m%d")
     races = get_todays_races()
-    track_codes = list(set(r["track_code"] for r in races))
+    race_lookup = {(r["track_code"], r["race_num"]): r["id"] for r in races}
+    track_codes = list({r["track_code"] for r in races})
     if not track_codes:
         logger.info("No tracks to fetch charts for")
         return 0
@@ -79,11 +77,7 @@ def fetch_all_todays_charts():
             continue
         parsed_races = parse_chart_text(text, code, today)
         for race_data in parsed_races:
-            race_id = None
-            for r in races:
-                if r["track_code"] == code and r["race_num"] == race_data["race_num"]:
-                    race_id = r["id"]
-                    break
+            race_id = race_lookup.get((code, race_data["race_num"]))
             save_chart_time(race_data, race_id)
             total_saved += 1
         logger.info(f"Chart parsed: {code} -- {len(parsed_races)} races saved")

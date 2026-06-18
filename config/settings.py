@@ -2,6 +2,8 @@
 # Horse Racing Research Agent — Configuration
 # ============================================================
 
+import os
+
 # --- Tracks to monitor ---
 # Priority tracks fetched first — Grade 1 and major tracks
 PRIORITY_TRACKS = [
@@ -85,10 +87,20 @@ TRACKS = [
 ]
 
 # --- Scraping settings ---
-SCRAPE_INTERVAL_MIN  = 10       # How often to check for scratches (minutes)
-ODDS_INTERVAL_MIN    = 5        # How often to update odds (minutes)
+SCRAPE_INTERVAL_MIN  = 10       # How often to check scratches/results/picks (minutes)
+LOOP_INTERVAL_MIN    = 5        # Main loop sleep interval (minutes)
+ODDS_INTERVAL_MIN    = LOOP_INTERVAL_MIN  # alias — live odds not implemented yet
+SCRATCH_CHECK_HOUR_ET = 10      # Skip scratch detection before this hour (ET)
 REQUEST_TIMEOUT      = 15       # HTTP request timeout (seconds)
 REQUEST_DELAY        = 0.5      # Delay between requests (seconds) — be polite
+
+# Canadian tracks use mobile scratch feed instead of desktop
+CANADIAN_TRACKS = {"WO", "WOT", "WOD", "HST", "GLD"}
+
+# --- Dashboard URL (override via RACING_DASHBOARD_URL env var) ---
+DASHBOARD_PUBLIC_URL = os.environ.get(
+    "RACING_DASHBOARD_URL", "http://100.68.82.83:8081/racing.html"
+)
 
 # --- Handicapping weights ---
 SPEED_FIGURE_WEIGHT  = 0.35     # 35% weight on speed figures
