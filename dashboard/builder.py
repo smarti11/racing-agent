@@ -938,7 +938,7 @@ def build_dashboard():
                         key=lambda x: x[1].get("score") or 0,
                         reverse=True,
                     )[:3]
-                    entry_by_prog = {str(e["program_num"]): e for e in active}
+                    entry_by_prog = {str(dict(e)["program_num"]): dict(e) for e in active}
                     role_top3 = []
                     for pgm, sc in fallback:
                         ent = entry_by_prog.get(str(pgm), {})
@@ -1707,9 +1707,14 @@ if __name__ == "__main__":
 def _build_pick34_panels():
     """Build Pick 3 and Pick 4 strategy panels for the dashboard."""
     try:
-        from db.database import get_conn
+        from db.database import get_conn, get_pick_payout_count, get_pick34_today_stats
+        from datetime import date as _date
+        today = _date.today().isoformat()
+        payout_count = get_pick_payout_count()
+        today_stats = get_pick34_today_stats(today)
+
         with get_conn() as conn:
-            # Per-bet-type stats from agent_pick_sequences
+            # Per-bet-type lifetime stats from agent_pick_sequences
             stats = {}
             for bet_type in ("PICK3", "PICK4"):
                 row = conn.execute("""
@@ -1724,9 +1729,6 @@ def _build_pick34_panels():
                 """, (bet_type,)).fetchone()
                 stats[bet_type] = dict(row) if row else {}
 
-            # Today's recommended sequences
-            from datetime import date as _date
-            today = _date.today().isoformat()
             today_rows = conn.execute("""
                 SELECT aps.bet_type, aps.track_code,
                        COALESCE(
@@ -1736,25 +1738,28 @@ def _build_pick34_panels():
                        ) AS track_name,
                        aps.start_race_num,
                        aps.sequence_prob, aps.est_payout,
-                       aps.expected_value, aps.cost
+                       aps.expected_value, aps.cost,
+                       aps.bc_reason, aps.recommended
                 FROM agent_pick_sequences aps
-                WHERE aps.race_date=? AND aps.recommended=1
-                ORDER BY aps.expected_value DESC
-                LIMIT 20
+                WHERE aps.race_date=?
+                ORDER BY aps.recommended DESC, aps.expected_value DESC
+                LIMIT 30
             """, (today,)).fetchall()
             today_recs = [dict(r) for r in today_rows]
 
-        return stats, today_recs
+        return stats, today_recs, payout_count, today_stats
     except Exception as _e:
-        return {}, []
+        return {}, [], 0, {}
 
 
 def _render_pick34_panel(bet_type: str, stats: dict, today_recs: list,
-                         threshold: int):
+                         threshold: int, payout_count: int = 0,
+                         today_stats: dict = None):
     """Render one strategy panel (Pick 3 or Pick 4)."""
     label = "PICK 3" if bet_type == "PICK3" else "PICK 4"
     cost = 4.00 if bet_type == "PICK3" else 8.00
     s = stats.get(bet_type, {})
+    ts = (today_stats or {}).get(bet_type, {})
     total = s.get("total", 0) or 0
     rec = s.get("recommended", 0) or 0
     hits = s.get("hits", 0) or 0
@@ -1763,43 +1768,105 @@ def _render_pick34_panel(bet_type: str, stats: dict, today_recs: list,
     net = returned - wagered
     roi = (100.0 * net / wagered) if wagered else 0
 
-    # Baseline progress
+    today_candidates = ts.get("candidates", 0) or 0
+    today_recommended = ts.get("recommended", 0) or 0
+
+    # Status banners
+    status_html = ""
+    if payout_count == 0:
+        status_html = (
+            f'<div style="background:#2a0a0a;border:1px solid #ff4d6d;'
+            f'border-radius:4px;padding:8px 10px;margin-bottom:10px;'
+            f'font-size:10px;color:#ffb3c1;line-height:1.5">'
+            f'⛔ <strong>No payout history</strong> — pick_payouts table is empty. '
+            f'Sequences cannot be detected or priced. '
+            f'Run <code style="color:#ffd60a">venv/bin/python3 tools/backfill_pick34_payouts.py --days 60</code> '
+            f'or wait for today\'s graded races to populate payouts automatically.'
+            f'</div>'
+        )
+    elif today_candidates == 0:
+        status_html = (
+            f'<div style="background:#1a1003;border:1px solid #ff8c00;'
+            f'border-radius:4px;padding:6px 10px;margin-bottom:10px;'
+            f'font-size:10px;color:#ffb86b">'
+            f'⚠ No candidate sequences today — no Pick {3 if bet_type == "PICK3" else 4} '
+            f'windows detected for today\'s tracks ({payout_count:,} historical payouts on file).'
+            f'</div>'
+        )
+
     progress_pct = min(100.0, 100.0 * rec / threshold) if threshold else 0
     baseline_html = ""
     if rec < threshold:
         baseline_html = (
-            f'<div style="background:#1a1003;border:1px solid #ff8c00;'
+            f'<div style="background:#162038;border:1px solid #1e2d4a;'
             f'border-radius:4px;padding:6px 10px;margin-bottom:10px;'
-            f'font-size:10px;color:#ffb86b">'
-            f'⚠ {label} BASELINE: {rec} / {threshold} sequences '
-            f'recommended ({progress_pct:.1f}%). Not yet publishing-ready.'
+            f'font-size:10px;color:#4a6080">'
+            f'Baseline building: {rec} / {threshold} lifetime recommended '
+            f'({progress_pct:.1f}%) before publishing-ready.'
             f'</div>'
         )
 
+    # Rejection breakdown for today
+    reject_html = ""
+    if today_candidates and today_recommended < today_candidates:
+        parts = []
+        for key, lbl in (
+            ("reject_filter_c", "LOW conf leg"),
+            ("reject_bc", "BC fail"),
+            ("reject_ev", "EV ≤ 0"),
+            ("reject_no_payout", "no track avg"),
+        ):
+            n = ts.get(key, 0) or 0
+            if n:
+                parts.append(f"{lbl}: {n}")
+        if parts:
+            reject_html = (
+                f'<div style="font-size:10px;color:#4a6080;margin-bottom:8px">'
+                f'Today rejected ({today_candidates - today_recommended}): '
+                f'{" · ".join(parts)}'
+                f'</div>'
+            )
+
     today_html = ""
-    if today_recs:
+    bet_today = [r for r in today_recs if r.get("bet_type") == bet_type]
+    if bet_today:
         seq_rows = ""
-        for r in today_recs:
-            if r["bet_type"] != bet_type:
-                continue
+        for r in bet_today:
+            is_rec = r.get("recommended")
+            row_op = "1" if is_rec else "0.55"
+            status = "BET" if is_rec else "SKIP"
+            status_c = "#00c896" if is_rec else "#4a6080"
+            reason = f' <span style="color:#ff8c42">({r.get("bc_reason")})</span>' if not is_rec and r.get("bc_reason") else ""
             seq_rows += (
-                f'<tr><td style="padding:4px 8px;color:#c8d8f0">{r["track_name"]}</td>'
-                f'<td style="padding:4px 8px;text-align:center;color:#4a6080">R{r["start_race_num"]}-{r["start_race_num"] + (2 if bet_type == "PICK3" else 3)}</td>'
+                f'<tr style="opacity:{row_op}">'
+                f'<td style="padding:4px 8px;color:#c8d8f0">{r["track_name"]}</td>'
+                f'<td style="padding:4px 8px;text-align:center;color:#4a6080">'
+                f'R{r["start_race_num"]}-{r["start_race_num"] + (2 if bet_type == "PICK3" else 3)}</td>'
+                f'<td style="padding:4px 8px;text-align:center;color:{status_c};font-weight:700">{status}</td>'
                 f'<td style="padding:4px 8px;text-align:right;color:#4a6080">{(r["sequence_prob"] or 0)*100:.2f}%</td>'
                 f'<td style="padding:4px 8px;text-align:right;color:#4a6080">${r["est_payout"] or 0:.2f}</td>'
-                f'<td style="padding:4px 8px;text-align:right;color:#00c896;font-weight:700">${r["expected_value"] or 0:+.2f}</td></tr>'
+                f'<td style="padding:4px 8px;text-align:right;color:#00c896;font-weight:700">'
+                f'${r["expected_value"] or 0:+.2f}{reason}</td></tr>'
             )
-        if seq_rows:
-            today_html = (
-                '<table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:8px">'
-                '<thead><tr style="background:#162038">'
-                '<th style="padding:4px 8px;text-align:left;color:#4a6080">TRACK</th>'
-                '<th style="padding:4px 8px;text-align:center;color:#4a6080">RACES</th>'
-                '<th style="padding:4px 8px;text-align:right;color:#4a6080">SEQ PROB</th>'
-                '<th style="padding:4px 8px;text-align:right;color:#4a6080">EST PAYOUT</th>'
-                '<th style="padding:4px 8px;text-align:right;color:#4a6080">EV</th>'
-                '</tr></thead><tbody>' + seq_rows + '</tbody></table>'
-            )
+        today_html = (
+            f'<div style="font-size:10px;color:#4a6080;margin:8px 0 4px">'
+            f'TODAY: {today_candidates} candidates · {today_recommended} recommended</div>'
+            + reject_html
+            + '<table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:4px">'
+            '<thead><tr style="background:#162038">'
+            '<th style="padding:4px 8px;text-align:left;color:#4a6080">TRACK</th>'
+            '<th style="padding:4px 8px;text-align:center;color:#4a6080">RACES</th>'
+            '<th style="padding:4px 8px;text-align:center;color:#4a6080">STATUS</th>'
+            '<th style="padding:4px 8px;text-align:right;color:#4a6080">SEQ PROB</th>'
+            '<th style="padding:4px 8px;text-align:right;color:#4a6080">EST PAYOUT</th>'
+            '<th style="padding:4px 8px;text-align:right;color:#4a6080">EV</th>'
+            '</tr></thead><tbody>' + seq_rows + '</tbody></table>'
+        )
+    elif payout_count > 0:
+        today_html = (
+            f'<div style="font-size:10px;color:#4a6080;margin-top:8px">'
+            f'TODAY: 0 candidates evaluated for {label}.</div>'
+        )
 
     color = "#00c896" if net >= 0 else "#ff4d6d"
     return (
@@ -1807,13 +1874,17 @@ def _render_pick34_panel(bet_type: str, stats: dict, today_recs: list,
         f'<div style="font-size:11px;font-weight:700;color:#00c896;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid #00c89633">'
         f'{label} STRATEGY — ${cost:.2f}/sequence — TOP 2 PER LEG'
         f'</div>'
+        f'{status_html}'
         f'{baseline_html}'
-        f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">'
-        f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">SEQUENCES</div><div style="font-size:14px;font-weight:700;color:#fff">{rec}</div></div>'
+        f'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px">'
+        f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">TODAY CAND.</div><div style="font-size:14px;font-weight:700;color:#fff">{today_candidates}</div></div>'
+        f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">TODAY REC.</div><div style="font-size:14px;font-weight:700;color:#ffd60a">{today_recommended}</div></div>'
+        f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">LIFETIME REC.</div><div style="font-size:14px;font-weight:700;color:#fff">{rec}</div></div>'
         f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">HITS</div><div style="font-size:14px;font-weight:700;color:#fff">{hits}</div></div>'
         f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">NET P&L</div><div style="font-size:14px;font-weight:700;color:{color}">${net:+.2f}</div></div>'
-        f'<div style="background:#162038;border-radius:6px;padding:8px 10px"><div style="font-size:9px;color:#4a6080">ROI</div><div style="font-size:14px;font-weight:700;color:{color}">{roi:+.1f}%</div></div>'
         f'</div>'
+        f'<div style="font-size:10px;color:#4a6080;margin-bottom:6px">'
+        f'Payout history: {payout_count:,} records · Lifetime ROI on recommended: {roi:+.1f}%</div>'
         f'{today_html}'
         f'</div>'
     )
@@ -1821,9 +1892,15 @@ def _render_pick34_panel(bet_type: str, stats: dict, today_recs: list,
 
 def build_pick34_section():
     """Top-level: returns the combined Pick 3 + Pick 4 HTML for dashboard."""
-    stats, today_recs = _build_pick34_panels()
-    p3 = _render_pick34_panel("PICK3", stats, today_recs, threshold=300)
-    p4 = _render_pick34_panel("PICK4", stats, today_recs, threshold=200)
+    stats, today_recs, payout_count, today_stats = _build_pick34_panels()
+    p3 = _render_pick34_panel(
+        "PICK3", stats, today_recs, threshold=300,
+        payout_count=payout_count, today_stats=today_stats,
+    )
+    p4 = _render_pick34_panel(
+        "PICK4", stats, today_recs, threshold=200,
+        payout_count=payout_count, today_stats=today_stats,
+    )
     return p3 + p4
 
 # PHASE3_PICK34_PANELS_APPLIED

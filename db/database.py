@@ -188,6 +188,46 @@ def init_db():
             FOREIGN KEY(race_id) REFERENCES races(id),
             UNIQUE(race_id, program_num) ON CONFLICT REPLACE
         );
+
+        CREATE TABLE IF NOT EXISTS pick_payouts (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id     INTEGER NOT NULL,
+            bet_type    TEXT NOT NULL,
+            combo       TEXT,
+            payout      REAL,
+            base_amount REAL,
+            posted_ts   TEXT NOT NULL,
+            UNIQUE(race_id, bet_type),
+            FOREIGN KEY(race_id) REFERENCES races(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_pick_sequences (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            bet_type        TEXT NOT NULL,
+            track_code      TEXT NOT NULL,
+            race_date       TEXT NOT NULL,
+            start_race_num  INTEGER NOT NULL,
+            legs_json       TEXT NOT NULL,
+            sequence_prob   REAL,
+            est_payout      REAL,
+            cost            REAL,
+            expected_value  REAL,
+            bc_qualifies    INTEGER,
+            bc_reason       TEXT,
+            filter_c_pass   INTEGER,
+            recommended     INTEGER NOT NULL,
+            created_ts      TEXT NOT NULL,
+            actual_winners  TEXT,
+            hit             INTEGER,
+            actual_payout   REAL,
+            graded_ts       TEXT,
+            UNIQUE(bet_type, track_code, race_date, start_race_num)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_pick_payouts_race ON pick_payouts(race_id);
+        CREATE INDEX IF NOT EXISTS idx_pick_payouts_type ON pick_payouts(bet_type);
+        CREATE INDEX IF NOT EXISTS idx_seq_date ON agent_pick_sequences(race_date);
+        CREATE INDEX IF NOT EXISTS idx_seq_recommended ON agent_pick_sequences(recommended, race_date);
         """)
         _migrations = [
             "ALTER TABLE entries ADD COLUMN first_fetched_ts TEXT",
@@ -363,6 +403,71 @@ def get_latest_odds_map(race_id: int) -> dict:
     return {str(r["program_num"]): r["odds"] for r in rows}
 
 
+def save_pick_payouts(race_id: int, result_data: dict) -> int:
+    """Persist Pick 3/4/5/6 payouts from a parsed result dict."""
+    if not result_data:
+        return 0
+    now_iso = datetime.now().isoformat()
+    stored = 0
+    with get_conn() as conn:
+        for key, bet_type in (
+            ("pick3", "PICK3"),
+            ("pick4", "PICK4"),
+            ("pick5", "PICK5"),
+            ("pick6", "PICK6"),
+        ):
+            info = result_data.get(key)
+            if not info or not info.get("payout"):
+                continue
+            try:
+                conn.execute(
+                    "INSERT OR IGNORE INTO pick_payouts "
+                    "(race_id, bet_type, combo, payout, base_amount, posted_ts) "
+                    "VALUES (?,?,?,?,?,?)",
+                    (
+                        race_id,
+                        bet_type,
+                        info.get("combo", ""),
+                        info["payout"],
+                        0.50,
+                        now_iso,
+                    ),
+                )
+                stored += 1
+            except Exception as e:
+                logger.warning(f"pick_payouts insert {bet_type} race {race_id}: {e}")
+    return stored
+
+
+def get_pick_payout_count() -> int:
+    with get_conn() as conn:
+        return conn.execute("SELECT COUNT(*) FROM pick_payouts").fetchone()[0]
+
+
+def get_pick34_today_stats(race_date: str) -> dict:
+    """Per-bet-type candidate/rejection counts for dashboard."""
+    out = {}
+    with get_conn() as conn:
+        for bet_type in ("PICK3", "PICK4"):
+            row = conn.execute("""
+                SELECT
+                    COUNT(*) AS candidates,
+                    SUM(CASE WHEN recommended=1 THEN 1 ELSE 0 END) AS recommended,
+                    SUM(CASE WHEN recommended=0 AND filter_c_pass=0 THEN 1 ELSE 0 END) AS reject_filter_c,
+                    SUM(CASE WHEN recommended=0 AND filter_c_pass=1
+                             AND bc_qualifies=0 THEN 1 ELSE 0 END) AS reject_bc,
+                    SUM(CASE WHEN recommended=0 AND filter_c_pass=1
+                             AND bc_qualifies=1
+                             AND (expected_value IS NULL OR expected_value <= 0)
+                        THEN 1 ELSE 0 END) AS reject_ev,
+                    SUM(CASE WHEN recommended=0 AND est_payout IS NULL THEN 1 ELSE 0 END) AS reject_no_payout
+                FROM agent_pick_sequences
+                WHERE bet_type=? AND race_date=?
+            """, (bet_type, race_date)).fetchone()
+            out[bet_type] = dict(row) if row else {}
+    return out
+
+
 def save_result(race_id: int, result_data: dict):
     """Save official race result and auto-grade agent picks."""
     winner_num  = result_data.get("winner_num")
@@ -427,6 +532,10 @@ def save_result(race_id: int, result_data: dict):
                 "UPDATE picks SET result=?, payout=? WHERE id=?",
                 (grade, payout, pick["id"])
             )
+
+    n_pick = save_pick_payouts(race_id, result_data)
+    if n_pick:
+        logger.info(f"Saved {n_pick} pick payout(s) for race {race_id}")
 
 
 def get_todays_results():

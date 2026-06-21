@@ -35,7 +35,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 from data.results import BASE, HEADERS, get_results_for_race
-from db.database import get_conn
+from db.database import get_conn, save_pick_payouts
 from config.settings import REQUEST_DELAY, REQUEST_TIMEOUT
 
 log_path = ROOT / "logs" / "backfill_pick34.log"
@@ -76,40 +76,7 @@ def already_have_payouts(race_id: int) -> bool:
 
 def store_pick_payouts(race_id: int, result: dict):
     """Extract pick3/pick4/pick5/pick6 from result dict, store rows."""
-    if not result:
-        return 0
-    now = datetime.now().isoformat()
-    stored = 0
-    conn = get_conn()
-    for key, bet_type in (
-        ("pick3", "PICK3"),
-        ("pick4", "PICK4"),
-        ("pick5", "PICK5"),
-        ("pick6", "PICK6"),
-    ):
-        info = result.get(key)
-        if not info or not info.get("payout"):
-            continue
-        try:
-            conn.execute(
-                "INSERT OR IGNORE INTO pick_payouts "
-                "(race_id, bet_type, combo, payout, base_amount, posted_ts) "
-                "VALUES (?,?,?,?,?,?)",
-                (
-                    race_id,
-                    bet_type,
-                    info.get("combo", ""),
-                    info["payout"],
-                    0.50,  # Most modern pick bets are $0.50 base
-                    now,
-                ),
-            )
-            stored += 1
-        except Exception as e:
-            logger.warning(f"  Insert error {bet_type} race_id={race_id}: {e}")
-    conn.commit()
-    conn.close()
-    return stored
+    return save_pick_payouts(race_id, result)
 
 
 def backfill_one_date(date_yyyymmdd: str):
