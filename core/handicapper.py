@@ -26,6 +26,7 @@ from config.meet_leaders import (
     MEET_LEADERS, MEET_LEADER_MULTIPLIER,
     WEAK_SIGNAL_TRACKS,
 )
+from config.confidence import calibrate_confidence
 
 logger = logging.getLogger("racing_agent")
 
@@ -133,10 +134,13 @@ ELITE_TRAINERS = {
 }
 
 
-def get_jockey_win_pct(jockey_name: str) -> float:
+def get_jockey_win_pct(jockey_name: str, track_code: str = "") -> float:
     if not jockey_name:
         return DEFAULT_JOCKEY_WIN_PCT
-    # Try our DB first
+    if track_code:
+        track_stats = get_jockey_stats_from_db(jockey_name, track_code)
+        if track_stats.get("win_pct") is not None and track_stats.get("starts", 0) >= 5:
+            return track_stats["win_pct"] / 100
     db_stats = get_jockey_stats_from_db(jockey_name)
     if db_stats.get("win_pct") is not None and db_stats.get("starts", 0) >= 5:
         return db_stats["win_pct"] / 100
@@ -259,7 +263,8 @@ def form_score_adjustment(form_data: dict) -> float:
 
 
 def score_horse(entry: dict, conditions: str, field_size: int,
-                pace_scenario: dict = None, form_data: dict = None) -> dict:
+                pace_scenario: dict = None, form_data: dict = None,
+                track_code: str = "") -> dict:
     """Score a single horse on 0-100 scale."""
 
     prog    = entry.get("program_num", "?")
@@ -291,7 +296,7 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     speed_norm = min(1.0, speed_fig / 110.0)
 
     # 2. Jockey
-    jock_pct   = get_jockey_win_pct(jockey)
+    jock_pct   = get_jockey_win_pct(jockey, track_code)
     jock_norm  = min(1.0, jock_pct / 0.35)
 
     # 3. Trainer
@@ -413,7 +418,8 @@ def handicap_race(entries: list, conditions: str = "", track_code: str = "",
             result = score_horse(
                 dict(entry), conditions, field_size,
                 pace_scenario=pace_scenario,
-                form_data=form_data
+                form_data=form_data,
+                track_code=track_code,
             )
             result["pace_scenario"] = pace_scenario
             result["track_code"] = track_code
@@ -421,10 +427,8 @@ def handicap_race(entries: list, conditions: str = "", track_code: str = "",
         except Exception as ex:
             logger.warning(f"Scoring error for {entry.get('horse_name')}: {ex}")
 
-    # Apply jockey score boosts before ranking so boosted scores drive sort order
-    # TEMPORARILY DISABLED 2026-05-02 — caused agent to loop on large cards
-    # for horse in scores:
-    #     _apply_jockey_boosts(horse, track_code)
+    for horse in scores:
+        _apply_jockey_boosts(horse, track_code)
 
     scores.sort(key=lambda x: x["score"], reverse=True)
     for i, s in enumerate(scores):
@@ -439,10 +443,12 @@ def get_top_pick(scored_horses: list) -> dict:
     top = scored_horses[0]
     if len(scored_horses) > 1:
         gap = top["score"] - scored_horses[1]["score"]
-        confidence = "HIGH" if gap >= 8 else "MEDIUM" if gap >= 4 else "LOW"
     else:
-        confidence = "HIGH"
-    return {**top, "confidence": confidence}
+        gap = 999.0
+    ml_decimal = parse_odds(top.get("morning_line", ""))
+    track_code = top.get("track_code", "")
+    confidence = calibrate_confidence(gap, ml_decimal, track_code)
+    return {**top, "confidence": confidence, "score_gap": round(gap, 1)}
 
 
 def get_value_picks(scored_horses: list, min_odds: float = 3.0) -> list:

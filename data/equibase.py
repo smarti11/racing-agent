@@ -299,16 +299,21 @@ def get_scratches(track_code: str, date_str: str = None):
     Detect scratches by comparing current Equibase entries against
     what we already have in the DB. If a horse was in our DB but is
     no longer on the Equibase page, it has been scratched.
+
+    Also detects false scratches: horse marked scratched in DB but
+    present on the live Equibase card (confirmed via second fetch).
+
+    Returns (scratches, unscratches) — each a list of dicts with
+    race_num, program_num, horse_name.
     """
-    # SCRATCH_TIME_GATE: don't run scratch detection before 7 AM ET
-    # Overnight fetches produce false positives against incomplete DB state
+    # SCRATCH_TIME_GATE: don't run scratch detection before 10 AM ET
     try:
         import pytz
         _et = pytz.timezone("America/New_York")
         _now_et = datetime.now(_et)
         if _now_et.hour < 10:
             logger.info(f"Scratch detection skipped — before 10 AM ET ({_now_et.strftime('%H:%M')} ET)")
-            return []
+            return [], []
     except Exception:
         pass
     if not date_str:
@@ -317,6 +322,7 @@ def get_scratches(track_code: str, date_str: str = None):
     from db.database import get_todays_races, get_race_entries as db_get_entries
 
     scratches = []
+    unscratches = []
     races_meta = get_day_card(track_code, track_code, date_str)
 
     for meta in races_meta:
@@ -336,20 +342,20 @@ def get_scratches(track_code: str, date_str: str = None):
                 db_entries = db_get_entries(db_race["id"])
                 active_db = [e for e in db_entries if not e["scratched"]]
 
-                # SCRATCH_SANITY_CHECK: if live fetch returned fewer than 50%
-                # of the horses we have in DB, the page parsed incorrectly.
-                # Skip scratch detection for this race to avoid false positives.
-                # Sanity check removed — 10AM gate is primary protection
-                # save_entry resets scratched=0 so DB always shows full field
-                logger.info(f"Scratch check: {track_code} R{meta['race_num']} live={len(current_nums)} db={len(active_db)}")
+                logger.info(
+                    f"Scratch check: {track_code} R{meta['race_num']} "
+                    f"live={len(current_nums)} db={len(active_db)}"
+                )
 
-                # CONSECUTIVE_MISS_GUARD: only scratch a horse if absent
-                # from 2 consecutive fetches — one bad Equibase page = false positive
+                false_scr = [
+                    e for e in db_entries
+                    if e["scratched"] and e["program_num"] in current_nums
+                ]
                 absent = [e for e in active_db if e["program_num"] not in current_nums]
-                if not absent:
+
+                if not false_scr and not absent:
                     break
 
-                # Cap at 3 scratches per race per pass — more than that = bad page
                 if len(absent) > 3:
                     logger.warning(
                         f"Scratch cap exceeded: {track_code} R{meta['race_num']} "
@@ -357,7 +363,6 @@ def get_scratches(track_code: str, date_str: str = None):
                     )
                     break
 
-                # Second-chance: re-fetch the page and confirm absences
                 import time
                 time.sleep(2)
                 race2 = get_race_entries(
@@ -365,9 +370,24 @@ def get_scratches(track_code: str, date_str: str = None):
                     meta["race_num"], meta["post_time"]
                 )
                 if not race2:
-                    logger.warning(f"Scratch second-fetch failed: {track_code} R{meta['race_num']} — skipping")
+                    logger.warning(
+                        f"Scratch second-fetch failed: {track_code} R{meta['race_num']} — skipping"
+                    )
                     break
                 confirm_nums = {e["program_num"] for e in race2.get("entries", [])}
+
+                for db_entry in false_scr:
+                    prog = db_entry["program_num"]
+                    if prog in confirm_nums:
+                        unscratches.append({
+                            "race_num": meta["race_num"],
+                            "program_num": prog,
+                            "horse_name": db_entry["horse_name"],
+                        })
+                        logger.info(
+                            f"Un-scratch CONFIRMED (2-fetch): {track_code} R{meta['race_num']} "
+                            f"#{prog} {db_entry['horse_name']}"
+                        )
 
                 for db_entry in active_db:
                     prog = db_entry["program_num"]
@@ -375,14 +395,20 @@ def get_scratches(track_code: str, date_str: str = None):
                         scratches.append({
                             "race_num": meta["race_num"],
                             "program_num": prog,
-                            "horse_name": db_entry["horse_name"]
+                            "horse_name": db_entry["horse_name"],
                         })
-                        logger.info(f"Scratch CONFIRMED (2-fetch): {track_code} R{meta['race_num']} #{prog} {db_entry['horse_name']}")
+                        logger.info(
+                            f"Scratch CONFIRMED (2-fetch): {track_code} R{meta['race_num']} "
+                            f"#{prog} {db_entry['horse_name']}"
+                        )
                     elif prog not in current_nums and prog in confirm_nums:
-                        logger.info(f"Scratch FALSE POSITIVE avoided: {track_code} R{meta['race_num']} #{prog} {db_entry['horse_name']} reappeared on 2nd fetch")
+                        logger.info(
+                            f"Scratch FALSE POSITIVE avoided: {track_code} R{meta['race_num']} "
+                            f"#{prog} {db_entry['horse_name']} reappeared on 2nd fetch"
+                        )
                 break
 
-    return scratches
+    return scratches, unscratches
 
 
 
@@ -402,7 +428,7 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
         _now_et = datetime.now(_et)
         if _now_et.hour < 10:
             logger.info(f"Scratch detection skipped — before 10 AM ET ({_now_et.strftime('%H:%M')} ET)")
-            return []
+            return [], []
     except Exception:
         pass
 
@@ -415,7 +441,7 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
         mmddyy = date_str[4:6] + date_str[6:8] + date_str[2:4]
     except Exception:
         logger.warning(f"get_scratches_desktop: bad date_str {date_str}")
-        return []
+        return [], []
 
     url = f"https://www.equibase.com/static/entry/{track_code}{mmddyy}USA-EQB.html"
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
@@ -424,10 +450,10 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
         r = requests.get(url, headers=headers, timeout=15)
         if r.status_code != 200:
             logger.warning(f"get_scratches_desktop: {url} returned {r.status_code}")
-            return []
+            return [], []
     except Exception as e:
         logger.warning(f"get_scratches_desktop: request failed {e}")
-        return []
+        return [], []
 
     soup = BeautifulSoup(r.text, "html.parser")
     scratch_rows = soup.find_all("tr", class_="scratch")
@@ -457,7 +483,7 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
         logger.info(f"Scratch (desktop): {track_code} R{race_num} #{prog_num} {horse_name}")
 
     logger.info(f"get_scratches_desktop: {track_code} found {len(scratches)} scratches")
-    return scratches
+    return scratches, []
 
 
 def get_jockey_stats(jockey_name: str):

@@ -258,6 +258,23 @@ def mark_scratched(race_id, program_num):
         logger.info(f"Marked #{program_num} scratched in race {race_id}")
 
 
+def mark_unscratched(race_id, program_num):
+    """Clear a false scratch when horse reappears on live entries."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT scratched FROM entries WHERE race_id=? AND program_num=?",
+            (race_id, program_num),
+        ).fetchone()
+        if not row or not row["scratched"]:
+            return False
+        conn.execute("""
+            UPDATE entries SET scratched=0, scratch_time=NULL
+            WHERE race_id=? AND program_num=?
+        """, (race_id, program_num))
+        logger.info(f"Un-scratched #{program_num} in race {race_id} (reappeared on live card)")
+        return True
+
+
 def save_odds(race_id, program_num, horse_name, odds, odds_type="live"):
     with get_conn() as conn:
         conn.execute("""

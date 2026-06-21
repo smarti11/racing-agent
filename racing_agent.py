@@ -35,7 +35,7 @@ from data.chart_fetcher import fetch_all_todays_charts
 from core.scratch_fetcher import fetch_track_scratches
 from core.pick_manager import save_todays_picks
 from db.database import (
-    init_db, save_race, save_entry, mark_scratched,
+    init_db, save_race, save_entry, mark_scratched, mark_unscratched,
     save_result, grade_agent_picks,
     get_todays_races, get_race_entries as db_get_race_entries,
 )
@@ -100,8 +100,11 @@ def fetch_todays_entries() -> int:
                 )
                 for entry in race.get("entries", []):
                     save_entry(race_id, entry["program_num"], entry["horse_name"], entry)
-                    if entry.get("scratched") and allow_scratch:
-                        mark_scratched(race_id, entry["program_num"])
+                    if allow_scratch:
+                        if entry.get("scratched"):
+                            mark_scratched(race_id, entry["program_num"])
+                        else:
+                            mark_unscratched(race_id, entry["program_num"])
                     total_entries += 1
                 total_races += 1
         except Exception as e:
@@ -125,6 +128,7 @@ def check_scratches() -> int:
     races = get_todays_races()
     checked_tracks = set()
     scratch_count = 0
+    unscratch_count = 0
 
     race_lookup = {(race["track_code"], race["race_num"]): race["id"] for race in races}
 
@@ -135,9 +139,9 @@ def check_scratches() -> int:
         checked_tracks.add(track_code)
 
         if track_code in CANADIAN_TRACKS:
-            scratches = get_scratches(track_code)
+            scratches, unscratches = get_scratches(track_code)
         else:
-            scratches = get_scratches_desktop(track_code)
+            scratches, unscratches = get_scratches_desktop(track_code)
 
         for scratch in scratches:
             race_num = scratch.get("race_num")
@@ -149,14 +153,22 @@ def check_scratches() -> int:
             else:
                 logger.warning(f"Scratch not matched: {track_code} R{race_num} #{prog_num}")
 
+        for item in unscratches:
+            race_num = item.get("race_num")
+            prog_num = item.get("program_num", "")
+            matched_race_id = race_lookup.get((track_code, race_num))
+            if matched_race_id and prog_num:
+                if mark_unscratched(matched_race_id, prog_num):
+                    unscratch_count += 1
+
         for race_num, prog_num, horse_name, _reason in fetch_track_scratches(track_code):
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
                 mark_scratched(matched_race_id, prog_num)
                 scratch_count += 1
 
-    logger.info(f"Found {scratch_count} scratches")
-    return scratch_count
+    logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")
+    return scratch_count + unscratch_count
 
 
 def fetch_todays_race_results() -> int:

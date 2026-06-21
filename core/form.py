@@ -105,25 +105,35 @@ def get_horse_form(horse_name: str, current_date: str = None) -> dict:
         conn.close()
 
 
-def get_jockey_stats_from_db(jockey_name: str) -> dict:
-    """Calculate jockey win % from our results database."""
+def get_jockey_stats_from_db(jockey_name: str, track_code: str = "") -> dict:
+    """Calculate jockey win % from our results database (optionally per track)."""
     conn = get_conn()
     try:
-        # Count starts and wins
-        starts = conn.execute("""
-            SELECT COUNT(*) as n FROM entries e
-            JOIN races r ON r.id = e.race_id
-            JOIN results rs ON rs.race_id = e.race_id
-            WHERE LOWER(e.jockey) LIKE LOWER(?)
-        """, (f"%{jockey_name}%",)).fetchone()["n"]
+        track_sql = " AND r.track_code = ?" if track_code else ""
+        params_starts = [f"%{jockey_name}%"]
+        params_wins = [f"%{jockey_name}%"]
+        if track_code:
+            params_starts.append(track_code)
+            params_wins.append(track_code)
 
-        wins = conn.execute("""
+        starts = conn.execute(f"""
             SELECT COUNT(*) as n FROM entries e
             JOIN races r ON r.id = e.race_id
             JOIN results rs ON rs.race_id = e.race_id
             WHERE LOWER(e.jockey) LIKE LOWER(?)
+              AND e.scratched = 0
+              {track_sql}
+        """, params_starts).fetchone()["n"]
+
+        wins = conn.execute(f"""
+            SELECT COUNT(*) as n FROM entries e
+            JOIN races r ON r.id = e.race_id
+            JOIN results rs ON rs.race_id = e.race_id
+            WHERE LOWER(e.jockey) LIKE LOWER(?)
+              AND e.scratched = 0
               AND e.program_num = rs.winner_num
-        """, (f"%{jockey_name}%",)).fetchone()["n"]
+              {track_sql}
+        """, params_wins).fetchone()["n"]
 
         win_pct = round(wins / starts * 100, 1) if starts >= 5 else None
         return {"starts": starts, "wins": wins, "win_pct": win_pct}
