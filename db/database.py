@@ -171,11 +171,41 @@ def init_db():
             created_ts          TEXT NOT NULL,
             FOREIGN KEY(race_id) REFERENCES races(id)
         );
+
+        CREATE TABLE IF NOT EXISTS agent_value_bets (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id      INTEGER NOT NULL,
+            program_num  TEXT NOT NULL,
+            horse_name   TEXT NOT NULL,
+            odds_str     TEXT,
+            odds_source  TEXT,
+            model_prob   REAL,
+            market_prob  REAL,
+            final_prob   REAL,
+            edge         REAL,
+            kelly_f      REAL,
+            created_ts   TEXT NOT NULL,
+            FOREIGN KEY(race_id) REFERENCES races(id),
+            UNIQUE(race_id, program_num) ON CONFLICT REPLACE
+        );
         """)
-        try:
-            conn.execute("ALTER TABLE entries ADD COLUMN first_fetched_ts TEXT")
-        except Exception:
-            pass  # column already exists
+        _migrations = [
+            "ALTER TABLE entries ADD COLUMN first_fetched_ts TEXT",
+            "ALTER TABLE agent_entry_scores ADD COLUMN win_prob REAL",
+            "ALTER TABLE agent_entry_scores ADD COLUMN calibrated_prob REAL",
+            "ALTER TABLE agent_entry_scores ADD COLUMN market_prob REAL",
+            "ALTER TABLE agent_entry_scores ADD COLUMN final_prob REAL",
+            "ALTER TABLE agent_entry_scores ADD COLUMN edge REAL",
+            "ALTER TABLE agent_entry_scores ADD COLUMN live_odds TEXT",
+            "ALTER TABLE agent_entry_scores ADD COLUMN odds_source TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
+            "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
+        ]
+        for sql in _migrations:
+            try:
+                conn.execute(sql)
+            except Exception:
+                pass
         conn.execute(
             "UPDATE entries SET first_fetched_ts = fetched_ts WHERE first_fetched_ts IS NULL"
         )
@@ -303,12 +333,34 @@ def get_race_entries(race_id):
             SELECT e.*, o.odds as live_odds
             FROM entries e
             LEFT JOIN (
-                SELECT program_num, odds FROM odds
-                WHERE race_id=? ORDER BY fetched_ts DESC
+                SELECT o1.program_num, o1.odds
+                FROM odds o1
+                INNER JOIN (
+                    SELECT program_num, MAX(fetched_ts) AS max_ts
+                    FROM odds WHERE race_id=? GROUP BY program_num
+                ) latest ON o1.program_num = latest.program_num
+                    AND o1.fetched_ts = latest.max_ts
+                WHERE o1.race_id=?
             ) o ON o.program_num = e.program_num
             WHERE e.race_id=?
             ORDER BY CAST(e.program_num AS INTEGER)
+        """, (race_id, race_id, race_id)).fetchall()
+
+
+def get_latest_odds_map(race_id: int) -> dict:
+    """Return {program_num: odds_str} for latest live odds in a race."""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT o1.program_num, o1.odds
+            FROM odds o1
+            INNER JOIN (
+                SELECT program_num, MAX(fetched_ts) AS max_ts
+                FROM odds WHERE race_id=? GROUP BY program_num
+            ) latest ON o1.program_num = latest.program_num
+                AND o1.fetched_ts = latest.max_ts
+            WHERE o1.race_id=?
         """, (race_id, race_id)).fetchall()
+    return {str(r["program_num"]): r["odds"] for r in rows}
 
 
 def save_result(race_id: int, result_data: dict):
@@ -482,8 +534,8 @@ def save_agent_picks(race_id: int, picks: list):
                 INSERT INTO agent_picks
                 (race_id, rank, program_num, horse_name, confidence, role,
                  created_ts, score, win_prob, morning_line, calibrated_prob,
-                 data_quality)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                 final_prob, market_prob, data_quality)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 race_id,
                 pick.get("rank", 1),
@@ -496,6 +548,8 @@ def save_agent_picks(race_id: int, picks: list):
                 pick.get("win_prob"),
                 pick.get("morning_line"),
                 pick.get("calibrated_prob"),
+                pick.get("final_prob"),
+                pick.get("market_prob"),
                 pick.get("data_quality", "OK"),
             ))
 
@@ -512,8 +566,9 @@ def save_agent_entry_scores(race_id: int, scored: list):
                 INSERT INTO agent_entry_scores
                 (race_id, program_num, score, speed_fig, pace_role, form,
                  days_since, layoff_flag, class_change, trainer_hot, value,
-                 j_win_pct, t_win_pct, created_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 j_win_pct, t_win_pct, win_prob, calibrated_prob, market_prob,
+                 final_prob, edge, live_odds, odds_source, created_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 race_id,
                 str(h.get("program_num", "")),
@@ -528,8 +583,86 @@ def save_agent_entry_scores(race_id: int, scored: list):
                 h.get("value"),
                 h.get("j_win_pct_db"),
                 h.get("t_win_pct_db"),
+                h.get("win_prob"),
+                h.get("calibrated_prob"),
+                h.get("market_prob"),
+                h.get("final_prob"),
+                h.get("edge"),
+                h.get("odds_str"),
+                h.get("odds_source", ""),
                 now_iso,
             ))
+
+
+def save_agent_value_bets(race_id: int, bets: list):
+    """Persist positive-edge runners for a race."""
+    if not bets:
+        with get_conn() as conn:
+            conn.execute("DELETE FROM agent_value_bets WHERE race_id=?", (race_id,))
+        return
+    now_iso = datetime.now().isoformat()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM agent_value_bets WHERE race_id=?", (race_id,))
+        for h in bets:
+            conn.execute("""
+                INSERT INTO agent_value_bets
+                (race_id, program_num, horse_name, odds_str, odds_source,
+                 model_prob, market_prob, final_prob, edge, kelly_f, created_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                race_id,
+                str(h.get("program_num", "")),
+                h.get("horse_name", ""),
+                h.get("odds_str"),
+                h.get("odds_source", ""),
+                h.get("calibrated_prob") or h.get("win_prob"),
+                h.get("market_prob"),
+                h.get("final_prob"),
+                h.get("edge"),
+                h.get("kelly_f"),
+                now_iso,
+            ))
+
+
+def get_todays_value_bets() -> list:
+    """All positive-edge bets for today's card."""
+    today = datetime.now(EASTERN).date().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT avb.*, r.track_name, r.race_num, r.post_time, r.track_code
+            FROM agent_value_bets avb
+            JOIN races r ON r.id = avb.race_id
+            LEFT JOIN entries e ON e.race_id = avb.race_id
+                AND e.program_num = avb.program_num
+            WHERE r.race_date = ?
+              AND (e.scratched IS NULL OR e.scratched = 0)
+            ORDER BY avb.edge DESC
+        """, (today,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_track_high_win_rate_14d() -> dict:
+    """Return {track_name: win_pct} for HIGH confidence rank-1 picks, last 14 days."""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT r.track_name,
+                   COUNT(*) AS n,
+                   SUM(CASE WHEN ap.result = 'WIN'
+                            AND ap.program_num = res.winner_num THEN 1 ELSE 0 END) AS wins
+            FROM agent_picks ap
+            JOIN races r ON r.id = ap.race_id
+            LEFT JOIN results res ON res.race_id = ap.race_id
+            WHERE ap.rank = 1
+              AND ap.confidence = 'HIGH'
+              AND ap.result IS NOT NULL AND ap.result != ''
+              AND r.race_date >= date('now', '-14 days')
+            GROUP BY r.track_name
+            HAVING n >= 3
+        """).fetchall()
+    return {
+        r["track_name"]: round(100.0 * r["wins"] / r["n"], 1)
+        for r in rows
+    }
 
 
 def save_agent_race_analysis(race_id: int, pace_scenario: dict):
@@ -1782,6 +1915,8 @@ def get_todays_bet_slate():
                     aph.confidence,
                     aph.rendered_ts,
                     ap.calibrated_prob,
+                    ap.final_prob,
+                    ap.market_prob,
                     ap.morning_line,
                     ap2.win_prob AS rank2_prob,
                     ROW_NUMBER() OVER (
@@ -1814,6 +1949,8 @@ def get_todays_bet_slate():
                 lp.horse_name,
                 lp.confidence,
                 lp.calibrated_prob,
+                lp.final_prob,
+                lp.market_prob,
                 lp.morning_line,
                 res.winner_num,
                 CASE WHEN res.winner_num = lp.program_num THEN 'WIN'
@@ -1841,6 +1978,8 @@ def get_todays_bet_slate():
                     ap.horse_name,
                     ap.confidence,
                     ap.calibrated_prob,
+                    ap.final_prob,
+                    ap.market_prob,
                     ap.morning_line,
                     ap2.win_prob AS rank2_prob,
                     res.winner_num,
@@ -1950,6 +2089,8 @@ def get_todays_bet_slate():
                 "track_roi": track_roi_map.get(r["track_name"], 0.0),
                 "status": status_display,
                 "calibrated_prob": r["calibrated_prob"] if "calibrated_prob" in r.keys() else None,
+                "final_prob": r["final_prob"] if "final_prob" in r.keys() else None,
+                "market_prob": r["market_prob"] if "market_prob" in r.keys() else None,
                 "morning_line": r["morning_line"] if "morning_line" in r.keys() else None,
                 "rank2_prob": r["rank2_prob"] if "rank2_prob" in r.keys() else None,
             })

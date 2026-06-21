@@ -89,7 +89,7 @@ TRACKS = [
 # --- Scraping settings ---
 SCRAPE_INTERVAL_MIN  = 10       # How often to check scratches/results/picks (minutes)
 LOOP_INTERVAL_MIN    = 5        # Main loop sleep interval (minutes)
-ODDS_INTERVAL_MIN    = LOOP_INTERVAL_MIN  # alias — live odds not implemented yet
+ODDS_INTERVAL_MIN    = LOOP_INTERVAL_MIN  # live odds fetched each data cycle
 SCRATCH_CHECK_HOUR_ET = 10      # Skip scratch detection before this hour (ET)
 REQUEST_TIMEOUT      = 15       # HTTP request timeout (seconds)
 REQUEST_DELAY        = 0.5      # Delay between requests (seconds) — be polite

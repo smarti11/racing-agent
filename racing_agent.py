@@ -282,6 +282,14 @@ def _run_data_cycle() -> bool:
         changed = True
     if fetch_all_todays_charts() > 0:
         changed = True
+
+    try:
+        from data.odds_fetcher import fetch_all_live_odds
+        if fetch_all_live_odds() > 0:
+            changed = True
+    except Exception as e:
+        logger.warning(f"Live odds fetch error: {e}")
+
     if save_todays_picks() > 0:
         changed = True
     return changed
@@ -333,6 +341,11 @@ def main():
     _backup_database()
 
     fetch_todays_entries()
+    try:
+        from data.odds_fetcher import fetch_all_live_odds
+        fetch_all_live_odds()
+    except Exception as e:
+        logger.warning(f"Initial live odds fetch error: {e}")
     save_todays_picks()
     fetch_todays_race_results()
     generate_dashboard()

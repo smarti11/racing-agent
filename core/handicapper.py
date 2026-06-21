@@ -351,14 +351,8 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     final_score = round(base_score + pace_adj + form_adj, 1)
     final_score = max(0, min(100, final_score))
 
-    # Value rating
-    ml_decimal = parse_odds(ml)
-    if ml_decimal is not None:
-        implied_prob = 1 / (ml_decimal + 1)
-        score_prob   = raw_score
-        value = round((score_prob - implied_prob) * 100, 1)
-    else:
-        value = 0.0
+    # Value rating — corrected in pick_manager after market blend
+    value = 0.0
 
     # Get form string for display
     form_str    = form_data.get("form", "---") if form_data else "---"

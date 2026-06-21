@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 import logging
 from pathlib import Path
-from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses
+from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_track_high_win_rate_14d
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -65,22 +65,26 @@ def render_bet_slate_html(slate):
             return 1.0 / (odds + 1.0)
         except: return None
     
-    def render_edge_cells(model_prob, ml):
+    def render_edge_cells(model_prob, ml=None, market_prob=None):
         """Returns three <td>: MODEL%, MKT%, EDGE."""
-        mkt = market_prob_from_ml(ml)
-        if model_prob is None:
+        if market_prob is not None:
+            mkt = market_prob
+        else:
+            mkt = market_prob_from_ml(ml)
+        prob = model_prob
+        if prob is None:
             model_str = "—"
         else:
-            model_str = f"{model_prob*100:.1f}%"
+            model_str = f"{prob*100:.1f}%"
         if mkt is None:
             mkt_str = "—"
         else:
             mkt_str = f"{mkt*100:.1f}%"
-        if model_prob is None or mkt is None or mkt == 0:
+        if prob is None or mkt is None or mkt == 0:
             edge_str = "—"
             edge_c = "#4a6080"
         else:
-            edge = (model_prob - mkt) / mkt * 100
+            edge = (prob - mkt) / mkt * 100
             edge_str = f"{edge:+.0f}%"
             if edge > 20: edge_c = "#00c896"
             elif edge > 0: edge_c = "#a3e635"
@@ -114,7 +118,11 @@ def render_bet_slate_html(slate):
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["horse_name"]}</td>'
         html += f'<td style="padding:6px 8px;color:{conf_color(s["confidence"])};font-weight:700">{s["confidence"]}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["bet_type"]}</td>'
-        html += render_edge_cells(s.get("calibrated_prob"), s.get("morning_line"))
+        html += render_edge_cells(
+            s.get("final_prob") or s.get("calibrated_prob"),
+            s.get("morning_line"),
+            market_prob=s.get("market_prob"),
+        )
         roi = s["track_roi"]
         roi_c = "#00c896" if roi > 0 else "#ff4d6d"
         html += f'<td style="padding:6px 8px;color:{roi_c};text-align:right">{roi:+.1f}%</td>'
@@ -135,7 +143,11 @@ def render_bet_slate_html(slate):
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["horse_name"]}</td>'
         html += f'<td style="padding:6px 8px;color:{conf_color(s["confidence"])};font-weight:700">{s["confidence"]}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["bet_type"]}</td>'
-        html += render_edge_cells(s.get("calibrated_prob"), s.get("morning_line"))
+        html += render_edge_cells(
+            s.get("final_prob") or s.get("calibrated_prob"),
+            s.get("morning_line"),
+            market_prob=s.get("market_prob"),
+        )
         roi = s["track_roi"]
         roi_c = "#00c896" if roi > 0 else "#ff4d6d"
         html += f'<td style="padding:6px 8px;color:{roi_c};text-align:right">{roi:+.1f}%</td>'
@@ -143,6 +155,68 @@ def render_bet_slate_html(slate):
         html += '</tr>'
     
     html += '</table>'
+    html += '</div>'
+    return html
+
+
+def render_value_bets_html(bets):
+    """Render positive-edge full-field scan results."""
+    if not bets:
+        return ""
+
+    html = (
+        '<div style="margin:16px 0;padding:14px 16px;background:#0f1828;'
+        'border:0.5px solid #1e2d4a;border-radius:8px">'
+        '<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px">'
+        '<div style="font-size:13px;font-weight:700;color:#a3e635;letter-spacing:.05em">'
+        'VALUE BETS (FULL FIELD)</div>'
+        f'<div style="font-size:11px;color:#4a6080">{len(bets)} runners · '
+        'Stage-2 blend vs market · min 5% edge</div>'
+        '</div>'
+        '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        '<tr style="color:#4a6080;text-align:left;border-bottom:0.5px solid #1e2d4a">'
+        '<th style="padding:6px 8px">TRACK</th>'
+        '<th style="padding:6px 8px">RACE</th>'
+        '<th style="padding:6px 8px">POST</th>'
+        '<th style="padding:6px 8px">#</th>'
+        '<th style="padding:6px 8px">HORSE</th>'
+        '<th style="padding:6px 8px;text-align:right">ODDS</th>'
+        '<th style="padding:6px 8px;text-align:right">FINAL%</th>'
+        '<th style="padding:6px 8px;text-align:right">MKT%</th>'
+        '<th style="padding:6px 8px;text-align:right">EDGE</th>'
+        '<th style="padding:6px 8px;text-align:right">KELLY</th>'
+        '</tr>'
+    )
+
+    for b in bets[:40]:
+        edge = b.get("edge") or 0
+        edge_pct = edge * 100
+        edge_c = "#00c896" if edge_pct > 15 else "#a3e635" if edge_pct > 5 else "#ffd60a"
+        src = b.get("odds_source") or "ml"
+        odds_label = f'{b.get("odds_str") or "—"}'
+        if src == "live":
+            odds_label += " *"
+        html += (
+            f'<tr style="border-bottom:0.5px solid #1e2d4a22">'
+            f'<td style="padding:6px 8px;color:#c8d8f0">{b.get("track_name","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">R{b.get("race_num","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">{b.get("post_time") or "—"}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">#{b.get("program_num","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">{b.get("horse_name","")}</td>'
+            f'<td style="padding:6px 8px;color:#ffd60a;text-align:right">{odds_label}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0;text-align:right;font-family:Courier,monospace">'
+            f'{(b.get("final_prob") or 0)*100:.1f}%</td>'
+            f'<td style="padding:6px 8px;color:#4a6080;text-align:right;font-family:Courier,monospace">'
+            f'{(b.get("market_prob") or 0)*100:.1f}%</td>'
+            f'<td style="padding:6px 8px;color:{edge_c};text-align:right;font-weight:700;font-family:Courier,monospace">'
+            f'{edge_pct:+.0f}%</td>'
+            f'<td style="padding:6px 8px;color:#4a6080;text-align:right;font-family:Courier,monospace">'
+            f'{(b.get("kelly_f") or 0)*100:.1f}%</td>'
+            f'</tr>'
+        )
+
+    html += '</table>'
+    html += '<div style="font-size:10px;color:#4a6080;margin-top:8px">* live odds</div>'
     html += '</div>'
     return html
 
@@ -355,6 +429,13 @@ def build_dashboard():
         logging.getLogger(__name__).warning("Bet slate render failed: %s" % _e)
         bet_slate_html = ""
 
+    try:
+        value_bets_html = render_value_bets_html(get_todays_value_bets())
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("Value bets render failed: %s" % _e)
+        value_bets_html = ""
+
     # Today's HIGH conf picks — full list, no track-profitability filter.
     # Lets the user see exactly which races the agent is calling HIGH right now.
     try:
@@ -399,6 +480,10 @@ def build_dashboard():
 
     entry_scores  = get_todays_entry_scores()   # {race_id: {program_num: score_dict}}
     race_analyses = get_todays_race_analyses()  # {race_id: analysis_dict}
+    try:
+        track_high_14d = get_track_high_win_rate_14d()
+    except Exception:
+        track_high_14d = {}
 
     tracks = {}
     for race in races:
@@ -800,6 +885,14 @@ def build_dashboard():
     else:
         for track_name, track_races in tracks.items():
             track_id = track_name.replace(" ", "_").replace("'","")
+            _high_14 = track_high_14d.get(track_name)
+            _high_badge = ""
+            if _high_14 is not None:
+                _hc = "#00c896" if _high_14 >= 25 else "#ffd60a" if _high_14 >= 18 else "#ff8c42"
+                _high_badge = (
+                    f'<span style="font-size:10px;font-weight:600;color:{_hc}">'
+                    f'HIGH 14d: {_high_14}%</span>'
+                )
             race_html += (
                 '<div style="margin-bottom:28px">'
                 '<div onclick="toggleTrack(\'' + track_id + '\')" '
@@ -809,6 +902,7 @@ def build_dashboard():
                 'align-items:center;cursor:pointer;user-select:none">'
                 f'<span>{track_name}</span>'
                 '<div style="display:flex;align-items:center;gap:10px">'
+                + _high_badge +
                 f'<span style="font-size:10px;font-weight:400;color:#4a6080">{len(track_races)} races</span>'
                 f'<span id="arrow_{track_id}" style="color:#4a6080;font-size:12px;transition:transform .2s">&#9654;</span>'
                 '</div></div>'
@@ -830,12 +924,35 @@ def build_dashboard():
                 # Drop any picks whose horse was scratched after the freeze
                 _scr_nums = {e["program_num"] for e in scratched}
                 role_top3 = [p for p in role_top3 if p.get("program_num") not in _scr_nums]
-                top_pick = role_top3[0] if role_top3 else None
-                if top_pick:
-                    top_picks_count += 1
+                picks_all_scratched = bool(_rp) and not role_top3
 
                 # Per-race score map from stored entry scores (all active runners)
                 score_map = entry_scores.get(race["id"], {})
+
+                if not role_top3 and score_map:
+                    fallback = sorted(
+                        [
+                            (pgm, sc) for pgm, sc in score_map.items()
+                            if pgm not in _scr_nums and sc.get("score") is not None
+                        ],
+                        key=lambda x: x[1].get("score") or 0,
+                        reverse=True,
+                    )[:3]
+                    entry_by_prog = {str(e["program_num"]): e for e in active}
+                    role_top3 = []
+                    for pgm, sc in fallback:
+                        ent = entry_by_prog.get(str(pgm), {})
+                        role_top3.append({
+                            "program_num": pgm,
+                            "horse_name": ent.get("horse_name", "?"),
+                            "morning_line": ent.get("live_odds") or ent.get("morning_line"),
+                            "confidence": "",
+                            "role": "ALT",
+                        })
+
+                top_pick = role_top3[0] if role_top3 else None
+                if top_pick and not picks_all_scratched:
+                    top_picks_count += 1
 
                 # Pace scenario from stored race analysis
                 _ra = race_analyses.get(race["id"], {})
@@ -1008,7 +1125,10 @@ def build_dashboard():
                             f'</div>'
                         )
 
-                    pick_banner = f'<div style="background:#0f1729;border:0.5px solid #00c89633;border-radius:6px;padding:8px 10px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:9px;color:#00c896;font-weight:700;letter-spacing:.1em">TOP 3 PICKS</span>{conf_str}</div><div style="display:flex;gap:6px;flex-wrap:wrap">{picks_html}</div>{pace_info}</div>'
+                    pick_banner = f'<div style="background:#0f1729;border:0.5px solid #00c89633;border-radius:6px;padding:8px 10px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:9px;color:#00c896;font-weight:700;letter-spacing:.1em">TOP 3 PICKS</span>{conf_str}'
+                    if picks_all_scratched:
+                        pick_banner += '<span style="font-size:9px;color:#ff8c42;font-weight:600">frozen picks scratched — showing top scored active</span>'
+                    pick_banner += f'</div><div style="display:flex;gap:6px;flex-wrap:wrap">{picks_html}</div>{pace_info}</div>'
 
                 scr_badge = ('<span style="color:#ff4d6d;font-size:10px">' + str(len(scratched)) + ' SCR</span>') if scratched else ""
                 race_html += (
@@ -1075,7 +1195,9 @@ def build_dashboard():
                         scr_badge = ""
                         scr_color = hc
 
-                    race_html += f'<tr style="border-bottom:0.5px solid #1e2d4a22;{ss}{rb}{scr_style}"><td style="padding:6px 8px;color:{nc};font-weight:{fw};font-family:Courier,monospace">{prog}</td><td style="padding:6px 8px;color:{scr_color};font-weight:{fw}">{entry["horse_name"]}{scr_badge}</td><td style="padding:6px 8px;color:#4a6080;font-size:10px">{jockey[:18]}</td><td style="padding:6px 8px;color:#4a6080;font-size:10px">{trainer[:18]}</td><td style="padding:6px 8px;text-align:right;color:#ffd60a;font-family:Courier,monospace">{entry.get("morning_line") or "—"}</td><td style="padding:6px 8px;text-align:center">{pace_badge(sc.get("pace_role","U")) if sc else "—"}</td><td style="padding:6px 8px;text-align:center">{form_badge(sc.get("form","---")) if sc else "—"}</td><td style="padding:6px 8px;text-align:center">{days_html}</td><td style="padding:6px 8px;text-align:center">{j_pct_html}</td><td style="padding:6px 8px;text-align:center">{t_pct_html}</td><td style="padding:6px 8px">{score_bar(sc["score"]) if sc else "—"}</td><td style="padding:6px 8px;text-align:center;display:flex;gap:3px;flex-wrap:wrap">{flags_html}</td></tr>'
+                    odds_disp = entry.get("live_odds") or entry.get("morning_line") or "—"
+                    live_star = " *" if entry.get("live_odds") else ""
+                    race_html += f'<tr style="border-bottom:0.5px solid #1e2d4a22;{ss}{rb}{scr_style}"><td style="padding:6px 8px;color:{nc};font-weight:{fw};font-family:Courier,monospace">{prog}</td><td style="padding:6px 8px;color:{scr_color};font-weight:{fw}">{entry["horse_name"]}{scr_badge}</td><td style="padding:6px 8px;color:#4a6080;font-size:10px">{jockey[:18]}</td><td style="padding:6px 8px;color:#4a6080;font-size:10px">{trainer[:18]}</td><td style="padding:6px 8px;text-align:right;color:#ffd60a;font-family:Courier,monospace">{odds_disp}{live_star}</td><td style="padding:6px 8px;text-align:center">{pace_badge(sc.get("pace_role","U")) if sc else "—"}</td><td style="padding:6px 8px;text-align:center">{form_badge(sc.get("form","---")) if sc else "—"}</td><td style="padding:6px 8px;text-align:center">{days_html}</td><td style="padding:6px 8px;text-align:center">{j_pct_html}</td><td style="padding:6px 8px;text-align:center">{t_pct_html}</td><td style="padding:6px 8px">{score_bar(sc["score"]) if sc else "—"}</td><td style="padding:6px 8px;text-align:center;display:flex;gap:3px;flex-wrap:wrap">{flags_html}</td></tr>'
 
                 race_html += "</tbody></table></div>"
             race_html += "</div></div>"  # close track_{id} div + outer div
@@ -1092,6 +1214,18 @@ def build_dashboard():
             "💰 TODAY'S BET SLATE "
             "<span style='font-size:9px;font-weight:400;color:#4a6080'>(click to expand/collapse)</span>"
             "</summary>" + bet_slate_html + "</details>"
+        )
+    value_bets_html = locals().get("value_bets_html") or ""
+    if value_bets_html:
+        value_bets_html = (
+            "<details style='margin:8px 0' open>"
+            "<summary style='cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;"
+            "border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;"
+            "color:#a3e635;letter-spacing:.05em;list-style:none;"
+            "user-select:none'>"
+            "📈 VALUE BETS (FULL FIELD) "
+            "<span style='font-size:9px;font-weight:400;color:#4a6080'>(click to expand/collapse)</span>"
+            "</summary>" + value_bets_html + "</details>"
         )
     if pick34_html:
         pick34_html = (
@@ -1197,6 +1331,7 @@ body{{background:#0a0f1e;color:#c8d8f0;font-family:-apple-system,BlinkMacSystemF
   <div class="stat"><div class="stat-label">Any Pick WPS%</div><div class="stat-val" style="color:#00c896">{agent_stats["any_pick_wps_pct"]}%</div><div class="stat-sub">1 of 3 in top 3</div></div>
 </div>
 {bet_slate_html}
+{value_bets_html}
 {pick34_html}
 {high_picks_html}
 <div class="legend">

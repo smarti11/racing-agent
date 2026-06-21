@@ -13,9 +13,11 @@ from db.database import (
     get_conn,
     get_todays_races,
     get_race_entries as db_get_race_entries,
+    get_latest_odds_map,
     save_agent_picks,
     save_agent_entry_scores,
     save_agent_race_analysis,
+    save_agent_value_bets,
 )
 
 logger = logging.getLogger("racing_agent")
@@ -109,6 +111,22 @@ def _entries_changed_since_picks(race_id: int, conn) -> bool:
     return scratched is not None
 
 
+def _odds_changed_since_picks(race_id: int, conn) -> bool:
+    """True if live odds updated after the last pick save."""
+    last_pick = conn.execute(
+        "SELECT MAX(created_ts) AS ts FROM agent_picks WHERE race_id=?",
+        (race_id,),
+    ).fetchone()["ts"]
+    if not last_pick:
+        return True
+
+    last_odds = conn.execute(
+        "SELECT MAX(fetched_ts) AS ts FROM odds WHERE race_id=?",
+        (race_id,),
+    ).fetchone()["ts"]
+    return bool(last_odds and last_odds > last_pick)
+
+
 def _archive_tainted_picks(race_id: int):
     with get_conn() as conn:
         old_picks = conn.execute(
@@ -134,6 +152,7 @@ def _archive_tainted_picks(race_id: int):
 def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_new_n: int) -> bool:
     from core.handicapper import handicap_race, get_top_pick, role_ranked_picks
     from core.probabilities import scores_to_probabilities
+    from core.market import enrich_race_with_market, scan_value_bets
 
     entries = db_get_race_entries(race["id"])
     entry_dicts = [dict(e) for e in entries]
@@ -169,16 +188,28 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
     except Exception as e:
         logger.warning(f"Calibrator unavailable: {e}")
 
-    ml_map = {e.get("program_num"): e.get("morning_line") for e in entry_dicts}
+    for h in active_scored:
+        pgm = h["program_num"]
+        h["calibrated_prob"] = calibrated_map.get(pgm, h.get("win_prob"))
+
+    ml_map = {str(e.get("program_num")): e.get("morning_line") for e in entry_dicts}
+    live_odds = get_latest_odds_map(race["id"])
+    enrich_race_with_market(active_scored, live_odds=live_odds, ml_map=ml_map)
+
+    value_bets = scan_value_bets(active_scored)
+    save_agent_value_bets(race["id"], value_bets)
+
     top = get_top_pick(scored)
     confidence = top.get("confidence", "LOW") if top else "LOW"
     if scored:
         scored[0]["confidence"] = confidence
 
     roles = role_ranked_picks(scored)
+    prob_by_pgm = {h["program_num"]: h for h in active_scored}
     picks = []
     for i, horse in enumerate(roles["all"]):
         pgm = horse["program_num"]
+        enriched = prob_by_pgm.get(pgm, {})
         picks.append({
             "rank": i + 1,
             "program_num": pgm,
@@ -187,8 +218,10 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
             "role": horse.get("role", ""),
             "score": horse.get("score"),
             "win_prob": prob_map.get(pgm),
-            "morning_line": ml_map.get(pgm),
-            "calibrated_prob": calibrated_map.get(pgm),
+            "morning_line": ml_map.get(str(pgm)),
+            "calibrated_prob": enriched.get("calibrated_prob"),
+            "final_prob": enriched.get("final_prob"),
+            "market_prob": enriched.get("market_prob"),
             "data_quality": data_quality,
         })
 
@@ -244,7 +277,9 @@ def save_todays_picks() -> int:
 
         if not force_regen:
             with get_conn() as conn:
-                if not _entries_changed_since_picks(race["id"], conn):
+                entries_dirty = _entries_changed_since_picks(race["id"], conn)
+                odds_dirty = _odds_changed_since_picks(race["id"], conn)
+                if not entries_dirty and not odds_dirty:
                     skipped_clean += 1
                     continue
 
