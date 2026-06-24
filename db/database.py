@@ -2259,14 +2259,7 @@ def get_todays_bet_slate():
                 sortable = "9999"
             
             status = r["result_status"]
-            if status is None:
-                status_display = "upcoming"
-            elif status == "WIN":
-                status_display = "WON"
-            elif status == "MISS":
-                status_display = "lost"
-            else:
-                status_display = status.lower()
+            status_display = "upcoming" if status is None else status
             
             slate.append({
                 "race_id": r["race_id"],

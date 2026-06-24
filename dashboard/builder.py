@@ -14,6 +14,44 @@ def cc(conf):
     return {"HIGH":"#00c896","MEDIUM":"#ffd60a","LOW":"#ff8c42"}.get(conf,"#4a6080")
 
 
+RESULT_STATUS_COLORS = {
+    "WIN": "#00c896",
+    "PLACE": "#ffd60a",
+    "SHOW": "#ff8c42",
+    "MISS": "#ff4d6d",
+}
+
+
+def normalize_result_status(status):
+    if not status or status == "upcoming":
+        return None
+    label = str(status).upper()
+    if label == "WON":
+        return "WIN"
+    if label == "LOST":
+        return "MISS"
+    return label
+
+
+def format_result_status_span(status):
+    label = normalize_result_status(status)
+    if not label:
+        return '<span style="color:#4a6080">—</span>'
+    color = RESULT_STATUS_COLORS.get(label, "#4a6080")
+    return f'<span style="color:{color};font-weight:700">{label}</span>'
+
+
+def format_result_status_td(status, padding="6px 8px"):
+    label = normalize_result_status(status)
+    if not label:
+        return f'<td style="padding:{padding};color:#4a6080">—</td>'
+    color = RESULT_STATUS_COLORS.get(label, "#4a6080")
+    return (
+        f'<td style="padding:{padding};color:{color};font-weight:700">'
+        f'{label}</td>'
+    )
+
+
 def render_bet_slate_html(slate):
     """Render today's bet slate as an HTML table block."""
     if not slate:
@@ -96,18 +134,6 @@ def render_bet_slate_html(slate):
             f'<td style="padding:6px 8px;color:{edge_c};text-align:right;font-family:Courier,monospace;font-weight:700">{edge_str}</td>'
         )
     
-    def status_color(s):
-        if s == "upcoming": return "#4a6080"
-        if s == "WON": return "#00c896"
-        if s in ("place", "show"): return "#ffd60a"
-        if s in ("lost", "MISS"): return "#ff4d6d"
-        return "#4a6080"
-    
-    def status_display(s):
-        if s == "upcoming": return "—"
-        if s == "WON": return "WON"
-        return s.upper()
-
     def bet_type_cell(bt):
         c = "#ff8c42" if bt == "ITM ONLY" else "#c8d8f0"
         return f'<td style="padding:6px 8px;color:{c};font-weight:700">{bt}</td>'
@@ -130,7 +156,7 @@ def render_bet_slate_html(slate):
         roi = s["track_roi"]
         roi_c = "#00c896" if roi > 0 else "#ff4d6d"
         html += f'<td style="padding:6px 8px;color:{roi_c};text-align:right">{roi:+.1f}%</td>'
-        html += f'<td style="padding:6px 8px;color:{status_color(s["status"])}">{status_display(s["status"])}</td>'
+        html += format_result_status_td(s["status"])
         html += '</tr>'
     
     # Divider
@@ -155,7 +181,7 @@ def render_bet_slate_html(slate):
         roi = s["track_roi"]
         roi_c = "#00c896" if roi > 0 else "#ff4d6d"
         html += f'<td style="padding:6px 8px;color:{roi_c};text-align:right">{roi:+.1f}%</td>'
-        html += f'<td style="padding:6px 8px;color:{status_color(s["status"])};font-weight:700">{status_display(s["status"])}</td>'
+        html += format_result_status_td(s["status"])
         html += '</tr>'
     
     html += '</table>'
@@ -293,17 +319,7 @@ def render_actionable_bets_html(bets):
         odds_label = b.get("odds_str") or "—"
         if src == "live":
             odds_label += " *"
-        status = b.get("result_status")
-        status_colors = {
-            "WIN": "#00c896", "PLACE": "#ffd60a", "SHOW": "#ff8c42", "MISS": "#ff4d6d",
-        }
-        if status in status_colors:
-            st_html = (
-                f'<span style="color:{status_colors[status]};font-weight:700">'
-                f'{status}</span>'
-            )
-        else:
-            st_html = '<span style="color:#4a6080">—</span>'
+        st_html = format_result_status_span(b.get("result_status"))
         bet_amt = b.get("bet_amount") or 2.0
 
         html += (
@@ -473,12 +489,6 @@ def render_high_picks_html(rows):
     graded   = [r for r in rows if r.get("result_status") is not None]
     wins     = sum(1 for r in graded if r.get("result_status") == "WIN")
 
-    def status_cell(s):
-        if s is None:
-            return '<td style="padding:6px 8px;color:#4a6080">—</td>'
-        color = {"WIN":"#00c896","PLACE":"#ffd60a","SHOW":"#ff8c42","MISS":"#ff4d6d"}.get(s, "#4a6080")
-        return f'<td style="padding:6px 8px;color:{color};font-weight:700">{s}</td>'
-
     html  = '<div style="margin:16px 0;padding:14px 16px;background:#0f1828;border:0.5px solid #00c89633;border-radius:8px">'
     html += '<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px">'
     html += '<div style="font-size:13px;font-weight:700;color:#00c896;letter-spacing:.05em">TODAY\'S HIGH-CONFIDENCE PICKS</div>'
@@ -504,7 +514,7 @@ def render_high_picks_html(rows):
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{r.get("post_time") or "—"}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">#{r["program_num"]}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{r["horse_name"]}</td>'
-        html += status_cell(r.get("result_status"))
+        html += format_result_status_td(r.get("result_status"))
         html += '</tr>'
 
     html += '</table></div>'
