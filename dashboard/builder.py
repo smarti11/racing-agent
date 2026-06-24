@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 import logging
 from pathlib import Path
-from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_track_high_win_rate_14d
+from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_track_high_win_rate_14d
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -26,7 +26,7 @@ def render_bet_slate_html(slate):
     html = '<div style="margin:16px 0;padding:14px 16px;background:#0f1828;border:0.5px solid #1e2d4a;border-radius:8px">'
     html += '<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px">'
     html += '<div style="font-size:13px;font-weight:700;color:#00c896;letter-spacing:.05em">TODAY\'S BET SLATE</div>'
-    html += f'<div style="font-size:11px;color:#4a6080">{len(upcoming)} upcoming · {len(completed)} graded · HIGH CONF only · Bolton-Chapman validated</div>'
+    html += f'<div style="font-size:11px;color:#4a6080">{len(upcoming)} upcoming · {len(completed)} graded · HIGH 5/1+ = $2 WIN · HIGH chalk = ITM only</div>'
     html += '</div>'
     
     # Table
@@ -107,6 +107,10 @@ def render_bet_slate_html(slate):
         if s == "upcoming": return "—"
         if s == "WON": return "WON"
         return s.upper()
+
+    def bet_type_cell(bt):
+        c = "#ff8c42" if bt == "ITM ONLY" else "#c8d8f0"
+        return f'<td style="padding:6px 8px;color:{c};font-weight:700">{bt}</td>'
     
     # Upcoming first
     for s in upcoming:
@@ -117,7 +121,7 @@ def render_bet_slate_html(slate):
         html += f'<td style="padding:6px 8px;color:#c8d8f0">#{s["program_num"]}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["horse_name"]}</td>'
         html += f'<td style="padding:6px 8px;color:{conf_color(s["confidence"])};font-weight:700">{s["confidence"]}</td>'
-        html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["bet_type"]}</td>'
+        html += bet_type_cell(s["bet_type"])
         html += render_edge_cells(
             s.get("final_prob") or s.get("calibrated_prob"),
             s.get("morning_line"),
@@ -142,7 +146,7 @@ def render_bet_slate_html(slate):
         html += f'<td style="padding:6px 8px;color:#c8d8f0">#{s["program_num"]}</td>'
         html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["horse_name"]}</td>'
         html += f'<td style="padding:6px 8px;color:{conf_color(s["confidence"])};font-weight:700">{s["confidence"]}</td>'
-        html += f'<td style="padding:6px 8px;color:#c8d8f0">{s["bet_type"]}</td>'
+        html += bet_type_cell(s["bet_type"])
         html += render_edge_cells(
             s.get("final_prob") or s.get("calibrated_prob"),
             s.get("morning_line"),
@@ -171,7 +175,7 @@ def render_value_bets_html(bets):
         '<div style="font-size:13px;font-weight:700;color:#a3e635;letter-spacing:.05em">'
         'VALUE BETS (FULL FIELD)</div>'
         f'<div style="font-size:11px;color:#4a6080">{len(bets)} runners · '
-        'Stage-2 blend vs market · min 5% edge</div>'
+        'research scan · min 5% edge · not a bet list</div>'
         '</div>'
         '<table style="width:100%;border-collapse:collapse;font-size:12px">'
         '<tr style="color:#4a6080;text-align:left;border-bottom:0.5px solid #1e2d4a">'
@@ -218,6 +222,100 @@ def render_value_bets_html(bets):
     html += '</table>'
     html += '<div style="font-size:10px;color:#4a6080;margin-top:8px">* live odds</div>'
     html += '</div>'
+    return html
+
+
+def render_actionable_bets_html(bets):
+    """Selective Benter-style actionable bet list."""
+    from config.market import (
+        ACTIONABLE_MAX_PER_DAY,
+        ACTIONABLE_MIN_DECIMAL,
+        ACTIONABLE_MIN_EDGE,
+    )
+
+    html = (
+        '<div style="margin:16px 0;padding:14px 16px;background:#0a1f18;'
+        'border:1px solid #00c89655;border-radius:8px">'
+        '<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px">'
+        '<div style="font-size:14px;font-weight:700;color:#00c896;letter-spacing:.05em">'
+        'ACTIONABLE BETS</div>'
+        f'<div style="font-size:11px;color:#4a6080">'
+        f'{len(bets)} of max {ACTIONABLE_MAX_PER_DAY} · '
+        f'edge ≥{ACTIONABLE_MIN_EDGE*100:.0f}% · '
+        f'{ACTIONABLE_MIN_DECIMAL-1:.0f}/1+ · Kelly-sized $2 WIN</div>'
+        '</div>'
+    )
+
+    if not bets:
+        html += (
+            '<div style="font-size:11px;color:#4a6080;padding:8px 0">'
+            'No qualifying overlays on today\'s card. Check back after odds update '
+            'or see VALUE BETS (research) below.</div></div>'
+        )
+        return html
+
+    html += (
+        '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        '<tr style="color:#4a6080;text-align:left;border-bottom:0.5px solid #1e2d4a">'
+        '<th style="padding:6px 8px">#</th>'
+        '<th style="padding:6px 8px">TRACK</th>'
+        '<th style="padding:6px 8px">RACE</th>'
+        '<th style="padding:6px 8px">POST</th>'
+        '<th style="padding:6px 8px">HORSE</th>'
+        '<th style="padding:6px 8px;text-align:right">ODDS</th>'
+        '<th style="padding:6px 8px;text-align:right">FINAL%</th>'
+        '<th style="padding:6px 8px;text-align:right">MKT%</th>'
+        '<th style="padding:6px 8px;text-align:right">EDGE</th>'
+        '<th style="padding:6px 8px;text-align:right">BET</th>'
+        '<th style="padding:6px 8px">STATUS</th>'
+        '</tr>'
+    )
+
+    for b in bets:
+        edge = b.get("edge") or 0
+        edge_pct = edge * 100
+        edge_c = "#00c896" if edge_pct > 25 else "#a3e635"
+        src = b.get("odds_source") or "ml"
+        odds_label = b.get("odds_str") or "—"
+        if src == "live":
+            odds_label += " *"
+        status = b.get("result_status")
+        if status == "WIN":
+            st_html = '<span style="color:#00c896;font-weight:700">WON</span>'
+        elif status == "MISS":
+            st_html = '<span style="color:#ff4d6d">lost</span>'
+        else:
+            st_html = '<span style="color:#4a6080">—</span>'
+        bet_amt = b.get("bet_amount") or 2.0
+
+        html += (
+            f'<tr style="border-bottom:0.5px solid #1e2d4a22">'
+            f'<td style="padding:6px 8px;color:#ffd60a;font-weight:700">{b.get("rank_order","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">{b.get("track_name","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">R{b.get("race_num","")}</td>'
+            f'<td style="padding:6px 8px;color:#c8d8f0">{b.get("post_time") or "—"}</td>'
+            f'<td style="padding:6px 8px;color:#fff;font-weight:600">'
+            f'#{b.get("program_num","")} {b.get("horse_name","")}</td>'
+            f'<td style="padding:6px 8px;color:#ffd60a;text-align:right">{odds_label}</td>'
+            f'<td style="padding:6px 8px;text-align:right;font-family:Courier,monospace">'
+            f'{(b.get("final_prob") or 0)*100:.1f}%</td>'
+            f'<td style="padding:6px 8px;text-align:right;font-family:Courier,monospace;color:#4a6080">'
+            f'{(b.get("market_prob") or 0)*100:.1f}%</td>'
+            f'<td style="padding:6px 8px;text-align:right;font-weight:700;color:{edge_c};'
+            f'font-family:Courier,monospace">{edge_pct:+.0f}%</td>'
+            f'<td style="padding:6px 8px;text-align:right;color:#00c896;font-weight:700">'
+            f'${bet_amt:.2f}</td>'
+            f'<td style="padding:6px 8px">{st_html}</td>'
+            f'</tr>'
+        )
+
+    html += (
+        '</table>'
+        '<div style="font-size:10px;color:#4a6080;margin-top:8px;line-height:1.5">'
+        'One bet per race max · skips rank-1 HIGH chalk ≤5/1 · '
+        '* = live odds · Use VALUE BETS below for full-field research only'
+        '</div></div>'
+    )
     return html
 
 
@@ -428,6 +526,13 @@ def build_dashboard():
         import logging
         logging.getLogger(__name__).warning("Bet slate render failed: %s" % _e)
         bet_slate_html = ""
+
+    try:
+        actionable_html = render_actionable_bets_html(get_todays_actionable_bets())
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("Actionable bets render failed: %s" % _e)
+        actionable_html = ""
 
     try:
         value_bets_html = render_value_bets_html(get_todays_value_bets())
@@ -1218,15 +1323,16 @@ def build_dashboard():
     value_bets_html = locals().get("value_bets_html") or ""
     if value_bets_html:
         value_bets_html = (
-            "<details style='margin:8px 0' open>"
+            "<details style='margin:8px 0'>"
             "<summary style='cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;"
             "border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;"
-            "color:#a3e635;letter-spacing:.05em;list-style:none;"
+            "color:#4a6080;letter-spacing:.05em;list-style:none;"
             "user-select:none'>"
-            "📈 VALUE BETS (FULL FIELD) "
+            "🔬 VALUE BETS — RESEARCH (full field) "
             "<span style='font-size:9px;font-weight:400;color:#4a6080'>(click to expand/collapse)</span>"
             "</summary>" + value_bets_html + "</details>"
         )
+    actionable_html = locals().get("actionable_html") or ""
     if pick34_html:
         pick34_html = (
             "<details style='margin:8px 0'>"
@@ -1331,6 +1437,7 @@ body{{background:#0a0f1e;color:#c8d8f0;font-family:-apple-system,BlinkMacSystemF
   <div class="stat"><div class="stat-label">Any Pick WPS%</div><div class="stat-val" style="color:#00c896">{agent_stats["any_pick_wps_pct"]}%</div><div class="stat-sub">1 of 3 in top 3</div></div>
 </div>
 {bet_slate_html}
+{actionable_html}
 {value_bets_html}
 {pick34_html}
 {high_picks_html}

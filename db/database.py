@@ -189,6 +189,26 @@ def init_db():
             UNIQUE(race_id, program_num) ON CONFLICT REPLACE
         );
 
+        CREATE TABLE IF NOT EXISTS agent_actionable_bets (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_date    TEXT NOT NULL,
+            race_id      INTEGER NOT NULL,
+            program_num  TEXT NOT NULL,
+            horse_name   TEXT NOT NULL,
+            odds_str     TEXT,
+            odds_source  TEXT,
+            final_prob   REAL,
+            market_prob  REAL,
+            edge         REAL,
+            rel_edge     REAL,
+            kelly_f      REAL,
+            bet_amount   REAL,
+            rank_order   INTEGER NOT NULL,
+            created_ts   TEXT NOT NULL,
+            FOREIGN KEY(race_id) REFERENCES races(id),
+            UNIQUE(race_date, race_id, program_num) ON CONFLICT REPLACE
+        );
+
         CREATE TABLE IF NOT EXISTS pick_payouts (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             race_id     INTEGER NOT NULL,
@@ -240,6 +260,7 @@ def init_db():
             "ALTER TABLE agent_entry_scores ADD COLUMN odds_source TEXT",
             "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
+            "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
         ]
         for sql in _migrations:
             try:
@@ -746,6 +767,59 @@ def get_todays_value_bets() -> list:
             WHERE r.race_date = ?
               AND (e.scratched IS NULL OR e.scratched = 0)
             ORDER BY avb.edge DESC
+        """, (today,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def save_agent_actionable_bets(race_date: str, bets: list):
+    """Replace actionable bet list for a race date."""
+    now_iso = datetime.now().isoformat()
+    with get_conn() as conn:
+        conn.execute("DELETE FROM agent_actionable_bets WHERE race_date=?", (race_date,))
+        for i, h in enumerate(bets, start=1):
+            conn.execute("""
+                INSERT INTO agent_actionable_bets
+                (race_date, race_id, program_num, horse_name, odds_str, odds_source,
+                 final_prob, market_prob, edge, rel_edge, kelly_f, bet_amount,
+                 rank_order, created_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                race_date,
+                h.get("race_id"),
+                str(h.get("program_num", "")),
+                h.get("horse_name", ""),
+                h.get("odds_str"),
+                h.get("odds_source", ""),
+                h.get("final_prob"),
+                h.get("market_prob"),
+                h.get("edge"),
+                h.get("rel_edge"),
+                h.get("kelly_f"),
+                h.get("bet_amount"),
+                i,
+                now_iso,
+            ))
+
+
+def get_todays_actionable_bets() -> list:
+    """Selective Benter-style bet list for today."""
+    today = datetime.now(EASTERN).date().isoformat()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT aab.*, r.track_name, r.race_num, r.post_time, r.track_code,
+                   res.winner_num,
+                   CASE WHEN res.winner_num = aab.program_num THEN 'WIN'
+                        WHEN res.winner_num IS NOT NULL THEN 'MISS'
+                        ELSE NULL END AS result_status,
+                   res.winner_win_payout
+            FROM agent_actionable_bets aab
+            JOIN races r ON r.id = aab.race_id
+            LEFT JOIN results res ON res.race_id = aab.race_id
+            LEFT JOIN entries e ON e.race_id = aab.race_id
+                AND e.program_num = aab.program_num
+            WHERE aab.race_date = ?
+              AND (e.scratched IS NULL OR e.scratched = 0)
+            ORDER BY aab.rank_order
         """, (today,)).fetchall()
     return [dict(r) for r in rows]
 
@@ -2150,9 +2224,17 @@ def get_todays_bet_slate():
             #     continue
             
             conf = r["confidence"]
+            ml = r["morning_line"] if "morning_line" in r.keys() else None
+            from core.kelly import parse_odds_to_decimal
+            dec = parse_odds_to_decimal(ml or "") if ml else None
+
             if conf == "HIGH":
-                bet_type = "$2 WIN"
-                stake = 2.00
+                if dec and dec < 6.0:
+                    bet_type = "ITM ONLY"
+                    stake = 0.00
+                else:
+                    bet_type = "$2 WIN"
+                    stake = 2.00
             elif conf == "MEDIUM":
                 bet_type = "$0.50 PL+SH"
                 stake = 1.00

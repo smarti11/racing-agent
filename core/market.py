@@ -11,8 +11,21 @@ import math
 import re
 from typing import Dict, List, Optional
 
-from config.market import MARKET_BLEND_ALPHA, MIN_EDGE, TAKEOUT, VALUE_BET_MIN_DECIMAL
-from core.kelly import compute_edge, kelly_fraction, parse_odds_to_decimal
+from config.market import (
+    ACTIONABLE_HIGH_CHALK_MAX_DEC,
+    ACTIONABLE_MAX_PER_DAY,
+    ACTIONABLE_MIN_DECIMAL,
+    ACTIONABLE_MIN_EDGE,
+    ACTIONABLE_MIN_REL_EDGE,
+    ACTIONABLE_ONE_PER_RACE,
+    ACTIONABLE_PREFER_LIVE,
+    ACTIONABLE_SKIP_HIGH_CHALK,
+    MARKET_BLEND_ALPHA,
+    MIN_EDGE,
+    TAKEOUT,
+    VALUE_BET_MIN_DECIMAL,
+)
+from core.kelly import compute_edge, kelly_bet, kelly_fraction, parse_odds_to_decimal
 
 
 def _logit(p: float, eps: float = 1e-6) -> float:
@@ -164,6 +177,118 @@ def scan_value_bets(
         bets.append(h)
     bets.sort(key=lambda x: x.get("edge") or 0.0, reverse=True)
     return bets
+
+
+def _relative_edge(final_p: float, mkt_p: float) -> float:
+    if not mkt_p or mkt_p <= 0 or not final_p:
+        return 0.0
+    return (final_p - mkt_p) / mkt_p
+
+
+def _actionable_sort_key(h: dict) -> tuple:
+    edge = h.get("edge") or 0.0
+    live_rank = 0 if h.get("odds_source") == "live" else 1
+    if not ACTIONABLE_PREFER_LIVE:
+        live_rank = 0
+    return (live_rank, -edge)
+
+
+def select_actionable_bets(
+    candidates: List[dict],
+    high_chalk_keys: Optional[set] = None,
+) -> List[dict]:
+    """Narrow value candidates to a selective Benter-style bet list."""
+    high_chalk_keys = high_chalk_keys or set()
+    filtered: List[dict] = []
+
+    for h in candidates:
+        race_id = h.get("race_id")
+        pgm = str(h.get("program_num", ""))
+        if ACTIONABLE_SKIP_HIGH_CHALK and (race_id, pgm) in high_chalk_keys:
+            continue
+
+        edge = h.get("edge")
+        if edge is None or edge < ACTIONABLE_MIN_EDGE:
+            continue
+
+        odds_str = h.get("odds_str") or ""
+        dec = parse_odds_to_decimal(odds_str)
+        if not dec or dec < ACTIONABLE_MIN_DECIMAL:
+            continue
+
+        final_p = h.get("final_prob") or 0.0
+        mkt_p = h.get("market_prob") or 0.0
+        if _relative_edge(final_p, mkt_p) < ACTIONABLE_MIN_REL_EDGE:
+            continue
+
+        kelly_f = h.get("kelly_f") or 0.0
+        if kelly_f <= 0:
+            continue
+
+        bet_amt, _, _, should = kelly_bet(
+            final_p, odds_str, min_edge=ACTIONABLE_MIN_EDGE,
+        )
+        if not should:
+            continue
+
+        out = dict(h)
+        out["bet_amount"] = bet_amt
+        out["rel_edge"] = _relative_edge(final_p, mkt_p)
+        filtered.append(out)
+
+    filtered.sort(key=_actionable_sort_key)
+
+    if ACTIONABLE_ONE_PER_RACE:
+        by_race: Dict[int, dict] = {}
+        for h in filtered:
+            rid = h.get("race_id")
+            if rid is None:
+                continue
+            if rid not in by_race:
+                by_race[rid] = h
+        filtered = sorted(by_race.values(), key=_actionable_sort_key)
+
+    return filtered[:ACTIONABLE_MAX_PER_DAY]
+
+
+def rebuild_actionable_bets_for_date(race_date: str) -> int:
+    """Rebuild today's actionable list from value bets + pick context."""
+    from db.database import get_conn, save_agent_actionable_bets
+
+    with get_conn() as conn:
+        value_rows = conn.execute("""
+            SELECT avb.*, r.track_name, r.race_num, r.post_time, r.track_code
+            FROM agent_value_bets avb
+            JOIN races r ON r.id = avb.race_id
+            LEFT JOIN entries e ON e.race_id = avb.race_id
+                AND e.program_num = avb.program_num
+            WHERE r.race_date = ?
+              AND (e.scratched IS NULL OR e.scratched = 0)
+        """, (race_date,)).fetchall()
+
+        high_chalk_keys = set()
+        if ACTIONABLE_SKIP_HIGH_CHALK:
+            for row in conn.execute("""
+                SELECT ap.race_id, ap.program_num, ap.morning_line
+                FROM agent_picks ap
+                JOIN races r ON r.id = ap.race_id
+                WHERE r.race_date = ? AND ap.rank = 1 AND ap.confidence = 'HIGH'
+            """, (race_date,)):
+                dec = parse_odds_to_decimal(row["morning_line"] or "")
+                if dec and dec < ACTIONABLE_HIGH_CHALK_MAX_DEC:
+                    high_chalk_keys.add((row["race_id"], str(row["program_num"])))
+
+    candidates = []
+    for row in value_rows:
+        d = dict(row)
+        d["odds_source"] = d.get("odds_source") or (
+            "live" if d.get("odds_str") else ""
+        )
+        candidates.append(d)
+
+    actionable = select_actionable_bets(candidates, high_chalk_keys)
+    save_agent_actionable_bets(race_date, actionable)
+    return len(actionable)
 
 
 def clean_odds_text(text: str) -> Optional[str]:

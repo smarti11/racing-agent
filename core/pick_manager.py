@@ -298,4 +298,13 @@ def save_todays_picks() -> int:
         f"Saved role-based picks for {saved} races "
         f"(skipped {skipped_frozen} frozen, {skipped_clean} unchanged)"
     )
+
+    try:
+        from core.market import rebuild_actionable_bets_for_date
+        today = datetime.now(EASTERN).date().isoformat()
+        n_act = rebuild_actionable_bets_for_date(today)
+        logger.info(f"Actionable bets rebuilt: {n_act} for {today}")
+    except Exception as e:
+        logger.warning(f"Actionable bet rebuild failed: {e}")
+
     return saved

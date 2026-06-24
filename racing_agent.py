@@ -200,6 +200,13 @@ def fetch_todays_race_results() -> int:
 def generate_dashboard():
     """Generate the racing dashboard HTML."""
     try:
+        from core.market import rebuild_actionable_bets_for_date
+        from datetime import date as dt
+        rebuild_actionable_bets_for_date(dt.today().isoformat())
+    except Exception as e:
+        logger.warning(f"Actionable bet rebuild failed: {e}")
+
+    try:
         from core.pick4_picker import recommend_sequences_for_date
         from datetime import date as dt
         recs = recommend_sequences_for_date(dt.today().isoformat(), verbose=False)
