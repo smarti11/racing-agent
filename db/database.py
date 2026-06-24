@@ -807,8 +807,10 @@ def get_todays_actionable_bets() -> list:
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT aab.*, r.track_name, r.race_num, r.post_time, r.track_code,
-                   res.winner_num,
+                   res.winner_num, res.second_num, res.third_num,
                    CASE WHEN res.winner_num = aab.program_num THEN 'WIN'
+                        WHEN res.second_num = aab.program_num THEN 'PLACE'
+                        WHEN res.third_num = aab.program_num THEN 'SHOW'
                         WHEN res.winner_num IS NOT NULL THEN 'MISS'
                         ELSE NULL END AS result_status,
                    res.winner_win_payout

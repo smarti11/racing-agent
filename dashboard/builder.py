@@ -233,16 +233,30 @@ def render_actionable_bets_html(bets):
         ACTIONABLE_MIN_EDGE,
     )
 
+    graded = [b for b in bets if b.get("result_status")]
+    upcoming = len(bets) - len(graded)
+    wins = sum(1 for b in graded if b.get("result_status") == "WIN")
+    itm = sum(1 for b in graded if b.get("result_status") in ("WIN", "PLACE", "SHOW"))
+    sub = (
+        f'{len(bets)} of max {ACTIONABLE_MAX_PER_DAY} · '
+        f'edge ≥{ACTIONABLE_MIN_EDGE*100:.0f}% · '
+        f'{ACTIONABLE_MIN_DECIMAL-1:.0f}/1+ · Kelly-sized $2 WIN'
+    )
+    if graded:
+        sub += (
+            f' · {len(graded)} graded · {wins}W'
+            f' · {itm}/{len(graded)} ITM ({itm/len(graded)*100:.0f}%)'
+        )
+    elif upcoming:
+        sub += f' · {upcoming} upcoming'
+
     html = (
         '<div style="margin:16px 0;padding:14px 16px;background:#0a1f18;'
         'border:1px solid #00c89655;border-radius:8px">'
         '<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px">'
         '<div style="font-size:14px;font-weight:700;color:#00c896;letter-spacing:.05em">'
         'ACTIONABLE BETS</div>'
-        f'<div style="font-size:11px;color:#4a6080">'
-        f'{len(bets)} of max {ACTIONABLE_MAX_PER_DAY} · '
-        f'edge ≥{ACTIONABLE_MIN_EDGE*100:.0f}% · '
-        f'{ACTIONABLE_MIN_DECIMAL-1:.0f}/1+ · Kelly-sized $2 WIN</div>'
+        f'<div style="font-size:11px;color:#4a6080">{sub}</div>'
         '</div>'
     )
 
@@ -280,10 +294,14 @@ def render_actionable_bets_html(bets):
         if src == "live":
             odds_label += " *"
         status = b.get("result_status")
-        if status == "WIN":
-            st_html = '<span style="color:#00c896;font-weight:700">WON</span>'
-        elif status == "MISS":
-            st_html = '<span style="color:#ff4d6d">lost</span>'
+        status_colors = {
+            "WIN": "#00c896", "PLACE": "#ffd60a", "SHOW": "#ff8c42", "MISS": "#ff4d6d",
+        }
+        if status in status_colors:
+            st_html = (
+                f'<span style="color:{status_colors[status]};font-weight:700">'
+                f'{status}</span>'
+            )
         else:
             st_html = '<span style="color:#4a6080">—</span>'
         bet_amt = b.get("bet_amount") or 2.0
