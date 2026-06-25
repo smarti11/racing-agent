@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 import logging
 from pathlib import Path
-from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_track_high_win_rate_14d
+from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_actionable_paper_stats, get_track_high_win_rate_14d
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -251,13 +251,126 @@ def render_value_bets_html(bets):
     return html
 
 
-def render_actionable_bets_html(bets):
+def render_actionable_paper_tracker_html(stats):
+    """Rolling flat-$2 paper P&L for actionable bets."""
+    if not stats:
+        return ""
+
+    roi_c = "#00c896" if stats["roi_pct"] > 0 else "#ff4d6d" if stats["roi_pct"] < 0 else "#c8d8f0"
+    net_c = "#00c896" if stats["net"] > 0 else "#ff4d6d" if stats["net"] < 0 else "#c8d8f0"
+    goal = stats["goal_bets"]
+    graded = stats["graded"]
+    goal_pct = min(stats["goal_pct"], 100.0)
+
+    html = (
+        '<div style="margin-bottom:12px;padding:10px 12px;background:#071510;'
+        'border:0.5px solid #00c89633;border-radius:6px">'
+        '<div style="display:flex;align-items:baseline;justify-content:space-between;'
+        'flex-wrap:wrap;gap:8px;margin-bottom:8px">'
+        '<div style="font-size:11px;font-weight:700;color:#a3e635;letter-spacing:.05em">'
+        f'📋 PAPER TRACKER — ${stats["stake"]:.0f} WIN · last {stats["days"]} days</div>'
+        '<div style="font-size:10px;color:#4a6080">'
+        'flat stake on every actionable row · wins pay tote · ITM tracked separately'
+        '</div></div>'
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));'
+        'gap:8px;margin-bottom:10px">'
+    )
+
+    cells = [
+        ("Graded", str(graded), "#fff", f'{stats["pending"]} pending' if stats["pending"] else ""),
+        ("Wins", str(stats["wins"]), "#00c896", f'{stats["win_pct"]:.1f}%'),
+        ("ITM", f'{stats["itm"]}/{graded}' if graded else "—", "#ffd60a", f'{stats["itm_pct"]:.1f}%'),
+        ("Wagered", f'${stats["wagered"]:.0f}', "#c8d8f0", ""),
+        ("Returned", f'${stats["returned"]:.2f}', "#c8d8f0", ""),
+        ("Net P/L", f'${stats["net"]:+.2f}', net_c, ""),
+        ("ROI", f'{stats["roi_pct"]:+.1f}%', roi_c, ""),
+    ]
+    for label, val, color, sub in cells:
+        sub_html = (
+            f'<div style="font-size:9px;color:#4a6080;margin-top:2px">{sub}</div>'
+            if sub else ""
+        )
+        html += (
+            f'<div style="background:#0a1f18;border:0.5px solid #1e2d4a;border-radius:4px;'
+            f'padding:8px 10px">'
+            f'<div style="font-size:9px;color:#4a6080;text-transform:uppercase;'
+            f'letter-spacing:.06em;margin-bottom:3px">{label}</div>'
+            f'<div style="font-size:15px;font-weight:700;color:{color}">{val}</div>'
+            f'{sub_html}</div>'
+        )
+
+    html += '</div>'
+
+    html += (
+        '<div style="margin-bottom:8px">'
+        '<div style="display:flex;justify-content:space-between;font-size:10px;'
+        'color:#4a6080;margin-bottom:4px">'
+        f'<span>Review gate: {graded}/{goal} graded bets</span>'
+        f'<span>{goal_pct:.0f}%</span></div>'
+        '<div style="height:6px;background:#0f1828;border-radius:3px;overflow:hidden">'
+        f'<div style="height:100%;width:{goal_pct:.0f}%;background:linear-gradient(90deg,#00c896,#a3e635)">'
+        '</div></div></div>'
+    )
+
+    if stats["by_date"]:
+        html += (
+            '<table style="width:100%;border-collapse:collapse;font-size:10px">'
+            '<tr style="color:#4a6080;text-align:left">'
+            '<th style="padding:4px 6px;font-weight:600">DATE</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">GRADED</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">W</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">ITM</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">WAGERED</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">NET</th>'
+            '<th style="padding:4px 6px;font-weight:600;text-align:right">ROI</th>'
+            '</tr>'
+        )
+        for d in stats["by_date"]:
+            day_net = d["returned"] - d["wagered"]
+            day_roi = d["roi_pct"]
+            day_net_c = "#00c896" if day_net > 0 else "#ff4d6d" if day_net < 0 else "#4a6080"
+            day_roi_c = "#00c896" if day_roi > 0 else "#ff4d6d" if day_roi < 0 else "#4a6080"
+            html += (
+                f'<tr style="border-top:0.5px solid #1e2d4a33">'
+                f'<td style="padding:4px 6px;color:#c8d8f0">{d["date"]}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:#c8d8f0">{d["graded"]}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:#00c896">{d["wins"]}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:#ffd60a">'
+                f'{d["itm"]}/{d["graded"]}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:#4a6080">'
+                f'${d["wagered"]:.0f}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:{day_net_c};font-weight:700">'
+                f'${day_net:+.2f}</td>'
+                f'<td style="padding:4px 6px;text-align:right;color:{day_roi_c};font-weight:700">'
+                f'{day_roi:+.1f}%</td>'
+                f'</tr>'
+            )
+        html += '</table>'
+    elif graded == 0:
+        html += (
+            '<div style="font-size:10px;color:#4a6080">'
+            'No graded actionable bets in this window yet. '
+            f'{stats["listed"]} listed · {stats["pending"]} awaiting results.'
+            '</div>'
+        )
+
+    html += '</div>'
+    return html
+
+
+def render_actionable_bets_html(bets, paper_stats=None):
     """Selective Benter-style actionable bet list."""
     from config.market import (
         ACTIONABLE_MAX_PER_DAY,
         ACTIONABLE_MIN_DECIMAL,
         ACTIONABLE_MIN_EDGE,
     )
+
+    if paper_stats is None:
+        try:
+            paper_stats = get_actionable_paper_stats()
+        except Exception:
+            paper_stats = None
 
     graded = [b for b in bets if b.get("result_status")]
     upcoming = len(bets) - len(graded)
@@ -285,6 +398,9 @@ def render_actionable_bets_html(bets):
         f'<div style="font-size:11px;color:#4a6080">{sub}</div>'
         '</div>'
     )
+
+    if paper_stats:
+        html += render_actionable_paper_tracker_html(paper_stats)
 
     if not bets:
         html += (

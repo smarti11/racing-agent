@@ -25,3 +25,8 @@ ACTIONABLE_MIN_REL_EDGE = 0.50      # (final - market) / market >= 50%
 ACTIONABLE_SKIP_HIGH_CHALK = True   # Skip rank-1 HIGH at <= 5/1 (ITM watch only)
 ACTIONABLE_HIGH_CHALK_MAX_DEC = 6.0 # 5/1 threshold
 ACTIONABLE_PREFER_LIVE = True       # Sort live odds ahead of morning line
+
+# Paper-tracker defaults (flat $2 WIN on every actionable row)
+ACTIONABLE_PAPER_STAKE = 2.00
+ACTIONABLE_PAPER_DAYS = 7           # Rolling window on dashboard
+ACTIONABLE_PAPER_GOAL = 75          # Graded bets before filter review

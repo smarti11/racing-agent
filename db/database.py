@@ -826,6 +826,117 @@ def get_todays_actionable_bets() -> list:
     return [dict(r) for r in rows]
 
 
+def get_actionable_paper_stats(days: int = None) -> dict:
+    """Rolling paper P&L for flat $2 WIN on actionable bets."""
+    from config.market import (
+        ACTIONABLE_PAPER_DAYS,
+        ACTIONABLE_PAPER_GOAL,
+        ACTIONABLE_PAPER_STAKE,
+    )
+
+    if days is None:
+        days = ACTIONABLE_PAPER_DAYS
+    stake = ACTIONABLE_PAPER_STAKE
+    today = datetime.now(EASTERN).date().isoformat()
+
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT aab.race_date, aab.program_num,
+                   res.winner_num, res.second_num, res.third_num,
+                   res.winner_win_payout,
+                   CASE WHEN res.winner_num = aab.program_num THEN 'WIN'
+                        WHEN res.second_num = aab.program_num THEN 'PLACE'
+                        WHEN res.third_num = aab.program_num THEN 'SHOW'
+                        WHEN res.winner_num IS NOT NULL THEN 'MISS'
+                        ELSE NULL END AS result_status
+            FROM agent_actionable_bets aab
+            JOIN races r ON r.id = aab.race_id
+            LEFT JOIN results res ON res.race_id = aab.race_id
+            LEFT JOIN entries e ON e.race_id = aab.race_id
+                AND e.program_num = aab.program_num
+            WHERE aab.race_date >= date(?, '-' || ? || ' days')
+              AND (e.scratched IS NULL OR e.scratched = 0)
+            ORDER BY aab.race_date, aab.rank_order
+        """, (today, days - 1)).fetchall()
+
+    listed = len(rows)
+    graded_rows = [dict(r) for r in rows if r["result_status"]]
+    pending = listed - len(graded_rows)
+
+    wins = places = shows = misses = 0
+    returned = 0.0
+    by_date = {}
+
+    for r in graded_rows:
+        d = r["race_date"]
+        if d not in by_date:
+            by_date[d] = {
+                "date": d,
+                "graded": 0,
+                "wins": 0,
+                "itm": 0,
+                "wagered": 0.0,
+                "returned": 0.0,
+            }
+        day = by_date[d]
+        day["graded"] += 1
+        day["wagered"] += stake
+
+        status = r["result_status"]
+        if status == "WIN":
+            wins += 1
+            day["wins"] += 1
+            pay = (r["winner_win_payout"] or 0.0) / 2.0 * stake
+            returned += pay
+            day["returned"] += pay
+        elif status == "PLACE":
+            places += 1
+        elif status == "SHOW":
+            shows += 1
+        else:
+            misses += 1
+
+        if status in ("WIN", "PLACE", "SHOW"):
+            day["itm"] += 1
+
+    graded = len(graded_rows)
+    wagered = graded * stake
+    net = returned - wagered
+    itm = wins + places + shows
+    roi_pct = (100.0 * net / wagered) if wagered else 0.0
+
+    daily = []
+    for d in sorted(by_date.keys(), reverse=True):
+        b = by_date[d]
+        b["roi_pct"] = (
+            100.0 * (b["returned"] - b["wagered"]) / b["wagered"]
+            if b["wagered"] else 0.0
+        )
+        daily.append(b)
+
+    return {
+        "days": days,
+        "stake": stake,
+        "goal_bets": ACTIONABLE_PAPER_GOAL,
+        "listed": listed,
+        "graded": graded,
+        "pending": pending,
+        "wins": wins,
+        "places": places,
+        "shows": shows,
+        "misses": misses,
+        "itm": itm,
+        "itm_pct": round(100.0 * itm / graded, 1) if graded else 0.0,
+        "win_pct": round(100.0 * wins / graded, 1) if graded else 0.0,
+        "wagered": round(wagered, 2),
+        "returned": round(returned, 2),
+        "net": round(net, 2),
+        "roi_pct": round(roi_pct, 1),
+        "goal_pct": round(100.0 * graded / ACTIONABLE_PAPER_GOAL, 1) if ACTIONABLE_PAPER_GOAL else 0.0,
+        "by_date": daily,
+    }
+
+
 def get_track_high_win_rate_14d() -> dict:
     """Return {track_name: win_pct} for HIGH confidence rank-1 picks, last 14 days."""
     with get_conn() as conn:
