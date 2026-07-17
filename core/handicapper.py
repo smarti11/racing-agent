@@ -243,14 +243,15 @@ def form_score_adjustment(form_data: dict) -> float:
     elif class_change == "RISE":
         adj -= 3   # Rising in class is harder
 
-    # Layoff
+    # Layoff — calibrated against empirical ROI (since 2026-06-09):
+    # <=14d +8.3%, 15-30d +2.4%, 31-60d -12.1%, debut/unknown +2.6%
     layoff = form_data.get("layoff_flag", "UNKNOWN")
     if layoff == "FRESH":
-        adj += 1   # Sharp and ready
+        adj += 3   # <=14d: best ROI bucket
     elif layoff == "LAYOFF":
-        adj -= 2   # 31-60 days
+        adj -= 6   # 31-60d: worst ROI bucket (-12.1%)
     elif layoff == "LONG_LAYOFF":
-        adj -= 4   # 60+ days, rust factor
+        adj -= 3   # 60+d: bad but market often discounts these already
 
     # Trainer hot/cold
     trainer_hot = form_data.get("trainer_hot", "UNKNOWN")
@@ -260,6 +261,21 @@ def form_score_adjustment(form_data: dict) -> float:
         adj -= 2
 
     return round(max(-15, min(15, adj)), 1)
+
+
+def pace_role_score_adjustment(pace_role: str) -> float:
+    """Empirical score bonus/penalty by pace role (ROI since 2026-06-09).
+    EP +9.5%, P +6.0%, S +4.8%, E -2.3%, C -16.2%.
+    Applied after scenario adjustment — adds directional bias the
+    scenario table alone doesn't fully capture.
+    """
+    return {
+        "EP":  3.0,
+        "P":   2.0,
+        "S":   1.0,
+        "E":  -2.0,
+        "C":  -6.0,
+    }.get(pace_role, 0.0)
 
 
 def score_horse(entry: dict, conditions: str, field_size: int,
@@ -347,8 +363,11 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     if form_data:
         form_adj = form_score_adjustment(form_data)
 
+    # Pace role adjustment — empirical ROI correction on top of scenario
+    role_adj = pace_role_score_adjustment(pace_style if pace_scenario else "")
+
     # Final score
-    final_score = round(base_score + pace_adj + form_adj, 1)
+    final_score = round(base_score + pace_adj + form_adj + role_adj, 1)
     final_score = max(0, min(100, final_score))
 
     # Value rating — corrected in pick_manager after market blend
