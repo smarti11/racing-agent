@@ -129,11 +129,11 @@ def fetch_and_mark_scratches_for_today():
                 )
 
     if new_scratches > 0:
-        # Touch regen flag so dashboard updates promptly
-        import os
+        # Touch regen flag so the agent loop refreshes picks + dashboard promptly
         from pathlib import Path
-        flag_path = Path(__file__).parent.parent / ".regen_now"
+        flag_path = Path.home() / "agents/racing-agent/.regen_now"
         try:
+            flag_path.parent.mkdir(parents=True, exist_ok=True)
             flag_path.touch()
         except Exception:
             pass

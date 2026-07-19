@@ -11,6 +11,8 @@ Usage:
     python racing_agent.py --tracks     # List today's active tracks
     python racing_agent.py --card       # Print today's card to terminal
     python racing_agent.py --dashboard  # Generate dashboard only
+    python racing_agent.py --refresh-race SAR 3 --scratch 10
+                                        # Mark #10 scratched and re-handicap SAR R3
 """
 
 import argparse
@@ -33,7 +35,7 @@ from data.equibase import get_todays_tracks, get_all_entries_today, get_scratche
 from data.results import get_todays_results_all_tracks
 from data.chart_fetcher import fetch_all_todays_charts
 from core.scratch_fetcher import fetch_track_scratches
-from core.pick_manager import save_todays_picks
+from core.pick_manager import save_todays_picks, refresh_race_picks
 from db.database import (
     init_db, save_race, save_entry, mark_scratched, mark_unscratched,
     save_result, grade_agent_picks,
@@ -308,9 +310,39 @@ def main():
     parser.add_argument("--tracks", action="store_true", help="List today's active tracks")
     parser.add_argument("--dashboard", action="store_true", help="Generate dashboard only")
     parser.add_argument("--card", action="store_true", help="Print today's card")
+    parser.add_argument(
+        "--refresh-race",
+        nargs=2,
+        metavar=("TRACK", "RACE_NUM"),
+        help="Force re-handicap one race (e.g. --refresh-race SAR 3). "
+             "Bypasses post-time freeze; still blocked if results posted.",
+    )
+    parser.add_argument(
+        "--scratch",
+        type=int,
+        metavar="PROGRAM",
+        help="With --refresh-race: mark this program number scratched before refreshing",
+    )
     args = parser.parse_args()
 
     init_db()
+
+    if args.refresh_race:
+        track_code, race_num_s = args.refresh_race
+        try:
+            race_num = int(race_num_s)
+        except ValueError:
+            print(f"Invalid race number: {race_num_s}")
+            return
+        ok = refresh_race_picks(track_code, race_num, scratch_program=args.scratch)
+        if ok:
+            generate_dashboard()
+            print(f"Refreshed picks for {track_code.upper()} R{race_num}")
+            if args.scratch is not None:
+                print(f"  (marked #{args.scratch} scratched)")
+        else:
+            print(f"Failed to refresh {track_code.upper()} R{race_num} — see logs")
+        return
 
     if args.tracks:
         tracks = get_todays_tracks()
@@ -390,7 +422,14 @@ def main():
                         REGEN_FLAG.unlink()
                     except FileNotFoundError:
                         pass
-                    logger.info("Manual scratch flag — regenerating dashboard")
+                    # Manual scratch: re-handicap dirty races first, then render.
+                    # Previously only rebuilt the dashboard from stale agent_picks.
+                    logger.info("Manual scratch flag — refreshing picks then dashboard")
+                    try:
+                        if save_todays_picks() > 0:
+                            dashboard_dirty = True
+                    except Exception as e:
+                        logger.warning(f"Pick refresh after manual scratch failed: {e}")
                 generate_dashboard()
                 dashboard_dirty = False
                 scan_count += 1
@@ -410,7 +449,11 @@ def main():
                         REGEN_FLAG.unlink()
                     except FileNotFoundError:
                         pass
-                    logger.info("Manual scratch detected — regenerating dashboard")
+                    logger.info("Manual scratch detected — refreshing picks then dashboard")
+                    try:
+                        save_todays_picks()
+                    except Exception as e:
+                        logger.warning(f"Pick refresh after manual scratch failed: {e}")
                     generate_dashboard()
                     dashboard_dirty = False
                     scan_count += 1

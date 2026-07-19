@@ -572,7 +572,7 @@ def get_todays_results():
         """, (today,)).fetchall()
 
 
-def save_agent_picks(race_id: int, picks: list):
+def save_agent_picks(race_id: int, picks: list, *, force: bool = False):
     """
     Save agent's top 3 picks for a race. FREEZE_GUARD_APPLIED.
 
@@ -580,24 +580,24 @@ def save_agent_picks(race_id: int, picks: list):
     - If race has results in `results` table, the live agent_picks row is
       FROZEN: this function will NOT modify agent_picks. It still logs to
       agent_picks_history for forensic record.
-    - Pre-race: continues DELETE-then-INSERT into agent_picks so scratches
-      and updated form trigger re-handicapping. Every save also appends to
-      agent_picks_history with trigger='agent_save'.
+    - POST_TIME_FREEZE (within 30 min of post): also freezes live picks,
+      unless force=True. force is used for scratch/field changes so late
+      scratches can re-rank the remaining field.
+    - Pre-race (or force): DELETE-then-INSERT into agent_picks. Every save
+      also appends to agent_picks_history with trigger='agent_save'.
     """
     now_iso = datetime.now().isoformat()
 
     with get_conn() as conn:
-        # FREEZE CHECK — frozen if results posted OR post time has passed
-        race_done = conn.execute(
+        # Results always freeze — never overwrite graded pre-race picks
+        results_posted = conn.execute(
             "SELECT 1 FROM results WHERE race_id=? LIMIT 1", (race_id,)
         ).fetchone() is not None
 
-        # POST_TIME_FREEZE: also freeze once post time has passed
-        # Prevents picks from changing after the race has started
-        if not race_done:
+        post_time_frozen = False
+        if not results_posted and not force:
             try:
                 import pytz
-                from datetime import date as _date
                 _et = pytz.timezone("America/New_York")
                 _now_et = datetime.now(_et)
                 _race_row = conn.execute(
@@ -630,9 +630,17 @@ def save_agent_picks(race_id: int, picks: list):
                         from datetime import timedelta as _td
                         _freeze_dt = _post_dt - _td(minutes=30)
                         if _now_et >= _freeze_dt:
-                            race_done = True  # POST_TIME_FREEZE 30min
+                            post_time_frozen = True
             except Exception as _pte:
                 pass  # if post time parse fails, don't freeze
+
+        frozen = results_posted or post_time_frozen
+        hist_trigger = (
+            "agent_save_results_frozen" if results_posted
+            else "agent_save_frozen" if post_time_frozen
+            else "agent_save_scratch_force" if force
+            else "agent_save"
+        )
 
         # Always log to history (audit trail; never deleted)
         for pick in picks:
@@ -648,12 +656,12 @@ def save_agent_picks(race_id: int, picks: list):
                     pick.get("confidence", ""),
                     pick.get("role", ""),
                     now_iso,
-                    "agent_save_frozen" if race_done else "agent_save",
+                    hist_trigger,
                 ),
             )
 
-        if race_done:
-            # Race is over: do NOT modify agent_picks (FREEZE)
+        if frozen:
+            # Results posted or post-time freeze (without force): do NOT modify agent_picks
             return
 
         # Pre-race: DELETE-then-INSERT live picks (scratches still apply)
