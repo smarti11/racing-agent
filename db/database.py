@@ -55,6 +55,7 @@ def init_db():
             scratch_time     TEXT,
             fetched_ts       TEXT NOT NULL,
             first_fetched_ts TEXT,
+            UNIQUE(race_id, program_num),
             FOREIGN KEY(race_id) REFERENCES races(id)
         );
 
@@ -95,16 +96,50 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS agent_picks (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            race_id     INTEGER NOT NULL,
-            rank        INTEGER NOT NULL,
-            program_num TEXT NOT NULL,
-            horse_name  TEXT NOT NULL,
-            confidence  TEXT,
-            role        TEXT,
-            result      TEXT,
-            created_ts  TEXT NOT NULL,
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id          INTEGER NOT NULL,
+            rank             INTEGER NOT NULL,
+            program_num      TEXT NOT NULL,
+            horse_name       TEXT NOT NULL,
+            confidence       TEXT,
+            role             TEXT,
+            result           TEXT,
+            created_ts       TEXT NOT NULL,
+            score            REAL,
+            win_prob         REAL,
+            morning_line     TEXT,
+            calibrated_prob  REAL,
+            final_prob       REAL,
+            market_prob      REAL,
+            data_quality     TEXT DEFAULT 'OK',
+            finish_position  INTEGER,
             FOREIGN KEY(race_id) REFERENCES races(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_picks_history (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id      INTEGER NOT NULL,
+            rank         INTEGER NOT NULL,
+            program_num  TEXT NOT NULL,
+            horse_name   TEXT NOT NULL,
+            confidence   TEXT,
+            role         TEXT,
+            rendered_ts  TEXT NOT NULL,
+            trigger      TEXT,
+            data_quality TEXT,
+            FOREIGN KEY(race_id) REFERENCES races(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS manual_scratches (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id      INTEGER NOT NULL,
+            program_num  INTEGER NOT NULL,
+            horse_name   TEXT,
+            track_name   TEXT,
+            race_num     INTEGER,
+            race_date    TEXT,
+            flagged_ts   TEXT NOT NULL,
+            source       TEXT DEFAULT 'manual_button'
         );
 
         CREATE TABLE IF NOT EXISTS results (
@@ -258,9 +293,19 @@ def init_db():
             "ALTER TABLE agent_entry_scores ADD COLUMN edge REAL",
             "ALTER TABLE agent_entry_scores ADD COLUMN live_odds TEXT",
             "ALTER TABLE agent_entry_scores ADD COLUMN odds_source TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN score REAL",
+            "ALTER TABLE agent_picks ADD COLUMN win_prob REAL",
+            "ALTER TABLE agent_picks ADD COLUMN morning_line TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN calibrated_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
+            "ALTER TABLE agent_picks ADD COLUMN data_quality TEXT DEFAULT 'OK'",
+            "ALTER TABLE agent_picks ADD COLUMN finish_position INTEGER",
+            "ALTER TABLE agent_picks_history ADD COLUMN data_quality TEXT",
             "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
+            # Needed for ON CONFLICT(race_id, program_num) on DBs created before
+            # UNIQUE was added to the entries CREATE TABLE definition.
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_race_prog ON entries(race_id, program_num)",
         ]
         for sql in _migrations:
             try:
