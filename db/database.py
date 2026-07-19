@@ -55,7 +55,8 @@ def init_db():
             scratch_time     TEXT,
             fetched_ts       TEXT NOT NULL,
             first_fetched_ts TEXT,
-            FOREIGN KEY(race_id) REFERENCES races(id)
+            FOREIGN KEY(race_id) REFERENCES races(id),
+            UNIQUE(race_id, program_num)
         );
 
         CREATE TABLE IF NOT EXISTS odds (
@@ -104,6 +105,20 @@ def init_db():
             role        TEXT,
             result      TEXT,
             created_ts  TEXT NOT NULL,
+            FOREIGN KEY(race_id) REFERENCES races(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_picks_history (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            race_id      INTEGER NOT NULL,
+            rank         INTEGER NOT NULL,
+            program_num  TEXT NOT NULL,
+            horse_name   TEXT NOT NULL,
+            confidence   TEXT,
+            role         TEXT,
+            rendered_ts  TEXT NOT NULL,
+            trigger      TEXT,
+            data_quality TEXT,
             FOREIGN KEY(race_id) REFERENCES races(id)
         );
 
@@ -261,6 +276,13 @@ def init_db():
             "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
             "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN data_quality TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN score REAL",
+            "ALTER TABLE agent_picks ADD COLUMN win_prob REAL",
+            "ALTER TABLE agent_picks ADD COLUMN morning_line TEXT",
+            "ALTER TABLE agent_picks ADD COLUMN calibrated_prob REAL",
+            "ALTER TABLE agent_picks_history ADD COLUMN data_quality TEXT",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_race_prog ON entries(race_id, program_num)",
         ]
         for sql in _migrations:
             try:
@@ -572,7 +594,7 @@ def get_todays_results():
         """, (today,)).fetchall()
 
 
-def save_agent_picks(race_id: int, picks: list):
+def save_agent_picks(race_id: int, picks: list, force: bool = False):
     """
     Save agent's top 3 picks for a race. FREEZE_GUARD_APPLIED.
 
@@ -580,6 +602,9 @@ def save_agent_picks(race_id: int, picks: list):
     - If race has results in `results` table, the live agent_picks row is
       FROZEN: this function will NOT modify agent_picks. It still logs to
       agent_picks_history for forensic record.
+    - POST_TIME_FREEZE (30 min before post) also freezes unless force=True,
+      which is used to supersede overnight TAINTED_PARSE / thin stub picks
+      once the full field arrives.
     - Pre-race: continues DELETE-then-INSERT into agent_picks so scratches
       and updated form trigger re-handicapping. Every save also appends to
       agent_picks_history with trigger='agent_save'.
@@ -587,14 +612,14 @@ def save_agent_picks(race_id: int, picks: list):
     now_iso = datetime.now().isoformat()
 
     with get_conn() as conn:
-        # FREEZE CHECK — frozen if results posted OR post time has passed
+        # FREEZE CHECK — always frozen once results are posted
         race_done = conn.execute(
             "SELECT 1 FROM results WHERE race_id=? LIMIT 1", (race_id,)
         ).fetchone() is not None
 
         # POST_TIME_FREEZE: also freeze once post time has passed
         # Prevents picks from changing after the race has started
-        if not race_done:
+        if not race_done and not force:
             try:
                 import pytz
                 from datetime import date as _date
@@ -635,6 +660,11 @@ def save_agent_picks(race_id: int, picks: list):
                 pass  # if post time parse fails, don't freeze
 
         # Always log to history (audit trail; never deleted)
+        hist_trigger = "agent_save"
+        if race_done:
+            hist_trigger = "agent_save_frozen"
+        elif force:
+            hist_trigger = "agent_save_tainted_regen"
         for pick in picks:
             conn.execute(
                 "INSERT INTO agent_picks_history "
@@ -648,7 +678,7 @@ def save_agent_picks(race_id: int, picks: list):
                     pick.get("confidence", ""),
                     pick.get("role", ""),
                     now_iso,
-                    "agent_save_frozen" if race_done else "agent_save",
+                    hist_trigger,
                 ),
             )
 

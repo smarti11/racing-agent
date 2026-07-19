@@ -610,16 +610,28 @@ def role_ranked_picks(scored_horses: list) -> dict:
         else:
             show_horse["show_confidence"] = "HIGH"
 
-    all_picks = [p for p in [win_horse, place_horse, show_horse] if p]
+    all_picks = []
+    seen_progs = set()
+    for p in (win_horse, place_horse, show_horse):
+        if not p:
+            continue
+        prog = str(p.get("program_num", ""))
+        if prog in seen_progs:
+            continue
+        seen_progs.add(prog)
+        all_picks.append(p)
 
     # Assign ranks 1, 2, 3
     for i, p in enumerate(all_picks):
         p["rank"] = i + 1
 
+    place_out = all_picks[1] if len(all_picks) > 1 else None
+    show_out = all_picks[2] if len(all_picks) > 2 else None
+
     return {
         "win":   win_horse,
-        "place": place_horse,
-        "show":  show_horse,
+        "place": place_out,
+        "show":  show_out,
         "all":   all_picks,
     }
 
@@ -699,15 +711,20 @@ def top2_picks(scored_horses: list) -> dict:
     show_horse   = _annotate(active[2], "SHOW",   3) if len(active) > 2 else None
 
     picks = [win_horse]
-    if backup_horse:
-        picks.append(backup_horse)
-    if show_horse:
-        picks.append(show_horse)
+    seen = {str(win_horse.get("program_num", ""))}
+    for h in (backup_horse, show_horse):
+        if not h:
+            continue
+        prog = str(h.get("program_num", ""))
+        if prog in seen:
+            continue
+        seen.add(prog)
+        picks.append(h)
 
     return {
         "win":   win_horse,
-        "place": backup_horse,
-        "show":  show_horse,
+        "place": picks[1] if len(picks) > 1 else None,
+        "show":  picks[2] if len(picks) > 2 else None,
         "all":   picks,
         "top2":  picks[:2],
         "top3":  picks,
