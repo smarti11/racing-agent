@@ -196,6 +196,18 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
     live_odds = get_latest_odds_map(race["id"])
     enrich_race_with_market(active_scored, live_odds=live_odds, ml_map=ml_map)
 
+    # Soft-pull ranking toward market favorites before locking top pick.
+    try:
+        from config.market import MARKET_SCORE_BLEND
+        from core.market import blend_scores_with_market
+        blend_scores_with_market(active_scored, weight=MARKET_SCORE_BLEND)
+        # Keep scored list (same objects) in sync for get_top_pick / roles.
+        scored.sort(key=lambda x: x.get("score", 0), reverse=True)
+        for i, s in enumerate(scored):
+            s["rank"] = i + 1
+    except Exception as e:
+        logger.warning(f"Market score blend skipped: {e}")
+
     value_bets = scan_value_bets(active_scored)
     save_agent_value_bets(race["id"], value_bets)
 

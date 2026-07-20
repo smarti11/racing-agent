@@ -13,6 +13,7 @@ Scores each horse using multiple factors including:
 """
 
 import logging
+from typing import Optional
 from core.speed_figures import odds_to_speed_figure, parse_odds, get_class_base
 from data.speed_calc import compute_speed_figure as calc_speed_fig
 from core.pace import analyze_pace_scenario, pace_scenario_score_adjustment
@@ -308,9 +309,12 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     class_norm = min(1.0, class_base / 110.0)
 
     # 5. Pace — use scenario if available, else fall back to post position
+    # Jul 2026: down-weight closers (C) for WIN; boost E/EP early types.
     if pace_scenario and pace_scenario.get("pace_styles"):
         pace_style = pace_scenario["pace_styles"].get(str(prog), "P")
-        p_score = {"E": 0.75, "EP": 0.70, "P": 0.65, "S": 0.55, "C": 0.45, "U": 0.55}.get(pace_style, 0.55)
+        p_score = {
+            "E": 0.80, "EP": 0.75, "P": 0.65, "S": 0.50, "C": 0.30, "U": 0.55,
+        }.get(pace_style, 0.55)
     else:
         from core.speed_figures import parse_odds as _po
         p_score = 0.55
@@ -337,10 +341,19 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     except Exception:
         pass
 
-    # Pace scenario adjustment
+    # Pace scenario adjustment — closers only keep the boost when the
+    # scenario explicitly favors them (CONTESTED / CLOSERS_RACE).
     pace_adj = 0.0
     if pace_scenario:
         pace_adj = pace_scenario_score_adjustment(str(prog), pace_scenario)
+        pace_style_tmp = ""
+        if pace_scenario.get("pace_styles"):
+            pace_style_tmp = pace_scenario["pace_styles"].get(str(prog), "P")
+        scenario_name = (pace_scenario.get("scenario") or "").upper()
+        if pace_style_tmp == "C" and scenario_name not in (
+            "CONTESTED", "CLOSERS_RACE",
+        ):
+            pace_adj = min(pace_adj, -3.0)
 
     # Form adjustment
     form_adj = 0.0
@@ -431,6 +444,25 @@ def handicap_race(entries: list, conditions: str = "", track_code: str = "",
     return scores
 
 
+def _morning_line_rank(horse: dict, field: list) -> Optional[int]:
+    """1 = shortest ML in the field (favorite). None if horse ML missing."""
+    my_ml = parse_odds(horse.get("morning_line", ""))
+    if my_ml is None:
+        return None
+    better = 0
+    known = 0
+    for h in field:
+        ml = parse_odds(h.get("morning_line", ""))
+        if ml is None:
+            continue
+        known += 1
+        if ml < my_ml - 1e-9:
+            better += 1
+    if known == 0:
+        return None
+    return better + 1
+
+
 def get_top_pick(scored_horses: list) -> dict:
     if not scored_horses:
         return None
@@ -441,7 +473,22 @@ def get_top_pick(scored_horses: list) -> dict:
         gap = 999.0
     ml_decimal = parse_odds(top.get("morning_line", ""))
     track_code = top.get("track_code", "")
-    confidence = calibrate_confidence(gap, ml_decimal, track_code)
+    model_p = top.get("final_prob")
+    if model_p is None:
+        model_p = top.get("calibrated_prob")
+    if model_p is None:
+        model_p = top.get("win_prob")
+    scenario = top.get("pace_scenario") or {}
+    confidence = calibrate_confidence(
+        gap,
+        ml_decimal,
+        track_code,
+        win_prob=model_p,
+        market_prob=top.get("market_prob"),
+        pace_role=top.get("pace_role"),
+        ml_rank=_morning_line_rank(top, scored_horses),
+        pace_scenario_name=scenario.get("scenario") if isinstance(scenario, dict) else None,
+    )
     return {**top, "confidence": confidence, "score_gap": round(gap, 1)}
 
 

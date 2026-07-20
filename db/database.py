@@ -2339,18 +2339,50 @@ def get_todays_bet_slate():
             conf = r["confidence"]
             ml = r["morning_line"] if "morning_line" in r.keys() else None
             from core.kelly import parse_odds_to_decimal
+            from config.confidence import (
+                MIN_PROB_FOR_HIGH,
+                MIN_PROB_FOR_MEDIUM,
+                MAX_ANTI_MARKET_REL_EDGE,
+                relative_model_edge,
+            )
             dec = parse_odds_to_decimal(ml or "") if ml else None
 
+            model_p = None
+            if "final_prob" in r.keys() and r["final_prob"] is not None:
+                model_p = r["final_prob"]
+            elif "calibrated_prob" in r.keys() and r["calibrated_prob"] is not None:
+                model_p = r["calibrated_prob"]
+            mkt_p = r["market_prob"] if "market_prob" in r.keys() else None
+            rel_edge = relative_model_edge(model_p, mkt_p)
+
+            # Soft-cap WIN stakes: low-prob and anti-market slips demoted to watch-only
+            win_blocked = False
+            if model_p is not None and model_p < MIN_PROB_FOR_MEDIUM:
+                win_blocked = True
+            if (
+                rel_edge is not None
+                and rel_edge >= MAX_ANTI_MARKET_REL_EDGE
+                and (dec is None or dec > 4.0)  # not short ML favorite (~3/1 or less)
+            ):
+                win_blocked = True
+
             if conf == "HIGH":
-                if dec and dec < 6.0:
+                if win_blocked or (model_p is not None and model_p < MIN_PROB_FOR_HIGH):
+                    bet_type = "ITM ONLY"
+                    stake = 0.00
+                elif dec and dec < 6.0:
                     bet_type = "ITM ONLY"
                     stake = 0.00
                 else:
                     bet_type = "$2 WIN"
                     stake = 2.00
             elif conf == "MEDIUM":
-                bet_type = "$0.50 PL+SH"
-                stake = 1.00
+                if win_blocked:
+                    bet_type = "tracked, not bet"
+                    stake = 0.00
+                else:
+                    bet_type = "$0.50 PL+SH"
+                    stake = 1.00
             else:
                 continue
             

@@ -41,8 +41,19 @@ MEET_LEADERS = {
 # ── Weak-signal tracks ───────────────────────────────────────────────────────
 # Only HIGH CONF top picks get a bet at these tracks.
 # MEDIUM or LOW confidence → race is logged and skipped.
+# HIGH is also capped by config.confidence (track floor / gap 999).
+# Expanded Jul 2026 from graded wipeouts (ALB/CNL/DMR/HAW/MNR/WYO) and
+# chronic underperformers (BTP/FL).
 WEAK_SIGNAL_TRACKS = {
     "CT",   # Charles Town (WV)
     "DED",  # Delta Downs (LA)
     "EVD",  # Evangeline Downs (LA)
+    "DMR",  # Del Mar (CA)
+    "ALB",  # Albuquerque (NM)
+    "HAW",  # Hawthorne (IL)
+    "MNR",  # Mountaineer (WV)
+    "WYO",  # Energy Downs / Wyoming
+    "CNL",  # Colonial Downs (VA)
+    "BTP",  # Belterra Park (OH)
+    "FL",   # Finger Lakes (NY)
 }
