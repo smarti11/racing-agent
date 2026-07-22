@@ -1,0 +1,65 @@
+WALL MARKING WORKSHEET — Centered Over Toilet
+==============================================
+Use painter’s tape on the wall. Do not rely on pencil alone for long vertical lines.
+
+STEP 1 — Tank centerline
+------------------------
+1. Measure toilet tank lid width: ______ in
+2. Half-width: ______ in
+3. From left edge of tank lid, mark center on the wall.
+4. Run a vertical strip of painter’s tape from tank lid up past the upper shelf zone.
+   This is CENTERLINE. Both shelves share it.
+
+STEP 2 — Bottom shelf height
+----------------------------
+Clearance above tank lid (plan default): 26 in (range 24–28 in)
+Basket / items on tank must clear the underside of the lower shelf.
+
+Mark LOWER SHELF BOTTOM at: tank lid + ______ in (default 26)
+Then mark LOWER SHELF TOP = bottom + 1.5 in shelf thickness.
+
+STEP 3 — Upper shelf height
+---------------------------
+Clear gap between shelves (plan default): 12 in clear
+UPPER SHELF BOTTOM = lower shelf top + 12 in
+UPPER SHELF TOP = upper shelf bottom + 1.5 in
+
+Computed (with defaults):
+  Lower bottom:  +26.0 in above lid
+  Lower top:     +27.5 in above lid
+  Upper bottom:  +39.5 in above lid
+  Upper top:     +41.0 in above lid
+
+STEP 4 — Shelf length / side marks
+----------------------------------
+Shelf length: 20 in → 10 in each side of centerline.
+
+On each shelf bottom line, mark:
+  LEFT end  = centerline − 10 in
+  RIGHT end = centerline + 10 in
+
+Confirm right end clears the towel cabinet by ≥ 1 in. If not, shorten length
+symmetrically (e.g. 18 in → ±9 in from center).
+
+STEP 5 — Studs
+--------------
+Scan and mark every stud across the 20 in shelf span (and ~2 in beyond each end).
+
+Stud locations relative to centerline (negative = left):
+  ______ in, ______ in, ______ in, ______ in
+
+If studs are not symmetric under the centered shelf, use a plate-style / ledger-style
+floating bracket so fasteners hit studs while the shelf remains visually centered.
+
+STEP 6 — Bracket plate outline
+------------------------------
+Trace each bracket backplate on the wall, level, with the shelf bottom line as reference
+per kit instructions. Recheck level before driving screws.
+
+CHECKLIST
+---------
+[ ] Centerline tape installed and plumb
+[ ] Lower and upper elevations marked
+[ ] ±10 in end marks clear of cabinet
+[ ] Studs mapped
+[ ] Bracket outlines level

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" width="400" height="560">
+  <title>Poplar floating shelves  wall layout over toilet</title>
+  <style>
+    .wall { fill: #e8e6e1; stroke: #9a9892; stroke-width: 2; }
+    .shelf { fill: #c4a574; stroke: #6b5344; stroke-width: 1.5; }
+    .tank { fill: #f5f5f5; stroke: #888; stroke-width: 1.5; }
+    .cabinet { fill: #f0f0f0; stroke: #aaa; stroke-width: 1; }
+    .center { stroke: #c45c26; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .dim { fill: none; stroke: #333; stroke-width: 1; }
+    .label { font-family: Georgia, serif; font-size: 11px; fill: #222; }
+    .title { font-family: Georgia, serif; font-size: 14px; font-weight: bold; fill: #222; }
+    .small { font-family: Georgia, serif; font-size: 9px; fill: #555; }
+  </style>
+
+  <!-- Wall -->
+  <rect class="wall" x="40" y="20" width="280" height="500"/>
+
+  <!-- Centerline -->
+  <line class="center" x1="160" y1="30" x2="160" y2="470"/>
+  <text class="small" x="168" y="42">centerline</text>
+
+  <!-- Upper shelf: top at y=80, 1.5in scale ~12px if 1in=8px ’ 12px thick, 20in=160px wide, 6in depth shown as height in elevation = thickness only -->
+  <!-- Scale: 1 in = 8 px. Shelf L=20in ’ 160px, T=1.5in ’ 12px. Center at x=160. -->
+  <rect class="shelf" x="80" y="80" width="160" height="12"/>
+  <text class="label" x="250" y="90">Upper 20×6×1.5</text>
+
+  <!-- 12 in clear gap = 96px -->
+  <line class="dim" x1="70" y1="92" x2="70" y2="188"/>
+  <text class="small" x="48" y="145">12&quot;</text>
+
+  <!-- Lower shelf -->
+  <rect class="shelf" x="80" y="188" width="160" height="12"/>
+  <text class="label" x="250" y="198">Lower 20×6×1.5</text>
+
+  <!-- 26 in clearance to tank = 208px -->
+  <line class="dim" x1="70" y1="200" x2="70" y2="408"/>
+  <text class="small" x="44" y="310">26&quot;</text>
+
+  <!-- Tank ~19 in wide centered -->
+  <rect class="tank" x="84" y="408" width="152" height="70"/>
+  <text class="label" x="120" y="448">Toilet tank</text>
+  <text class="small" x="115" y="462">~1820&quot; wide</text>
+
+  <!-- Towel cabinet right -->
+  <rect class="cabinet" x="250" y="300" width="60" height="180"/>
+  <text class="small" x="258" y="390">Towel</text>
+  <text class="small" x="255" y="402">cabinet</text>
+
+  <!-- Length dimension -->
+  <line class="dim" x1="80" y1="70" x2="240" y2="70"/>
+  <text class="small" x="145" y="65">20&quot;</text>
+
+  <text class="title" x="40" y="545">Centered poplar floating shelves (elevation)</text>
+</svg>
