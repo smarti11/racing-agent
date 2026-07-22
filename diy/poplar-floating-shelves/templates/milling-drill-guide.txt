@@ -1,40 +1,35 @@
-MILLING AND BRACKET DRILL GUIDE
-===============================
-Target finished blank (each): 20.00 × 6.00 × 1.50 in — qty 2
+MILLING GUIDE — Corner Shelves + Cleats
+=======================================
+Target shelf (each): 20.00 × 6.00 × 1.50 in — qty 2
+Cleats: 2 back-wall + 2 left-wall (see cut-list.txt)
 
-1. Laminate (if using 3/4 in stock)
------------------------------------
-- Joint mating faces, apply glue evenly, clamp every 6–8 in.
-- Align edges flush on the back (wall) side.
-- Cure per glue instructions (≥ 1 hour clamp; overnight before machining).
+1. Laminate shelves (if using 3/4 in stock)
+------------------------------------------
+- Glue, clamp, cure overnight before final milling.
 
-2. Mill to final size
----------------------
-- Plane or sand to 1.50 in thick.
-- Rip to 6.00 in depth.
-- Crosscut both ends square to 20.00 in length.
-- Ease all exposed edges (hand break or 1/8 in roundover). Leave back top/bottom
-  edges relatively sharp so the shelf sits tight to the wall.
+2. Mill shelves to final size
+-----------------------------
+- Plane/sand to 1.50 in thick; rip to 6.00 in; crosscut to 20.00 in.
+- LEFT end: dead square and crisp (mates to left wall).
+- BACK edge: dead square and crisp (mates to rear wall).
+- Ease FRONT edge and RIGHT end only (~1/16 in break or 1/8 in roundover).
 
-3. Mark identical blanks
-------------------------
-- Label backs: SHELF A / SHELF B, and mark UP / WALL.
-- Transfer centerline on the back edge of each shelf (at 10 in).
+3. Label orientation
+--------------------
+- Mark each shelf: LEFT END, BACK EDGE, UP, FRONT.
+- Dry-fit in the actual corner before finishing — check for wall out-of-square.
+  If walls are out of square, scribe the back/left edges to the wall lines.
 
-4. Drill for floating brackets
-------------------------------
-- Follow kit template exactly for rod diameter and depth.
-- Typical pattern: two rods, inset several inches from each end, centered on
-  shelf thickness, bored from the back face.
-- Use a drill press if available; otherwise a guide block to keep holes square.
-- Practice on scrap first (see cut-list scrap piece).
-- Dry-fit rods — shelf must slide on fully and sit flush to a flat reference wall.
+4. Mill cleats
+--------------
+- Back cleats: ~18.5 × 1.5 × 0.75 in (or full 20 in if preferred).
+- Left cleats: ~5.0 × 1.5 × 0.75 in (stops short of front edge).
+- Ease bottom front corner of cleats so they read thinner from below.
+- Pre-drill screw holes for stud locations.
 
 5. Pre-finish check
 -------------------
 [ ] Both shelves identical within 1/32 in
-[ ] Bracket rods fully seat
-[ ] No tear-out on visible faces
-[ ] Back face flat
-
-See diagrams/shelf-drill-pattern.svg for a schematic (adjust holes to your kit).
+[ ] Left end + back edge square and crisp
+[ ] Cleat pairs coplanar when dry-clamped in corner
+[ ] Shelf sits tight to both walls with no rock

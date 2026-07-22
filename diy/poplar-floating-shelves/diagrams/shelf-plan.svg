@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360">
+  <title>Corner shelf plan  left side and back edge attach to walls</title>
+  <style>
+    .wallfill { fill: #e4e1db; stroke: #888; stroke-width: 3; }
+    .shelf { fill: #c4a574; stroke: #5c4033; stroke-width: 2; }
+    .cleat { fill: #8b7355; stroke: #4a3728; stroke-width: 1; }
+    .label { font-family: Georgia, serif; font-size: 12px; fill: #222; }
+    .small { font-family: Georgia, serif; font-size: 10px; fill: #444; }
+    .dim { stroke: #333; fill: none; stroke-width: 1; }
+    .arrow { fill: #c45c26; }
+  </style>
+
+  <!-- Walls meeting at corner -->
+  <rect class="wallfill" x="20" y="40" width="40" height="240"/>
+  <rect class="wallfill" x="20" y="40" width="400" height="40"/>
+  <text class="label" x="70" y="30">Rear wall (backside of shelf attaches here)</text>
+  <text class="label" x="28" y="300" transform="rotate(-90 28,300)">Left wall</text>
+
+  <!-- Shelf 20×6 at scale 1in=16px ’ 320×96 -->
+  <rect class="shelf" x="60" y="80" width="320" height="96"/>
+
+  <!-- Cleats under edges -->
+  <rect class="cleat" x="68" y="80" width="300" height="14"/>
+  <rect class="cleat" x="60" y="88" width="14" height="80"/>
+
+  <text class="small" x="160" y="92">Back cleat (screwed to rear wall studs)</text>
+  <text class="small" x="78" y="140">Left</text>
+  <text class="small" x="78" y="152">cleat</text>
+
+  <!-- Attachment callouts -->
+  <polygon class="arrow" points="200,70 208,58 192,58"/>
+  <text class="small" x="214" y="62">BACK EDGE ’ wall</text>
+  <polygon class="arrow" points="52,130 40,122 40,138"/>
+  <text class="small" x="8" y="175">LEFT END ’ wall</text>
+
+  <line class="dim" x1="60" y1="200" x2="380" y2="200"/>
+  <text class="small" x="190" y="215">20.00 in along rear wall</text>
+  <line class="dim" x1="400" y1="80" x2="400" y2="176"/>
+  <text class="small" x="408" y="130">6.00 in</text>
+
+  <text class="label" x="60" y="250">Plan view (looking down). Front-right corner is free; left + back are supported.</text>
+  <text class="small" x="60" y="270">Fasten shelf down into both cleats after walls are level and coplanar.</text>
+</svg>

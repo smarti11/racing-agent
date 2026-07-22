@@ -1,38 +1,32 @@
-POPLAR FLOATING SHELVES — SHOPPING LIST
-=======================================
+POPLAR CORNER SHELVES — SHOPPING LIST
+====================================
 
 WOOD
 ----
-[ ] Poplar — enough for 2 shelves @ 20 × 6 × 1.5 in (+25% waste)
-    Prefer: 3/4 in × 6 in × 6 ft (laminate) OR 8/4 × 6 in × 3 ft
+[ ] Poplar — 2 shelves @ 20 × 6 × 1.5 in (+25% waste)
+[ ] Poplar (or paint-grade) for cleats — four pieces (see cut-list.txt)
+    Prefer: 1×6×8 ft poplar for shelves+cleats, or 8/4 shelves + 1×2 cleats
 
 HARDWARE
 --------
-[ ] Floating shelf brackets × 2 sets, each rated ≥ 30–50 lb
-    Prefer plate-style or multi-rod kits that can span studs while shelf stays centered
-[ ] Structural screws for brackets (#8 or #10 into studs — use kit-specified length)
-[ ] Wood glue (Titebond II or III) — if laminating
-[ ] Optional: shelf set screws / locking hardware if included with kit
+[ ] Structural screws into studs for cleats (#8 or #10, 2.5–3 in typical)
+[ ] Finish screws or pin nails to fasten shelves down onto cleats
+[ ] Wood glue (Titebond II or III) — if laminating shelves
+[ ] Optional: L-brackets in the inside corner under each shelf for extra stiffness
+[ ] Wall anchors ONLY if a cleat screw cannot hit a stud (prefer studs)
 
 FINISH
 ------
 [ ] Sandpaper: 120, 180, 220 grit
-[ ] Waterborne polyurethane (preferred for bathroom) OR oil + poly blend
-[ ] Tack cloth or microfiber rags
-[ ] Optional: wood conditioner + light stain if matching other bathroom wood
+[ ] Waterborne polyurethane (preferred) OR oil + poly
+[ ] Paint or finish for cleats (wall-match paint hides them)
+[ ] Tack cloth / microfiber rags
 
 TOOLS
 -----
 [ ] Stud finder
-[ ] 24 in (or longer) level
-[ ] Tape measure + pencil
-[ ] Painter’s tape
-[ ] Drill / driver + bits matching bracket rod diameter
-[ ] Circular saw or table saw; miter saw for square ends
-[ ] Clamps (if laminating)
-[ ] Optional: 1/8 in roundover bit or sanding block for edge break
-
-CONSUMABLES
------------
-[ ] Painter’s tape (wall layout marks)
-[ ] Masking paper / drop cloth for finishing
+[ ] 24 in level
+[ ] Tape measure, pencil, painter’s tape
+[ ] Drill / driver
+[ ] Saw for square cuts; clamps if laminating
+[ ] Optional: pocket-hole jig if joining L-brackets/cleat returns

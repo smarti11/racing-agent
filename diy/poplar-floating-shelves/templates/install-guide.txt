@@ -1,41 +1,44 @@
-INSTALLATION GUIDE — Centered Floating Shelves
-==============================================
-Prerequisites: wall marks complete (wall-marking-worksheet.txt), shelves finished and cured,
-brackets and structural screws on hand.
+INSTALLATION GUIDE — Left Wall + Back Wall Cleats
+=================================================
+Prerequisites: wall marks done, shelves and cleats finished/cured, studs mapped
+on BOTH walls.
 
-Defaults from plan
-------------------
+Defaults
+--------
 Shelf: 20 × 6 × 1.5 in
-Clear gap between shelves: 12 in
-Lower shelf bottom above tank lid: 26 in (acceptable 24–28)
-Center: tank lid centerline
+Clear gap: 12 in
+Lower shelf bottom above lid: 26 in
+Layout: left end to left wall, back edge to rear wall
 
-1. Mount lower bracket first
-----------------------------
-[ ] Align bracket to lower shelf marks; long level on bracket plate/rods
-[ ] Drive screws into studs only (use plate/ledger kit if studs miss shelf center)
-[ ] Confirm level again after first screws, then finish fastening
-[ ] Dry-fit lower shelf — flush to wall, centered (± equal overhang vs tank)
+1. Install lower cleats
+-----------------------
+[ ] Mount BACK-WALL cleat level at lower shelf underside elevation; screws into studs
+[ ] Mount LEFT-WALL cleat at the SAME elevation; screws into studs
+[ ] Check with a long level / winding sticks: both cleat tops coplanar
+[ ] Dry-set lower shelf into the corner — tight to both walls, no rock
 
-2. Mount upper bracket
-----------------------
-[ ] Measure from finished TOP of lower shelf (or from lower shelf BOTTOM + 1.5 + 12)
-  Upper shelf BOTTOM = lower shelf BOTTOM + 1.5 in + 12 in = lower bottom + 13.5 in
-[ ] Level upper bracket; fasten into studs
-[ ] Dry-fit upper shelf; match left/right overhang to lower shelf (use centerline tape)
-
-3. Final seat and lock
-----------------------
-[ ] Slide both shelves fully onto rods/plates
-[ ] Tighten kit set screws if provided
-[ ] Check: level, no wobble, tight wall gap, clear of towel cabinet, basket clears lower shelf
-
-4. Load guidance
-----------------
-Stay under bracket rating (plan assumes ≥ 30–50 lb per shelf). Prefer lighter décor,
-folded hand towels, and small bottles — not heavy ceramics stacked at the front edge.
-
-Rollback / adjustment
+2. Fasten lower shelf
 ---------------------
-If off-center: remove shelves, loosen bracket, shift using centerline tape, re-level, re-drive
-into studs (fill abandoned holes with appropriate anchors/plugs if needed before paint touch-up).
+[ ] From above, drive finish screws or pin nails into each cleat (pre-drill)
+[ ] Optional: small L-bracket under the inside corner into both walls/studs
+[ ] Confirm level front-to-back and left-to-right
+
+3. Install upper shelf
+----------------------
+[ ] Upper shelf BOTTOM = lower shelf BOTTOM + 1.5 + 12 = lower bottom + 13.5 in
+[ ] Repeat cleat install on both walls, then seat and fasten upper shelf
+[ ] Match front overhang / right-end position to the lower shelf
+
+4. Final checks
+---------------
+[ ] Left ends flush/tight to left wall
+[ ] Back edges flush/tight to rear wall
+[ ] 12 in clear between shelves
+[ ] Basket clears lower shelf; right ends clear towel cabinet
+[ ] No wobble under hand pressure
+
+Load guidance
+-------------
+Dual-wall cleats are stronger than single-wall floating rods. Still keep loads
+moderate (folded towels, small bottles). Avoid heavy stacks at the unsupported
+front-right corner.

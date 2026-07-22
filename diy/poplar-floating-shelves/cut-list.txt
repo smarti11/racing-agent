@@ -1,22 +1,33 @@
-POPLAR FLOATING SHELVES — CUT LIST
-===================================
-Final finished size per shelf: 20 in L × 6 in D × 1.5 in T
-Quantity: 2 identical shelves
+POPLAR CORNER SHELVES — CUT LIST
+================================
+Final shelf size: 20 in L × 6 in D × 1.5 in T — qty 2
+Mount: cleats on back wall AND left wall
 
+SHELVES
+-------
 OPTION A — Laminate from 3/4 in stock
--------------------------------------
 Part                    Qty   Rough cut          Notes
-Shelf face (top)        2     20.5 × 6.25 × 3/4  Trim to final after glue-up
-Shelf face (bottom)     2     20.5 × 6.25 × 3/4  Grain parallel to face piece
-Waste / test scrap      1     ~12 × 6 × 3/4      Practice bracket drill holes
+Shelf face (top)        2     20.5 × 6.25 × 3/4  Trim after glue-up
+Shelf face (bottom)     2     20.5 × 6.25 × 3/4  Grain parallel
+Waste / test scrap      1     ~12 × 6 × 3/4      Fit checks against corner
 
 After glue-up: mill each blank to 20.00 × 6.00 × 1.50 in.
-Square ends on miter saw or shooting board. Break sharp edges ~1/16 in.
+Square the LEFT end carefully — it must sit tight to the left wall.
+Square the BACK edge — it must sit tight to the rear wall.
+Ease only the front and right edges (leave left end + back edge crisp).
 
 OPTION B — Mill from 8/4 poplar
--------------------------------
 Part                    Qty   Rough cut          Notes
-Shelf blank             2     21 × 6.5 × ~1.75   Plane to 1.50 thick, then trim
+Shelf blank             2     21 × 6.5 × ~1.75   Plane to 1.50, then trim
 
-Buy ~25% extra board feet beyond the net volume (~0.21 bd ft net for both shelves).
-Recommended purchase: one 1×6×6 ft poplar board (for laminate) OR one 8/4×6×3 ft blank.
+CLEATS (dual-wall mount)
+------------------------
+Part                    Qty   Finished size           Notes
+Back-wall cleat         2     18.5 × 1.5 × 0.75 in   Under back edge; leave ~0.75 in
+                                                     each end short of shelf ends if desired
+Left-wall cleat         2     5.0 × 1.5 × 0.75 in    Under left end; stops short of front edge
+
+Or cut cleats full length under the bearing edges and paint to match the wall.
+
+Buy ~25% extra board feet beyond net volume.
+Recommended: one 1×6×8 ft poplar (shelves + cleats) OR 8/4 for shelves + 1×2 for cleats.
