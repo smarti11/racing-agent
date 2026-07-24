@@ -28,6 +28,9 @@ from config.settings import (
     SCRATCH_CHECK_HOUR_ET,
     CANADIAN_TRACKS,
     DASHBOARD_PUBLIC_URL,
+    DASHBOARD_OUTPUT,
+    DASHBOARD_S3_ENABLED,
+    DASHBOARD_S3_URI,
 )
 from data.equibase import get_todays_tracks, get_all_entries_today, get_scratches, get_scratches_desktop
 from data.results import get_todays_results_all_tracks
@@ -219,6 +222,16 @@ def generate_dashboard():
     from dashboard.builder import build_dashboard
     build_dashboard()
     logger.info("Dashboard generated → dashboard/racing.html")
+
+    try:
+        from dashboard.s3_publish import publish_dashboard_to_s3
+        publish_dashboard_to_s3(
+            DASHBOARD_OUTPUT,
+            DASHBOARD_S3_URI,
+            enabled=DASHBOARD_S3_ENABLED,
+        )
+    except Exception as e:
+        logger.warning(f"S3 dashboard publish failed: {e}")
 
 
 def print_todays_card():

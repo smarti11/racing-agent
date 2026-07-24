@@ -99,7 +99,16 @@ CANADIAN_TRACKS = {"WO", "WOT", "WOD", "HST", "GLD"}
 
 # --- Dashboard URL (override via RACING_DASHBOARD_URL env var) ---
 DASHBOARD_PUBLIC_URL = os.environ.get(
-    "RACING_DASHBOARD_URL", "http://100.68.82.83:8081/racing.html"
+    "RACING_DASHBOARD_URL", "https://collaborease.com/racing/racing.html"
+)
+
+# --- S3 publish after each dashboard regen (Mac Mini → collaborease.com) ---
+# Set RACING_DASHBOARD_S3=0 to disable. Override destination with RACING_DASHBOARD_S3_URI.
+DASHBOARD_S3_ENABLED = os.environ.get("RACING_DASHBOARD_S3", "1").strip().lower() not in (
+    "0", "false", "no", "off",
+)
+DASHBOARD_S3_URI = os.environ.get(
+    "RACING_DASHBOARD_S3_URI", "s3://collaborease.com/racing/racing.html"
 )
 
 # --- Handicapping weights ---
