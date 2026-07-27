@@ -42,8 +42,8 @@ MEET_LEADERS = {
 # Only HIGH CONF top picks get a bet at these tracks.
 # MEDIUM or LOW confidence → race is logged and skipped.
 # HIGH is also capped by config.confidence (track floor / gap 999).
-# Expanded Jul 2026 from graded wipeouts (ALB/CNL/DMR/HAW/MNR/WYO) and
-# chronic underperformers (BTP/FL).
+# Expanded Jul 2026 from weekend wipeouts (DMR/EVD/PEN/RET/CNL/SAR) and
+# chronic underperformers.
 WEAK_SIGNAL_TRACKS = {
     "CT",   # Charles Town (WV)
     "DED",  # Delta Downs (LA)
@@ -56,4 +56,7 @@ WEAK_SIGNAL_TRACKS = {
     "CNL",  # Colonial Downs (VA)
     "BTP",  # Belterra Park (OH)
     "FL",   # Finger Lakes (NY)
+    "PEN",  # Penn National (PA)
+    "RET",  # Retama Park (TX)
+    "SAR",  # Saratoga (NY) — WIN ROI -55% Jul 24–26
 }

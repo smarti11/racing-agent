@@ -28,6 +28,7 @@ from config.meet_leaders import (
     WEAK_SIGNAL_TRACKS,
 )
 from config.confidence import calibrate_confidence
+from core.staking import win_stake_eligible, win_bet_label
 
 logger = logging.getLogger("racing_agent")
 
@@ -313,7 +314,7 @@ def score_horse(entry: dict, conditions: str, field_size: int,
     if pace_scenario and pace_scenario.get("pace_styles"):
         pace_style = pace_scenario["pace_styles"].get(str(prog), "P")
         p_score = {
-            "E": 0.80, "EP": 0.75, "P": 0.65, "S": 0.50, "C": 0.30, "U": 0.55,
+            "E": 0.80, "EP": 0.75, "P": 0.65, "S": 0.35, "C": 0.30, "U": 0.55,
         }.get(pace_style, 0.55)
     else:
         from core.speed_figures import parse_odds as _po
@@ -354,6 +355,8 @@ def score_horse(entry: dict, conditions: str, field_size: int,
             "CONTESTED", "CLOSERS_RACE",
         ):
             pace_adj = min(pace_adj, -3.0)
+        elif pace_style_tmp == "S":
+            pace_adj = min(pace_adj, -2.0)
 
     # Form adjustment
     form_adj = 0.0
@@ -463,6 +466,29 @@ def _morning_line_rank(horse: dict, field: list) -> Optional[int]:
     return better + 1
 
 
+def _model_prob(horse: dict) -> Optional[float]:
+    p = horse.get("final_prob")
+    if p is None:
+        p = horse.get("calibrated_prob")
+    if p is None:
+        p = horse.get("win_prob")
+    return p
+
+
+def _win_bet_recommendation(win_horse: dict, field_horses: list) -> str:
+    """Bet label for rank-1 using centralized staking gates."""
+    eligible, _ = win_stake_eligible(
+        win_horse.get("confidence", "LOW"),
+        _model_prob(win_horse),
+        win_horse.get("market_prob"),
+        _morning_line_rank(win_horse, field_horses),
+        win_horse.get("pace_role"),
+        len(field_horses),
+        win_horse.get("track_code", ""),
+    )
+    return win_bet_label(eligible, win_horse.get("confidence", "LOW"))
+
+
 def get_top_pick(scored_horses: list) -> dict:
     if not scored_horses:
         return None
@@ -479,6 +505,7 @@ def get_top_pick(scored_horses: list) -> dict:
     if model_p is None:
         model_p = top.get("win_prob")
     scenario = top.get("pace_scenario") or {}
+    field_size = len([h for h in scored_horses if not h.get("scratched")]) or len(scored_horses)
     confidence = calibrate_confidence(
         gap,
         ml_decimal,
@@ -488,6 +515,7 @@ def get_top_pick(scored_horses: list) -> dict:
         pace_role=top.get("pace_role"),
         ml_rank=_morning_line_rank(top, scored_horses),
         pace_scenario_name=scenario.get("scenario") if isinstance(scenario, dict) else None,
+        field_size=field_size,
     )
     return {**top, "confidence": confidence, "score_gap": round(gap, 1)}
 
@@ -621,9 +649,7 @@ def role_ranked_picks(scored_horses: list) -> dict:
     # ── Step 1: WIN — highest overall score ──────────────────────────────
     win_horse = active[0].copy()
     win_horse["role"] = "WIN"
-    win_horse["bet_recommendation"] = "$2.00 WIN" if win_horse.get("confidence") == "HIGH" else \
-                                       "$0.50 PL+SH" if win_horse.get("confidence") == "MEDIUM" else \
-                                       "$0.50 SHOW"
+    win_horse["bet_recommendation"] = _win_bet_recommendation(win_horse, active)
 
     win_prog = str(win_horse.get("program_num",""))
 
@@ -732,10 +758,7 @@ def top2_picks(scored_horses: list) -> dict:
         h["bc_reason"] = reason
         # Bet recommendation by role + BC gate
         if role == "WIN":
-            if qualifies and h.get("confidence") == "HIGH":
-                h["bet_recommendation"] = "$2.00 WIN"
-            else:
-                h["bet_recommendation"] = "SKIP" if not qualifies else "Pass"
+            h["bet_recommendation"] = _win_bet_recommendation(h, active)
         else:  # BACKUP
             # Backup horse used in exacta box / Pick 3 / Pick 4 sequences
             h["bet_recommendation"] = "Exacta/Multi-race only"

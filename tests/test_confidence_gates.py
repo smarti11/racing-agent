@@ -11,9 +11,11 @@ from config.confidence import (
     MAX_ANTI_MARKET_REL_EDGE,
     MIN_PROB_FOR_HIGH,
     MIN_PROB_FOR_MEDIUM,
+    MAX_FIELD_SIZE_FOR_CONF,
 )
 from core.market import blend_scores_with_market
 from core.handicapper import _morning_line_rank, get_top_pick
+from core.staking import win_stake_eligible
 
 
 def test_relative_edge():
@@ -136,8 +138,59 @@ def test_morning_line_rank_and_top_pick_gates():
     assert top["confidence"] == "LOW"  # closer + anti-market
 
 
+def test_stalker_veto():
+    conf = calibrate_confidence(
+        20.0, 3.0, "CD",
+        win_prob=0.35,
+        market_prob=0.32,
+        ml_rank=1,
+        pace_role="S",
+    )
+    assert conf == "LOW"
+
+
+def test_large_field_caps_confidence():
+    conf = calibrate_confidence(
+        20.0, 3.0, "CD",
+        win_prob=0.30,
+        market_prob=0.28,
+        ml_rank=4,
+        pace_role="P",
+        field_size=12,
+    )
+    assert conf == "LOW"
+
+
+def test_win_stake_requires_all_gates():
+    ok, reason = win_stake_eligible(
+        "HIGH", 0.30, 0.28, 1, "P", 8, "CD",
+    )
+    assert ok and reason == "OK"
+
+    ok, reason = win_stake_eligible(
+        "HIGH", 0.30, 0.15, 1, "P", 8, "CD",
+    )
+    assert not ok and reason == "ANTI_MARKET"
+
+    ok, reason = win_stake_eligible(
+        "HIGH", 0.30, 0.28, 1, "S", 8, "CD",
+    )
+    assert not ok and reason == "PACE_S"
+
+    ok, reason = win_stake_eligible(
+        "HIGH", 0.30, 0.28, 1, "P", 12, "CD",
+    )
+    assert not ok and reason == "LARGE_FIELD"
+
+    ok, reason = win_stake_eligible(
+        "HIGH", 0.30, 0.28, 1, "P", 8, "SAR",
+    )
+    assert not ok and reason == "WEAK_TRACK"
+
+
 def test_edge_threshold_constant():
-    assert MAX_ANTI_MARKET_REL_EDGE == 0.50
+    assert MAX_ANTI_MARKET_REL_EDGE == 0.40
+    assert MAX_FIELD_SIZE_FOR_CONF == 10
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 """Confidence calibration — score gap + market alignment + pace + track baseline.
 
-Gates tuned from Jul 13–19 2026 graded performance:
-  - Anti-market relative edges (>=50%) hit ~15% win / -43% ROI
-  - Closers (pace C) hit ~3–8% for WIN
+Gates tuned from Jul 13–26 2026 graded performance:
+  - Anti-market relative edges (>=40%) hit ~12% win / -46% ROI
+  - Closers (C) and stalkers (S) weak for WIN
   - Prob < 20% near-useless for WIN stakes
-  - MEDIUM previously underperformed LOW when miscalibrated
+  - Large fields (>=11) and score gaps >=8 overconfident
 """
 
 from typing import Optional
@@ -45,14 +45,20 @@ TRACK_HIGH_FLOOR = 0.20
 
 # --- Performance gates (Jul 2026) ---
 # Relative edge = (model_prob - market_prob) / market_prob
-MAX_ANTI_MARKET_REL_EDGE = 0.50
+MAX_ANTI_MARKET_REL_EDGE = 0.40
 # Top-2 on morning line counts as market-supported
 ML_SUPPORTED_RANK_MAX = 2
 # Soft-cap WIN / elevated confidence by model probability
 MIN_PROB_FOR_HIGH = 0.25
 MIN_PROB_FOR_MEDIUM = 0.20
+# Large fields — skip elevated confidence for WIN (weekend >=11: -59% ROI)
+MAX_FIELD_SIZE_FOR_CONF = 10
+# Huge score gaps without ML support are overconfident (weekend gap>=8: -60% ROI)
+OVERCONFIDENT_GAP = 8.0
 # Pace roles that may receive elevated confidence when scenario favors them
 CLOSER_FAVORABLE_SCENARIOS = frozenset({"CONTESTED", "CLOSERS_RACE"})
+# Stalker (S) pace — no WIN elevation (weekend: -59% ROI)
+STALKER_PACE_ROLE = "S"
 
 
 def _min_gap_for_high(ml_decimal: Optional[float], track_code: str) -> float:
@@ -106,14 +112,16 @@ def calibrate_confidence(
     pace_role: Optional[str] = None,
     ml_rank: Optional[int] = None,
     pace_scenario_name: Optional[str] = None,
+    field_size: Optional[int] = None,
 ) -> str:
     """Return HIGH / MEDIUM / LOW using gap, price, track, market, pace, and prob.
 
     Extra keyword gates (all optional for backward compatibility):
       win_prob / market_prob — anti-market edge + min-prob soft-caps
-      pace_role — closer (C) WIN veto
+      pace_role — closer (C) and stalker (S) WIN veto
       ml_rank — 1 = ML favorite; <=2 counts as market-supported
       pace_scenario_name — allows limited closer exception when contested
+      field_size — cap confidence when field >= 11 active runners
     """
     min_high = _min_gap_for_high(ml_decimal, track_code or "")
 
@@ -150,6 +158,22 @@ def calibrate_confidence(
             conf = _cap_confidence(conf, "MEDIUM")
         else:
             return "LOW"
+
+    # Gate 2b — stalker (S) WIN veto (no exception; weekend -59% ROI)
+    if role == STALKER_PACE_ROLE:
+        return "LOW"
+
+    # Gate 2c — large field cap
+    if field_size is not None and field_size > MAX_FIELD_SIZE_FOR_CONF:
+        conf = _cap_confidence(conf, "MEDIUM")
+        if not market_supported:
+            conf = "LOW"
+
+    # Gate 2d — overconfident score gap without market support
+    if score_gap >= OVERCONFIDENT_GAP and not market_supported:
+        conf = _cap_confidence(conf, "MEDIUM")
+        if rel_edge is not None and rel_edge >= MAX_ANTI_MARKET_REL_EDGE:
+            conf = "LOW"
 
     # Gate 3 — probability soft-caps for elevated confidence / WIN stakes
     if win_prob is not None:
