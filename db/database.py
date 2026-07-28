@@ -55,6 +55,7 @@ def init_db():
             scratch_time     TEXT,
             fetched_ts       TEXT NOT NULL,
             first_fetched_ts TEXT,
+            UNIQUE(race_id, program_num),
             FOREIGN KEY(race_id) REFERENCES races(id)
         );
 
@@ -261,6 +262,9 @@ def init_db():
             "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
             "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
+            # Needed for ON CONFLICT(race_id, program_num) on DBs created before
+            # UNIQUE was added to the entries CREATE TABLE definition.
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_race_prog ON entries(race_id, program_num)",
         ]
         for sql in _migrations:
             try:
