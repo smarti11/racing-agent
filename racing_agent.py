@@ -319,20 +319,36 @@ def _port_listening(port: int) -> bool:
         return False
 
 
+def _ensure_sidecar(port: int, name: str, argv: list[str]):
+    """Start a sidecar process if nothing is already listening on port."""
+    import subprocess
+
+    if _port_listening(port):
+        logger.info(f"{name} already listening on :{port}")
+        return
+    try:
+        subprocess.Popen(
+            argv,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            cwd=str(Path(__file__).resolve().parent),
+        )
+        logger.info(f"{name} started on port {port}")
+    except Exception as e:
+        logger.warning(f"Could not start {name}: {e}")
+
+
 def _ensure_scratch_server():
     """Start scratch_server.py if nothing is already listening on :8082.
 
-    Sidecar servers are preferably managed by launchd, but if launchd is not
-    loaded the agent used to leave the manual-scratch endpoint dead. Fall back
-    to starting it here so dashboard POST /scratch works.
+    Prefer launchd (see launchd/install.sh) for reboot survival. Fall back to
+    starting here so dashboard POST /scratch still works after a Mac restart
+    when LaunchAgents were never installed.
     """
     import os
-    import subprocess
     import sys
 
-    if _port_listening(8082):
-        logger.info("Scratch server already listening on :8082")
-        return
     script = Path(__file__).resolve().parent / "scratch_server.py"
     if not script.exists():
         logger.warning(f"Scratch server script missing: {script}")
@@ -341,16 +357,34 @@ def _ensure_scratch_server():
     venv_python = Path(os.environ["VIRTUAL_ENV"]) / "bin" / "python" if os.environ.get("VIRTUAL_ENV") else None
     if venv_python and venv_python.exists():
         python = str(venv_python)
-    try:
-        subprocess.Popen(
-            [python, str(script)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        logger.info("Scratch override server started on port 8082")
-    except Exception as e:
-        logger.warning(f"Could not start scratch server: {e}")
+    _ensure_sidecar(8082, "Scratch override server", [python, str(script)])
+
+
+def _ensure_dashboard_server():
+    """Start the static dashboard server on :8081 if it is not already up."""
+    import os
+    import sys
+
+    root = Path(__file__).resolve().parent
+    dashboard_dir = root / "dashboard"
+    if not dashboard_dir.is_dir():
+        logger.warning(f"Dashboard directory missing: {dashboard_dir}")
+        return
+    python = sys.executable
+    venv_python = Path(os.environ["VIRTUAL_ENV"]) / "bin" / "python" if os.environ.get("VIRTUAL_ENV") else None
+    if venv_python and venv_python.exists():
+        python = str(venv_python)
+    _ensure_sidecar(
+        8081,
+        "Dashboard server",
+        [python, "-m", "http.server", "8081", "--bind", "0.0.0.0", "--directory", str(dashboard_dir)],
+    )
+
+
+def _ensure_sidecars():
+    """Bring back :8081 / :8082 after a reboot if launchd did not."""
+    _ensure_dashboard_server()
+    _ensure_scratch_server()
 
 
 def main():
@@ -392,14 +426,14 @@ def main():
     print(f"  Data refresh every {SCRAPE_INTERVAL_MIN} min")
     print(f"  Loop interval: {LOOP_INTERVAL_MIN} min")
     print(f"  Dashboard: {DASHBOARD_PUBLIC_URL}")
-    print(f"  (HTTP :8081 via launchd; scratch :8082 launchd-or-agent fallback)")
+    print(f"  (HTTP :8081 / scratch :8082 — launchd or agent fallback after reboot)")
     print(f"  Scratch gate opens at {SCRATCH_CHECK_HOUR_ET}:00 ET")
     print(f"  Press Ctrl+C to stop")
     print(f"{'='*55}\n")
 
     _backup_database()
     if not args.once:
-        _ensure_scratch_server()
+        _ensure_sidecars()
 
     fetch_todays_entries()
     # Dedicated scratch detection must run before the first handicapping pass.
