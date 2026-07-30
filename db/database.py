@@ -2339,18 +2339,64 @@ def get_todays_bet_slate():
             conf = r["confidence"]
             ml = r["morning_line"] if "morning_line" in r.keys() else None
             from core.kelly import parse_odds_to_decimal
+            from core.handicapper import _morning_line_rank
+            from core.staking import win_stake_eligible, win_bet_label
+            from db.database import get_race_entries as _get_entries
+
             dec = parse_odds_to_decimal(ml or "") if ml else None
 
+            model_p = None
+            if "final_prob" in r.keys() and r["final_prob"] is not None:
+                model_p = r["final_prob"]
+            elif "calibrated_prob" in r.keys() and r["calibrated_prob"] is not None:
+                model_p = r["calibrated_prob"]
+
+            # Pace role + field size for staking gates
+            pace_role = None
+            field_size = 0
+            ml_rank = None
+            track_code = ""
+            with get_conn() as conn2:
+                race_row = conn2.execute(
+                    "SELECT track_code FROM races WHERE id=?", (r["race_id"],)
+                ).fetchone()
+                if race_row:
+                    track_code = race_row["track_code"] or ""
+                entries = _get_entries(r["race_id"])
+                active_entries = [dict(e) for e in entries if not e["scratched"]]
+                field_size = len(active_entries)
+                pick_entry = next(
+                    (e for e in active_entries if str(e["program_num"]) == str(r["program_num"])),
+                    None,
+                )
+                if pick_entry:
+                    ml_rank = _morning_line_rank(
+                        {"morning_line": pick_entry.get("morning_line") or ml},
+                        [{"morning_line": e.get("morning_line")} for e in active_entries],
+                    )
+                aes = conn2.execute(
+                    "SELECT pace_role FROM agent_entry_scores WHERE race_id=? AND program_num=?",
+                    (r["race_id"], str(r["program_num"])),
+                ).fetchone()
+                if aes:
+                    pace_role = aes["pace_role"]
+
+            mkt_p = r["market_prob"] if "market_prob" in r.keys() else None
+            stake_ok, _ = win_stake_eligible(
+                conf, model_p, mkt_p, ml_rank, pace_role, field_size, track_code,
+            )
+
             if conf == "HIGH":
-                if dec and dec < 6.0:
-                    bet_type = "ITM ONLY"
-                    stake = 0.00
-                else:
+                short_chalk = bool(dec and dec < 6.0)
+                if stake_ok and not short_chalk:
                     bet_type = "$2 WIN"
                     stake = 2.00
+                else:
+                    bet_type = win_bet_label(False, conf, short_chalk=short_chalk)
+                    stake = 0.00
             elif conf == "MEDIUM":
-                bet_type = "$0.50 PL+SH"
-                stake = 1.00
+                bet_type = "tracked, not bet"
+                stake = 0.00
             else:
                 continue
             

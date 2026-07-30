@@ -2,7 +2,12 @@
 
 # Weight on calibrated model probability in logit blend (0–1).
 # Higher = trust fundamentals more; lower = trust the market more.
-MARKET_BLEND_ALPHA = 0.65
+# Lowered Jul 2026 — anti-market overrides were the primary WIN ROI leak.
+MARKET_BLEND_ALPHA = 0.45
+
+# Soft blend of market_prob into handicapping score before ranking (0–1).
+# Pulls top-pick selection toward ML favorites without fully discarding model.
+MARKET_SCORE_BLEND = 0.15
 
 # Pari-mutuel win-pool takeout for edge / Kelly math.
 TAKEOUT = 0.18

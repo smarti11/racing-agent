@@ -103,6 +103,29 @@ def blend_race_probabilities(
         h["final_prob"] = p / total
 
 
+def blend_scores_with_market(
+    horses: List[dict],
+    weight: float = 0.15,
+) -> None:
+    """Soft-blend market_prob into score and re-rank in place.
+
+    weight=0.15 means final_score = 0.85 * model_score + 0.15 * (market_prob * 100).
+    Horses without market_prob keep their model score unchanged.
+    """
+    if not horses or weight <= 0:
+        return
+    weight = max(0.0, min(1.0, float(weight)))
+    for h in horses:
+        mkt = h.get("market_prob") or 0.0
+        if mkt <= 0:
+            continue
+        base = float(h.get("score") or 0.0)
+        h["score"] = round(base * (1.0 - weight) + (mkt * 100.0) * weight, 1)
+    horses.sort(key=lambda x: x.get("score") or 0.0, reverse=True)
+    for i, h in enumerate(horses):
+        h["rank"] = i + 1
+
+
 def _best_odds_for_horse(
     program_num: str,
     live_odds: Optional[Dict[str, str]],
