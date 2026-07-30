@@ -143,12 +143,14 @@ def check_scratches() -> int:
         else:
             scratches, unscratches = get_scratches_desktop(track_code)
 
+        weak_source = "mobile_diff" if track_code in CANADIAN_TRACKS else "desktop"
+
         for scratch in scratches:
             race_num = scratch.get("race_num")
             prog_num = scratch.get("program_num", "")
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                mark_scratched(matched_race_id, prog_num)
+                mark_scratched(matched_race_id, prog_num, source=weak_source)
                 scratch_count += 1
             else:
                 logger.warning(f"Scratch not matched: {track_code} R{race_num} #{prog_num}")
@@ -158,13 +160,13 @@ def check_scratches() -> int:
             prog_num = item.get("program_num", "")
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                if mark_unscratched(matched_race_id, prog_num):
+                if mark_unscratched(matched_race_id, prog_num, source=weak_source):
                     unscratch_count += 1
 
         for race_num, prog_num, horse_name, _reason in fetch_track_scratches(track_code):
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                mark_scratched(matched_race_id, prog_num)
+                mark_scratched(matched_race_id, prog_num, source="late_changes")
                 scratch_count += 1
 
     logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")

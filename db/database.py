@@ -53,6 +53,7 @@ def init_db():
             weight          TEXT,
             scratched        INTEGER DEFAULT 0,
             scratch_time     TEXT,
+            scratch_source   TEXT,
             fetched_ts       TEXT NOT NULL,
             first_fetched_ts TEXT,
             UNIQUE(race_id, program_num),
@@ -265,6 +266,7 @@ def init_db():
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
             "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
             "ALTER TABLE agent_value_bets ADD COLUMN actionable_prob REAL",
+            "ALTER TABLE entries ADD COLUMN scratch_source TEXT",
             "ALTER TABLE agent_actionable_bets ADD COLUMN actionable_prob REAL",
             # Needed for ON CONFLICT(race_id, program_num) on DBs created before
             # UNIQUE was added to the entries CREATE TABLE definition.
@@ -348,11 +350,14 @@ def save_entry(race_id, program_num, horse_name, details={}):
         ))
 
 
-def mark_scratched(race_id, program_num):
+def mark_scratched(race_id, program_num, source="mobile_diff"):
     """Idempotent — preserves the original scratch_time on repeat detections.
     check_scratches() re-detects the same scratch every cycle for the rest of
     the day; without this check, scratch_time kept advancing to "now" on every
-    redundant call, making hours-old scratches look like they just happened."""
+    redundant call, making hours-old scratches look like they just happened.
+
+    source records which detector confirmed the scratch — see mark_unscratched,
+    which refuses to override a 'late_changes' scratch with a weaker source."""
     with get_conn() as conn:
         row = conn.execute(
             "SELECT scratched FROM entries WHERE race_id=? AND program_num=?",
@@ -361,23 +366,36 @@ def mark_scratched(race_id, program_num):
         if row and row["scratched"]:
             return
         conn.execute("""
-            UPDATE entries SET scratched=1, scratch_time=?
+            UPDATE entries SET scratched=1, scratch_time=?, scratch_source=?
             WHERE race_id=? AND program_num=?
-        """, (datetime.now().isoformat(), race_id, program_num))
-        logger.info(f"Marked #{program_num} scratched in race {race_id}")
+        """, (datetime.now().isoformat(), source, race_id, program_num))
+        logger.info(f"Marked #{program_num} scratched in race {race_id} (source={source})")
 
 
-def mark_unscratched(race_id, program_num):
-    """Clear a false scratch when horse reappears on live entries."""
+def mark_unscratched(race_id, program_num, source="mobile_diff"):
+    """Clear a false scratch when horse reappears on live entries.
+
+    Refuses to override a scratch confirmed via the late-changes feed
+    (source='late_changes') with a weaker source. late_changes carries an
+    explicit reason (Veterinarian, Stewards, etc.) from a dedicated scratch
+    feed; Equibase's mobile entries page has been observed lagging behind it
+    by an hour+ (Woodbine, 2026-07-30: mobile "reappeared" 5 genuinely-
+    scratched horses, silently reverting the correct scratch every cycle)."""
     with get_conn() as conn:
         row = conn.execute(
-            "SELECT scratched FROM entries WHERE race_id=? AND program_num=?",
+            "SELECT scratched, scratch_source FROM entries WHERE race_id=? AND program_num=?",
             (race_id, program_num),
         ).fetchone()
         if not row or not row["scratched"]:
             return False
+        if row["scratch_source"] == "late_changes" and source != "late_changes":
+            logger.info(
+                f"Refusing to un-scratch #{program_num} in race {race_id}: "
+                f"confirmed via late_changes, ignoring weaker source={source}"
+            )
+            return False
         conn.execute("""
-            UPDATE entries SET scratched=0, scratch_time=NULL
+            UPDATE entries SET scratched=0, scratch_time=NULL, scratch_source=NULL
             WHERE race_id=? AND program_num=?
         """, (race_id, program_num))
         logger.info(f"Un-scratched #{program_num} in race {race_id} (reappeared on live card)")

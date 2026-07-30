@@ -124,7 +124,7 @@ def fetch_and_mark_scratches_for_today():
                 if ent["scratched"]:
                     continue  # already known
 
-                mark_scratched(race_id, program_num)
+                mark_scratched(race_id, program_num, source="late_changes")
                 new_scratches += 1
                 logger.info(
                     f"[SCRATCH FROM EQB] {track_name} R{race_num} #{program_num} "
