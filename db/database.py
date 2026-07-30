@@ -183,6 +183,7 @@ def init_db():
             model_prob   REAL,
             market_prob  REAL,
             final_prob   REAL,
+            actionable_prob REAL,
             edge         REAL,
             kelly_f      REAL,
             created_ts   TEXT NOT NULL,
@@ -199,6 +200,7 @@ def init_db():
             odds_str     TEXT,
             odds_source  TEXT,
             final_prob   REAL,
+            actionable_prob REAL,
             market_prob  REAL,
             edge         REAL,
             rel_edge     REAL,
@@ -262,6 +264,8 @@ def init_db():
             "ALTER TABLE agent_picks ADD COLUMN final_prob REAL",
             "ALTER TABLE agent_picks ADD COLUMN market_prob REAL",
             "ALTER TABLE agent_value_bets ADD COLUMN odds_source TEXT",
+            "ALTER TABLE agent_value_bets ADD COLUMN actionable_prob REAL",
+            "ALTER TABLE agent_actionable_bets ADD COLUMN actionable_prob REAL",
             # Needed for ON CONFLICT(race_id, program_num) on DBs created before
             # UNIQUE was added to the entries CREATE TABLE definition.
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_race_prog ON entries(race_id, program_num)",
@@ -345,7 +349,17 @@ def save_entry(race_id, program_num, horse_name, details={}):
 
 
 def mark_scratched(race_id, program_num):
+    """Idempotent — preserves the original scratch_time on repeat detections.
+    check_scratches() re-detects the same scratch every cycle for the rest of
+    the day; without this check, scratch_time kept advancing to "now" on every
+    redundant call, making hours-old scratches look like they just happened."""
     with get_conn() as conn:
+        row = conn.execute(
+            "SELECT scratched FROM entries WHERE race_id=? AND program_num=?",
+            (race_id, program_num),
+        ).fetchone()
+        if row and row["scratched"]:
+            return
         conn.execute("""
             UPDATE entries SET scratched=1, scratch_time=?
             WHERE race_id=? AND program_num=?
@@ -741,8 +755,8 @@ def save_agent_value_bets(race_id: int, bets: list):
             conn.execute("""
                 INSERT INTO agent_value_bets
                 (race_id, program_num, horse_name, odds_str, odds_source,
-                 model_prob, market_prob, final_prob, edge, kelly_f, created_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                 model_prob, market_prob, final_prob, actionable_prob, edge, kelly_f, created_ts)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 race_id,
                 str(h.get("program_num", "")),
@@ -752,6 +766,7 @@ def save_agent_value_bets(race_id: int, bets: list):
                 h.get("calibrated_prob") or h.get("win_prob"),
                 h.get("market_prob"),
                 h.get("final_prob"),
+                h.get("actionable_prob"),
                 h.get("edge"),
                 h.get("kelly_f"),
                 now_iso,
@@ -784,9 +799,9 @@ def save_agent_actionable_bets(race_date: str, bets: list):
             conn.execute("""
                 INSERT INTO agent_actionable_bets
                 (race_date, race_id, program_num, horse_name, odds_str, odds_source,
-                 final_prob, market_prob, edge, rel_edge, kelly_f, bet_amount,
+                 final_prob, actionable_prob, market_prob, edge, rel_edge, kelly_f, bet_amount,
                  rank_order, created_ts)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 race_date,
                 h.get("race_id"),
@@ -795,6 +810,7 @@ def save_agent_actionable_bets(race_date: str, bets: list):
                 h.get("odds_str"),
                 h.get("odds_source", ""),
                 h.get("final_prob"),
+                h.get("actionable_prob"),
                 h.get("market_prob"),
                 h.get("edge"),
                 h.get("rel_edge"),

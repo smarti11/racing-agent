@@ -2,7 +2,20 @@
 
 # Weight on calibrated model probability in logit blend (0–1).
 # Higher = trust fundamentals more; lower = trust the market more.
+# Used for the displayed/persisted final_prob (dashboard, agent_picks
+# confidence) — this population (mostly rank-1-ish favorites) is what
+# the isotonic calibrator is actually validated against.
 MARKET_BLEND_ALPHA = 0.65
+
+# Weight on calibrated model probability, used ONLY for edge/Kelly sizing on
+# the value-bet / actionable-bet path (second blend in enrich_race_with_market).
+# select_actionable_bets() keeps the single largest edge per race per day, which
+# is a winner's-curse selection over model/market disagreement — this
+# population runs far hotter than MARKET_BLEND_ALPHA assumes even when the
+# model is well-calibrated in general. 0.10 was fit against graded actionable-
+# bet history via tools/fit_actionable_alpha.py; re-run that script periodically
+# as more actionable-bet history accumulates.
+ACTIONABLE_BLEND_ALPHA = 0.10
 
 # Pari-mutuel win-pool takeout for edge / Kelly math.
 TAKEOUT = 0.18
