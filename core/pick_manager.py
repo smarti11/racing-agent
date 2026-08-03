@@ -25,7 +25,14 @@ EASTERN = pytz.timezone("America/New_York")
 
 
 def _check_tainted_regen(race_id: int, conn) -> tuple[bool, int, int]:
-    """Return (force_regen, old_entry_count, new_active_count)."""
+    """Return (force_regen, old_entry_count, new_active_count).
+
+    Overnight Equibase stubs often have only 2–3 horses. A 2-horse stub was
+    historically tagged TAINTED_SCRATCH (n_active < 3 checked before n_total < 4),
+    so the old TAINTED_PARSE-only gate never fired and POST_TIME_FREEZE locked
+    the stub picks in place. Regenerate whenever the live field has grown to a
+    real card (≥4 active) and the saved pick set is still tainted or too thin.
+    """
     if conn.execute(
         "SELECT 1 FROM results WHERE race_id=? LIMIT 1", (race_id,)
     ).fetchone():
@@ -35,7 +42,18 @@ def _check_tainted_regen(race_id: int, conn) -> tuple[bool, int, int]:
         "SELECT data_quality FROM agent_picks WHERE race_id=? AND rank=1",
         (race_id,),
     ).fetchone()
-    if not top or top["data_quality"] != "TAINTED_PARSE":
+    if not top:
+        return False, 0, 0
+
+    pick_stats = conn.execute(
+        "SELECT COUNT(*) AS n, COUNT(DISTINCT program_num) AS uniq "
+        "FROM agent_picks WHERE race_id=?",
+        (race_id,),
+    ).fetchone()
+    dq = top["data_quality"] or ""
+    tainted = dq in ("TAINTED_PARSE", "TAINTED_SCRATCH")
+    thin_picks = (pick_stats["n"] or 0) < 3 or (pick_stats["uniq"] or 0) < 3
+    if not tainted and not thin_picks:
         return False, 0, 0
 
     active = conn.execute(
@@ -130,7 +148,7 @@ def _odds_changed_since_picks(race_id: int, conn) -> bool:
 def _archive_tainted_picks(race_id: int):
     with get_conn() as conn:
         old_picks = conn.execute(
-            "SELECT rank, program_num, horse_name, confidence, role "
+            "SELECT rank, program_num, horse_name, confidence, role, data_quality "
             "FROM agent_picks WHERE race_id=? ORDER BY rank",
             (race_id,),
         ).fetchall()
@@ -144,7 +162,8 @@ def _archive_tainted_picks(race_id: int):
                 (
                     race_id, op["rank"], op["program_num"], op["horse_name"],
                     op["confidence"] or "", op["role"] or "", arc_ts,
-                    "tainted_parse_superseded", "TAINTED_PARSE",
+                    "tainted_parse_superseded",
+                    op["data_quality"] or "TAINTED_PARSE",
                 ),
             )
 
@@ -168,12 +187,15 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
     active_scored = [s for s in scored if not s.get("scratched")]
     n_active = len(active_scored)
     n_total = len(scored)
-    if n_active < 3:
-        data_quality = "TAINTED_SCRATCH"
-        logger.warning(f"TAINTED_SCRATCH: only {n_active} active of {n_total} total")
-    elif n_total < 4:
+    # Incomplete overnight cards (total < 4) are TAINTED_PARSE even when
+    # active < 3 — otherwise a 2-horse stub is mis-tagged TAINTED_SCRATCH and
+    # never force-regenerates once the full field arrives.
+    if n_total < 4:
         data_quality = "TAINTED_PARSE"
         logger.warning(f"TAINTED_PARSE: only {n_total} entries in DB")
+    elif n_active < 3:
+        data_quality = "TAINTED_SCRATCH"
+        logger.warning(f"TAINTED_SCRATCH: only {n_active} active of {n_total} total")
     else:
         data_quality = "OK"
 
@@ -225,7 +247,7 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
             "data_quality": data_quality,
         })
 
-    save_agent_picks(race["id"], picks)
+    save_agent_picks(race["id"], picks, force=force_regen)
     save_agent_entry_scores(race["id"], scored)
     if scored:
         save_agent_race_analysis(race["id"], scored[0].get("pace_scenario") or {})
@@ -233,7 +255,7 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
     if force_regen:
         logger.info(
             f"Regenerating picks {race['track_code']} R{race['race_num']}: "
-            f"was TAINTED_PARSE with {regen_old_n} entries, "
+            f"was tainted/thin with {regen_old_n} entries, "
             f"now {regen_new_n} active entries, new dq={data_quality}"
         )
 

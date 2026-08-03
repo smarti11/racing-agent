@@ -1171,25 +1171,44 @@ def build_dashboard():
                 _rp = picks_map.get(race["id"], {})
                 role_top3 = [v for _, v in sorted(_rp.items())]
                 # Drop any picks whose horse was scratched after the freeze
-                _scr_nums = {e["program_num"] for e in scratched}
-                role_top3 = [p for p in role_top3 if p.get("program_num") not in _scr_nums]
+                _scr_nums = {str(e["program_num"]) for e in scratched}
+                role_top3 = [
+                    p for p in role_top3
+                    if str(p.get("program_num")) not in _scr_nums
+                ]
+                # Deduplicate stub artifacts (e.g. WIN+SHOW same horse on 2-horse cards)
+                _seen_progs = set()
+                _deduped = []
+                for p in role_top3:
+                    prog = str(p.get("program_num", ""))
+                    if prog in _seen_progs:
+                        continue
+                    _seen_progs.add(prog)
+                    _deduped.append(p)
+                role_top3 = _deduped
                 picks_all_scratched = bool(_rp) and not role_top3
 
                 # Per-race score map from stored entry scores (all active runners)
                 score_map = entry_scores.get(race["id"], {})
 
-                if not role_top3 and score_map:
+                # Backfill to top-3 from stored scores when picks are thin
+                # (overnight stub, post-freeze scratch of a pick, or missing SHOW).
+                if score_map and len(role_top3) < 3:
+                    entry_by_prog = {str(dict(e)["program_num"]): dict(e) for e in active}
+                    have = {str(p.get("program_num")) for p in role_top3}
                     fallback = sorted(
                         [
                             (pgm, sc) for pgm, sc in score_map.items()
-                            if pgm not in _scr_nums and sc.get("score") is not None
+                            if str(pgm) not in _scr_nums
+                            and str(pgm) not in have
+                            and sc.get("score") is not None
                         ],
                         key=lambda x: x[1].get("score") or 0,
                         reverse=True,
-                    )[:3]
-                    entry_by_prog = {str(dict(e)["program_num"]): dict(e) for e in active}
-                    role_top3 = []
+                    )
                     for pgm, sc in fallback:
+                        if len(role_top3) >= 3:
+                            break
                         ent = entry_by_prog.get(str(pgm), {})
                         role_top3.append({
                             "program_num": pgm,
@@ -1198,6 +1217,7 @@ def build_dashboard():
                             "confidence": "",
                             "role": "ALT",
                         })
+                        have.add(str(pgm))
 
                 top_pick = role_top3[0] if role_top3 else None
                 if top_pick and not picks_all_scratched:
