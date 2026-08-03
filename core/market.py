@@ -7,11 +7,16 @@ Stage 3: edge scan across full field (scan_value_bets)
 
 from __future__ import annotations
 
+import logging
 import math
 import re
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+logger = logging.getLogger(__name__)
+
 from config.market import (
+    ACTIONABLE_BLEND_ALPHA,
     ACTIONABLE_HIGH_CHALK_MAX_DEC,
     ACTIONABLE_MAX_PER_DAY,
     ACTIONABLE_MIN_DECIMAL,
@@ -72,8 +77,9 @@ def normalize_market_probs(
 def blend_race_probabilities(
     horses: List[dict],
     alpha: float = MARKET_BLEND_ALPHA,
+    prob_field: str = "final_prob",
 ) -> None:
-    """Apply logit-space blend; sets final_prob on each horse in-place."""
+    """Apply logit-space blend; sets prob_field on each horse in-place."""
     if not horses:
         return
 
@@ -96,11 +102,11 @@ def blend_race_probabilities(
     if total <= 0:
         uniform = 1.0 / len(horses)
         for h in horses:
-            h["final_prob"] = uniform
+            h[prob_field] = uniform
         return
 
     for h, p in zip(horses, probs):
-        h["final_prob"] = p / total
+        h[prob_field] = p / total
 
 
 def _best_odds_for_horse(
@@ -146,14 +152,18 @@ def enrich_race_with_market(
         if h.get("calibrated_prob") is None:
             h["calibrated_prob"] = h.get("win_prob")
 
-    blend_race_probabilities(horses, alpha=alpha)
+    blend_race_probabilities(horses, alpha=alpha, prob_field="final_prob")
+    # Separate, lower-trust blend for edge/Kelly sizing only — see
+    # config.market.ACTIONABLE_BLEND_ALPHA for why this can't reuse final_prob.
+    blend_race_probabilities(horses, alpha=ACTIONABLE_BLEND_ALPHA, prob_field="actionable_prob")
 
     for h in horses:
         final_p = h.get("final_prob") or 0.0
+        actionable_p = h.get("actionable_prob") or 0.0
         mkt_p = h.get("market_prob") or 0.0
         odds_str = h.get("odds_str")
-        h["edge"] = compute_edge(final_p, odds_str, takeout) if odds_str else None
-        h["kelly_f"] = kelly_fraction(final_p, odds_str, takeout) if odds_str else 0.0
+        h["edge"] = compute_edge(actionable_p, odds_str, takeout) if odds_str else None
+        h["kelly_f"] = kelly_fraction(actionable_p, odds_str, takeout) if odds_str else 0.0
         if mkt_p > 0 and final_p > 0:
             h["value"] = round((final_p - mkt_p) / mkt_p * 100, 1)
         else:
@@ -177,6 +187,34 @@ def scan_value_bets(
         bets.append(h)
     bets.sort(key=lambda x: x.get("edge") or 0.0, reverse=True)
     return bets
+
+
+# Scratches recorded more than this long after a race's own post time are
+# retroactive bookkeeping (e.g. a nightly reconciliation sweep), not a live
+# market-moving event — see _race_post_datetime.
+POST_SCRATCH_GRACE_MINUTES = 60
+
+
+def _race_post_datetime(race_date: str, post_time: str) -> Optional[datetime]:
+    """Parse post_time into a naive local datetime (matches scratch_time's
+    naive-local storage via datetime.now().isoformat() in db.database.mark_scratched)."""
+    if not post_time or not race_date:
+        return None
+    match = re.match(r"(\d{1,2}):(\d{2})\s*(AM|PM)?", post_time.strip(), re.IGNORECASE)
+    if not match:
+        return None
+    hour, minute = int(match.group(1)), int(match.group(2))
+    ampm = (match.group(3) or "").upper()
+    if ampm == "PM" and hour != 12:
+        hour += 12
+    elif ampm == "AM" and hour == 12:
+        hour = 0
+    elif not ampm and hour < 8:
+        hour += 12  # no AM/PM stored; times < 8 are PM (no US racing at 1-7 AM)
+    try:
+        return datetime.strptime(race_date, "%Y-%m-%d").replace(hour=hour, minute=minute)
+    except ValueError:
+        return None
 
 
 def _relative_edge(final_p: float, mkt_p: float) -> float:
@@ -207,6 +245,20 @@ def select_actionable_bets(
         if ACTIONABLE_SKIP_HIGH_CHALK and (race_id, pgm) in high_chalk_keys:
             continue
 
+        # A scratch redistributes win probability across the remaining field,
+        # but morning-line odds never update for it and live odds may lag it —
+        # either way, edge/Kelly computed before the scratch price the wrong
+        # field. Skip until this horse's value bet is recomputed post-scratch.
+        last_scratch_ts = h.get("last_scratch_ts")
+        created_ts = h.get("created_ts")
+        if last_scratch_ts and created_ts and last_scratch_ts > created_ts:
+            logger.warning(
+                f"Skipping stale-post-scratch actionable candidate: race_id={race_id} "
+                f"pgm={pgm} horse={h.get('horse_name')} "
+                f"value_bet_created={created_ts} last_scratch={last_scratch_ts}"
+            )
+            continue
+
         edge = h.get("edge")
         if edge is None or edge < ACTIONABLE_MIN_EDGE:
             continue
@@ -216,9 +268,9 @@ def select_actionable_bets(
         if not dec or dec < ACTIONABLE_MIN_DECIMAL:
             continue
 
-        final_p = h.get("final_prob") or 0.0
+        actionable_p = h.get("actionable_prob") or 0.0
         mkt_p = h.get("market_prob") or 0.0
-        if _relative_edge(final_p, mkt_p) < ACTIONABLE_MIN_REL_EDGE:
+        if _relative_edge(actionable_p, mkt_p) < ACTIONABLE_MIN_REL_EDGE:
             continue
 
         kelly_f = h.get("kelly_f") or 0.0
@@ -226,14 +278,14 @@ def select_actionable_bets(
             continue
 
         bet_amt, _, _, should = kelly_bet(
-            final_p, odds_str, min_edge=ACTIONABLE_MIN_EDGE,
+            actionable_p, odds_str, min_edge=ACTIONABLE_MIN_EDGE,
         )
         if not should:
             continue
 
         out = dict(h)
         out["bet_amount"] = bet_amt
-        out["rel_edge"] = _relative_edge(final_p, mkt_p)
+        out["rel_edge"] = _relative_edge(actionable_p, mkt_p)
         filtered.append(out)
 
     filtered.sort(key=_actionable_sort_key)
@@ -266,6 +318,17 @@ def rebuild_actionable_bets_for_date(race_date: str) -> int:
               AND (e.scratched IS NULL OR e.scratched = 0)
         """, (race_date,)).fetchall()
 
+        race_ids = {row["race_id"] for row in value_rows}
+        scratches_by_race: Dict[int, List[str]] = {}
+        if race_ids:
+            placeholders = ",".join("?" * len(race_ids))
+            for row in conn.execute(f"""
+                SELECT race_id, scratch_time FROM entries
+                WHERE race_id IN ({placeholders}) AND scratched = 1
+                  AND scratch_time IS NOT NULL
+            """, tuple(race_ids)):
+                scratches_by_race.setdefault(row["race_id"], []).append(row["scratch_time"])
+
         high_chalk_keys = set()
         if ACTIONABLE_SKIP_HIGH_CHALK:
             for row in conn.execute("""
@@ -284,6 +347,24 @@ def rebuild_actionable_bets_for_date(race_date: str) -> int:
         d["odds_source"] = d.get("odds_source") or (
             "live" if d.get("odds_str") else ""
         )
+
+        race_scratches = scratches_by_race.get(d.get("race_id"), [])
+        post_dt = _race_post_datetime(race_date, d.get("post_time") or "")
+        market_moving_ts = None
+        if post_dt is not None:
+            cutoff = post_dt + timedelta(minutes=POST_SCRATCH_GRACE_MINUTES)
+            for ts in race_scratches:
+                try:
+                    if datetime.fromisoformat(ts) <= cutoff:
+                        if market_moving_ts is None or ts > market_moving_ts:
+                            market_moving_ts = ts
+                except ValueError:
+                    continue
+        elif race_scratches:
+            # Can't parse this race's post time — fall back to "any scratch counts"
+            market_moving_ts = max(race_scratches)
+        d["last_scratch_ts"] = market_moving_ts
+
         candidates.append(d)
 
     actionable = select_actionable_bets(candidates, high_chalk_keys)

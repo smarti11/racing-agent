@@ -7,16 +7,19 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from config.settings import CANADIAN_TRACKS
+
 logger = logging.getLogger(__name__)
 
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15"
-URL_TEMPLATE = "https://www.equibase.com/static/latechanges/html/latechanges{code}-USA.html"
+URL_TEMPLATE = "https://www.equibase.com/static/latechanges/html/latechanges{code}-{country}.html"
 
 
 def fetch_track_scratches(track_code):
     """Returns list of (race_num, program_num, horse_name, reason) tuples for scratched horses.
     Returns empty list on any error so caller can continue with other tracks."""
-    url = URL_TEMPLATE.format(code=track_code)
+    country = "CAN" if track_code in CANADIAN_TRACKS else "USA"
+    url = URL_TEMPLATE.format(code=track_code, country=country)
     try:
         resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=15)
         if resp.status_code != 200:
@@ -121,7 +124,7 @@ def fetch_and_mark_scratches_for_today():
                 if ent["scratched"]:
                     continue  # already known
 
-                mark_scratched(race_id, program_num)
+                mark_scratched(race_id, program_num, source="late_changes")
                 new_scratches += 1
                 logger.info(
                     f"[SCRATCH FROM EQB] {track_name} R{race_num} #{program_num} "

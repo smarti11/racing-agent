@@ -145,12 +145,14 @@ def check_scratches() -> int:
         else:
             scratches, unscratches = get_scratches_desktop(track_code)
 
+        weak_source = "mobile_diff" if track_code in CANADIAN_TRACKS else "desktop"
+
         for scratch in scratches:
             race_num = scratch.get("race_num")
             prog_num = scratch.get("program_num", "")
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                mark_scratched(matched_race_id, prog_num)
+                mark_scratched(matched_race_id, prog_num, source=weak_source)
                 scratch_count += 1
             else:
                 logger.warning(f"Scratch not matched: {track_code} R{race_num} #{prog_num}")
@@ -160,17 +162,38 @@ def check_scratches() -> int:
             prog_num = item.get("program_num", "")
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                if mark_unscratched(matched_race_id, prog_num):
+                if mark_unscratched(matched_race_id, prog_num, source=weak_source):
                     unscratch_count += 1
 
         for race_num, prog_num, horse_name, _reason in fetch_track_scratches(track_code):
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
-                mark_scratched(matched_race_id, prog_num)
+                mark_scratched(matched_race_id, prog_num, source="late_changes")
                 scratch_count += 1
 
     logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")
     return scratch_count + unscratch_count
+
+
+def _run_scratch_pipeline() -> int:
+    """Desktop + late-changes scratch detection. Returns total change count.
+
+    Gated at SCRATCH_CHECK_HOUR_ET so overnight/stale Equibase pages cannot
+    mark false scratches. Safe to call from --once, startup, and the loop.
+    """
+    changed = check_scratches()
+    if not _scratch_gate_open():
+        hr = datetime.now(EASTERN).hour
+        logger.info(
+            f"Late-changes fetch skipped — before {SCRATCH_CHECK_HOUR_ET} AM ET ({hr}:xx ET)"
+        )
+        return changed
+    try:
+        from core.scratch_fetcher import fetch_and_mark_scratches_for_today
+        changed += fetch_and_mark_scratches_for_today() or 0
+    except Exception as e:
+        logger.warning(f"Scratch fetcher error: {e}")
+    return changed
 
 
 def fetch_todays_race_results() -> int:
@@ -271,21 +294,8 @@ def _backup_database():
 def _run_data_cycle() -> bool:
     """Scratches, results, charts, picks. Returns True if anything may have changed."""
     changed = False
-    if check_scratches() > 0:
+    if _run_scratch_pipeline() > 0:
         changed = True
-
-    if _scratch_gate_open():
-        try:
-            from core.scratch_fetcher import fetch_and_mark_scratches_for_today
-            if fetch_and_mark_scratches_for_today():
-                changed = True
-        except Exception as e:
-            logger.warning(f"Scratch fetcher error: {e}")
-    else:
-        hr = datetime.now(EASTERN).hour
-        logger.info(
-            f"Late-changes fetch skipped — before {SCRATCH_CHECK_HOUR_ET} AM ET ({hr}:xx ET)"
-        )
 
     if fetch_todays_race_results() > 0:
         changed = True
@@ -302,6 +312,83 @@ def _run_data_cycle() -> bool:
     if save_todays_picks() > 0:
         changed = True
     return changed
+
+
+def _port_listening(port: int) -> bool:
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
+def _ensure_sidecar(port: int, name: str, argv: list[str]):
+    """Start a sidecar process if nothing is already listening on port."""
+    import subprocess
+
+    if _port_listening(port):
+        logger.info(f"{name} already listening on :{port}")
+        return
+    try:
+        subprocess.Popen(
+            argv,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            cwd=str(Path(__file__).resolve().parent),
+        )
+        logger.info(f"{name} started on port {port}")
+    except Exception as e:
+        logger.warning(f"Could not start {name}: {e}")
+
+
+def _ensure_scratch_server():
+    """Start scratch_server.py if nothing is already listening on :8082.
+
+    Prefer launchd (see launchd/install.sh) for reboot survival. Fall back to
+    starting here so dashboard POST /scratch still works after a Mac restart
+    when LaunchAgents were never installed.
+    """
+    import os
+    import sys
+
+    script = Path(__file__).resolve().parent / "scratch_server.py"
+    if not script.exists():
+        logger.warning(f"Scratch server script missing: {script}")
+        return
+    python = sys.executable
+    venv_python = Path(os.environ["VIRTUAL_ENV"]) / "bin" / "python" if os.environ.get("VIRTUAL_ENV") else None
+    if venv_python and venv_python.exists():
+        python = str(venv_python)
+    _ensure_sidecar(8082, "Scratch override server", [python, str(script)])
+
+
+def _ensure_dashboard_server():
+    """Start the static dashboard server on :8081 if it is not already up."""
+    import os
+    import sys
+
+    root = Path(__file__).resolve().parent
+    dashboard_dir = root / "dashboard"
+    if not dashboard_dir.is_dir():
+        logger.warning(f"Dashboard directory missing: {dashboard_dir}")
+        return
+    python = sys.executable
+    venv_python = Path(os.environ["VIRTUAL_ENV"]) / "bin" / "python" if os.environ.get("VIRTUAL_ENV") else None
+    if venv_python and venv_python.exists():
+        python = str(venv_python)
+    _ensure_sidecar(
+        8081,
+        "Dashboard server",
+        [python, "-m", "http.server", "8081", "--bind", "0.0.0.0", "--directory", str(dashboard_dir)],
+    )
+
+
+def _ensure_sidecars():
+    """Bring back :8081 / :8082 after a reboot if launchd did not."""
+    _ensure_dashboard_server()
+    _ensure_scratch_server()
 
 
 def main():
@@ -373,21 +460,22 @@ def main():
     print(f"  Data refresh every {SCRAPE_INTERVAL_MIN} min")
     print(f"  Loop interval: {LOOP_INTERVAL_MIN} min")
     print(f"  Dashboard: {DASHBOARD_PUBLIC_URL}")
-    print(f"  (HTTP :8081 + scratch :8082 managed by launchd)")
+    print(f"  (HTTP :8081 / scratch :8082 — launchd or agent fallback after reboot)")
+    print(f"  Scratch gate opens at {SCRATCH_CHECK_HOUR_ET}:00 ET")
     print(f"  Press Ctrl+C to stop")
     print(f"{'='*55}\n")
 
     _backup_database()
+    if not args.once:
+        _ensure_sidecars()
 
     fetch_todays_entries()
-    # Apply desktop / late-changes scratches before first handicapping pass.
-    # Without this, --once (and the initial continuous-mode cycle) can leave
-    # active picks on horses that Equibase already lists as scratched.
+    # Dedicated scratch detection must run before the first handicapping pass.
+    # Without this, --once (and the initial continuous-mode cycle) never calls
+    # check_scratches / late-changes — only the loop does, and only after
+    # SCRAPE_INTERVAL_MIN. Before SCRATCH_CHECK_HOUR_ET this is a no-op by design.
     try:
-        check_scratches()
-        if _scratch_gate_open():
-            from core.scratch_fetcher import fetch_and_mark_scratches_for_today
-            fetch_and_mark_scratches_for_today()
+        _run_scratch_pipeline()
     except Exception as e:
         logger.warning(f"Initial scratch check error: {e}")
     try:
