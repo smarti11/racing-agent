@@ -69,16 +69,25 @@ def _check_tainted_regen(race_id: int, conn) -> tuple[bool, int, int]:
     return True, total, active
 
 
+def _results_posted(race_id: int) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT 1 FROM results WHERE race_id=? LIMIT 1", (race_id,)
+        ).fetchone() is not None
+
+
 def _race_is_frozen(race: dict, force_regen: bool) -> bool:
-    """True if race has results or is within 30 min of post time."""
+    """True if race has results or is within 30 min of post time.
+
+    force_regen (TAINTED_PARSE) always bypasses. Callers that detect a
+    scratch/field change should pass force_regen=True or skip this check —
+    late scratches must re-rank the remaining field.
+    """
     if force_regen:
         return False
 
-    with get_conn() as conn:
-        if conn.execute(
-            "SELECT 1 FROM results WHERE race_id=? LIMIT 1", (race["id"],)
-        ).fetchone():
-            return True
+    if _results_posted(race["id"]):
+        return True
 
     post_time = (race.get("post_time") or "").strip()
     race_date = race.get("race_date") or ""
@@ -168,7 +177,15 @@ def _archive_tainted_picks(race_id: int):
             )
 
 
-def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_new_n: int) -> bool:
+def _handicap_and_save(
+    race: dict,
+    force_regen: bool,
+    regen_old_n: int,
+    regen_new_n: int,
+    *,
+    force_save: bool = False,
+    reason: str = "",
+) -> bool:
     from core.handicapper import handicap_race, get_top_pick, role_ranked_picks
     from core.probabilities import scores_to_probabilities
     from core.market import enrich_race_with_market, scan_value_bets
@@ -247,7 +264,9 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
             "data_quality": data_quality,
         })
 
-    save_agent_picks(race["id"], picks, force=force_regen)
+    # force bypasses POST_TIME_FREEZE for tainted/stub regen and late scratches.
+    # Results-posted races remain frozen inside save_agent_picks.
+    save_agent_picks(race["id"], picks, force=force_regen or force_save)
     save_agent_entry_scores(race["id"], scored)
     if scored:
         save_agent_race_analysis(race["id"], scored[0].get("pace_scenario") or {})
@@ -257,6 +276,11 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
             f"Regenerating picks {race['track_code']} R{race['race_num']}: "
             f"was tainted/thin with {regen_old_n} entries, "
             f"now {regen_new_n} active entries, new dq={data_quality}"
+        )
+    elif force_save and reason:
+        logger.info(
+            f"Scratch/field refresh {race['track_code']} R{race['race_num']}: "
+            f"{reason} — {n_active} active, dq={data_quality}"
         )
 
     try:
@@ -282,7 +306,12 @@ def _handicap_and_save(race: dict, force_regen: bool, regen_old_n: int, regen_ne
 
 
 def save_todays_picks() -> int:
-    """Handicap dirty races only. Returns count of races updated."""
+    """Handicap dirty races only. Returns count of races updated.
+
+    Scratch/field changes bypass POST_TIME_FREEZE so late scratches re-rank
+    the remaining field. Odds-only changes still respect the freeze.
+    Races with results posted are never updated.
+    """
     races = get_todays_races()
     saved = 0
     skipped_frozen = 0
@@ -292,24 +321,31 @@ def save_todays_picks() -> int:
         race = dict(race)
         with get_conn() as conn:
             force_regen, regen_old_n, regen_new_n = _check_tainted_regen(race["id"], conn)
+            entries_dirty = _entries_changed_since_picks(race["id"], conn)
+            odds_dirty = _odds_changed_since_picks(race["id"], conn)
 
-        if _race_is_frozen(race, force_regen):
+        # Late scratches must refresh picks even inside the post-time window.
+        scratch_force = entries_dirty and not _results_posted(race["id"])
+        bypass_freeze = force_regen or scratch_force
+
+        if _race_is_frozen(race, bypass_freeze):
             skipped_frozen += 1
             continue
 
-        if not force_regen:
-            with get_conn() as conn:
-                entries_dirty = _entries_changed_since_picks(race["id"], conn)
-                odds_dirty = _odds_changed_since_picks(race["id"], conn)
-                if not entries_dirty and not odds_dirty:
-                    skipped_clean += 1
-                    continue
+        if not force_regen and not entries_dirty and not odds_dirty:
+            skipped_clean += 1
+            continue
 
         if force_regen:
             _archive_tainted_picks(race["id"])
 
         try:
-            if _handicap_and_save(race, force_regen, regen_old_n, regen_new_n):
+            reason = "entries/scratches changed" if scratch_force else ""
+            if _handicap_and_save(
+                race, force_regen, regen_old_n, regen_new_n,
+                force_save=scratch_force or force_regen,
+                reason=reason,
+            ):
                 saved += 1
         except Exception as e:
             logger.warning(
@@ -330,3 +366,60 @@ def save_todays_picks() -> int:
         logger.warning(f"Actionable bet rebuild failed: {e}")
 
     return saved
+
+
+def refresh_race_picks(track_code: str, race_num: int, scratch_program=None) -> bool:
+    """Force re-handicap one race, optionally marking a program number scratched first.
+
+    Bypasses POST_TIME_FREEZE so late scratches (e.g. SAR R3 #10) update live picks.
+    Still no-ops if results are already posted.
+    """
+    from db.database import mark_scratched
+
+    track_code = (track_code or "").strip().upper()
+    today = datetime.now(EASTERN).date().isoformat()
+
+    with get_conn() as conn:
+        race = conn.execute(
+            "SELECT * FROM races WHERE track_code=? AND race_num=? AND race_date=?",
+            (track_code, race_num, today),
+        ).fetchone()
+
+    if not race:
+        # Fall back to most recent matching race if date filter misses
+        with get_conn() as conn:
+            race = conn.execute(
+                "SELECT * FROM races WHERE track_code=? AND race_num=? "
+                "ORDER BY race_date DESC LIMIT 1",
+                (track_code, race_num),
+            ).fetchone()
+
+    if not race:
+        logger.error(f"No race found for {track_code} R{race_num}")
+        return False
+
+    race = dict(race)
+    if _results_posted(race["id"]):
+        logger.warning(
+            f"Cannot refresh {track_code} R{race_num}: results already posted"
+        )
+        return False
+
+    if scratch_program is not None:
+        mark_scratched(race["id"], scratch_program)
+        logger.info(
+            f"Marked {track_code} R{race_num} #{scratch_program} scratched before refresh"
+        )
+
+    ok = _handicap_and_save(
+        race,
+        force_regen=False,
+        regen_old_n=0,
+        regen_new_n=0,
+        force_save=True,
+        reason="manual refresh"
+        + (f" (scratch #{scratch_program})" if scratch_program is not None else ""),
+    )
+    if ok:
+        logger.info(f"Refreshed picks for {track_code} R{race_num}")
+    return ok
