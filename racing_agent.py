@@ -348,6 +348,16 @@ def main():
     _backup_database()
 
     fetch_todays_entries()
+    # Apply desktop / late-changes scratches before first handicapping pass.
+    # Without this, --once (and the initial continuous-mode cycle) can leave
+    # active picks on horses that Equibase already lists as scratched.
+    try:
+        check_scratches()
+        if _scratch_gate_open():
+            from core.scratch_fetcher import fetch_and_mark_scratches_for_today
+            fetch_and_mark_scratches_for_today()
+    except Exception as e:
+        logger.warning(f"Initial scratch check error: {e}")
     try:
         from data.odds_fetcher import fetch_all_live_odds
         fetch_all_live_odds()
