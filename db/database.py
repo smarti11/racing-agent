@@ -85,17 +85,6 @@ def init_db():
             FOREIGN KEY(race_id) REFERENCES races(id)
         );
 
-        CREATE TABLE IF NOT EXISTS jockey_stats (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            jockey      TEXT NOT NULL,
-            track_code  TEXT,
-            wins        INTEGER DEFAULT 0,
-            starts      INTEGER DEFAULT 0,
-            win_pct     REAL DEFAULT 0,
-            updated_ts  TEXT NOT NULL,
-            UNIQUE(jockey, track_code)
-        );
-
         CREATE TABLE IF NOT EXISTS agent_picks (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             race_id          INTEGER NOT NULL,

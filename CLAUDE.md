@@ -114,7 +114,9 @@ May 14, 2026 snapshot (tainted — retained for reference only): 131 races, $522
 
 ### Database Schema (db/racing.db)
 
-Tables: `races`, `entries`, `odds`, `picks`, `jockey_stats`, `agent_picks`, `agent_picks_history`, `agent_entry_scores`, `agent_race_analysis`, `results`, `pick_payouts`, `manual_scratches`. Schema is in `db/database.init_db()`.
+Tables: `races`, `entries`, `odds`, `picks`, `agent_picks`, `agent_picks_history`, `agent_entry_scores`, `agent_race_analysis`, `results`, `pick_payouts`, `manual_scratches`. Schema is in `db/database.init_db()`.
+
+Jockey/trainer win% are **not** stored in a dedicated stats table — `core/form.py`'s `get_jockey_stats_from_db()` / `get_trainer_stats_from_db()` compute them live from `entries` + `races` + `results` on every call (≥5 starts required, else falls back to the elite-jockey/trainer list or a default). A `jockey_stats` table existed in the schema through 2026-08 but was dead code — nothing ever wrote to it and the handicapper read from the live query instead; it was removed.
 
 The `entries` table has two timestamp columns: `fetched_ts` (overwritten on every re-fetch) and `first_fetched_ts` (TEXT, nullable — set on initial INSERT, intentionally excluded from the `ON CONFLICT DO UPDATE` clause so it is never overwritten). Rows inserted before 2026-05-25 have `first_fetched_ts` backfilled to match `fetched_ts`; true first-fetch timestamps for those rows were lost to the prior overwrite behavior.
 
