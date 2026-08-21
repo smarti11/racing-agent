@@ -402,15 +402,29 @@ def mark_scratched(race_id, program_num, source="mobile_diff"):
         logger.info(f"Marked #{program_num} scratched in race {race_id} (source={source})")
 
 
+# Sources with explicit, per-horse scratch confirmation (a dedicated late-
+# changes feed, or the desktop endpoint's explicit SCR marker) — as opposed
+# to "mobile_diff", which only infers a scratch/unscratch from a horse's
+# absence/presence on a regular entries fetch and carries no real signal
+# either way. A strong-sourced scratch may only be reversed by another
+# strong source, never by a diff-based guess.
+STRONG_SCRATCH_SOURCES = {"late_changes", "desktop"}
+
+
 def mark_unscratched(race_id, program_num, source="mobile_diff"):
     """Clear a false scratch when horse reappears on live entries.
 
-    Refuses to override a scratch confirmed via the late-changes feed
-    (source='late_changes') with a weaker source. late_changes carries an
+    Refuses to override a scratch confirmed via a strong source
+    (STRONG_SCRATCH_SOURCES) with a weaker one. late_changes carries an
     explicit reason (Veterinarian, Stewards, etc.) from a dedicated scratch
-    feed; Equibase's mobile entries page has been observed lagging behind it
-    by an hour+ (Woodbine, 2026-07-30: mobile "reappeared" 5 genuinely-
-    scratched horses, silently reverting the correct scratch every cycle)."""
+    feed; desktop shows an explicit SCR marker. Equibase's mobile entries
+    page / the regular entries-fetch loop has been observed lagging behind
+    both by an hour+ (Woodbine, 2026-07-30: mobile "reappeared" 5 genuinely-
+    scratched horses, silently reverting the correct scratch every cycle;
+    Belterra Park R6, 2026-08-19: the regular entries-fetch loop called this
+    with the default source on every horse every ~30min cycle, reverting a
+    desktop-confirmed scratch until the next check_scratches() pass caught
+    it again ~1min later — a flap repeating all day)."""
     with get_conn() as conn:
         row = conn.execute(
             "SELECT scratched, scratch_source FROM entries WHERE race_id=? AND program_num=?",
@@ -418,10 +432,10 @@ def mark_unscratched(race_id, program_num, source="mobile_diff"):
         ).fetchone()
         if not row or not row["scratched"]:
             return False
-        if row["scratch_source"] == "late_changes" and source != "late_changes":
+        if row["scratch_source"] in STRONG_SCRATCH_SOURCES and source not in STRONG_SCRATCH_SOURCES:
             logger.info(
                 f"Refusing to un-scratch #{program_num} in race {race_id}: "
-                f"confirmed via late_changes, ignoring weaker source={source}"
+                f"confirmed via {row['scratch_source']}, ignoring weaker source={source}"
             )
             return False
         conn.execute("""
