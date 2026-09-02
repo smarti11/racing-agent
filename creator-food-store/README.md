@@ -49,7 +49,7 @@ Open http://localhost:3000
 
 ### Demo Accounts (after seed)
 
-- Creator: `chef@pantrylink.demo` — storefront at `/@chefmaria`
+- Creator: `chef@pantrylink.demo` — storefront at `/@grocerygirl`
 - Consumer: `shopper@pantrylink.demo`
 
 (Password auth requires registration; seed creates users without passwords — use signup or Google OAuth.)

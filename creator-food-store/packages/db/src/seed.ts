@@ -61,14 +61,19 @@ async function main() {
 
   const creator = await prisma.user.upsert({
     where: { email: "chef@pantrylink.demo" },
-    update: {},
+    update: {
+      name: "Grocery Girl",
+      handle: "grocerygirl",
+      bio: "Sharing my favorite grocery finds, pantry staples, and snacks.",
+      instagramUrl: "https://instagram.com/grocerygirl",
+    },
     create: {
       email: "chef@pantrylink.demo",
-      name: "Chef Maria",
-      handle: "chefmaria",
-      bio: "Home cook sharing my favorite pantry staples and snacks.",
+      name: "Grocery Girl",
+      handle: "grocerygirl",
+      bio: "Sharing my favorite grocery finds, pantry staples, and snacks.",
       role: "CREATOR",
-      instagramUrl: "https://instagram.com/chefmaria",
+      instagramUrl: "https://instagram.com/grocerygirl",
       creatorProfile: { create: { applicationStatus: "APPROVED" } },
     },
   });
