@@ -132,7 +132,7 @@ export default function LockerPage() {
         {locker?.length === 0 && (
           <p className="mt-4 text-stone-500">
             No saved products yet. Browse{" "}
-            <a href="/discover" className="text-emerald-600 underline">
+            <a href="/discover" className="text-ink underline">
               Discover
             </a>{" "}
             to find products.

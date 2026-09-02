@@ -28,7 +28,7 @@ function IndexPopup() {
 
       const token = (await chrome.storage.local.get("authToken")).authToken;
       if (!token) {
-        setStatus("Please sign in at pantrylink.com first.");
+        setStatus("Please sign in at goodcart.com first.");
         return;
       }
 
@@ -62,12 +62,11 @@ function IndexPopup() {
   }
 
   return (
-    <div style={{ width: 320, padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 24 }}>🥗</span>
-        <h1 style={{ fontSize: 18, fontWeight: "bold", margin: 0 }}>PantryLink</h1>
-      </div>
-      <p style={{ fontSize: 13, color: "#78716c", marginBottom: 16 }}>
+    <div style={{ width: 320, padding: 20, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <h1 style={{ fontSize: 22, fontWeight: 400, fontFamily: "Georgia, serif", margin: 0 }}>
+        GoodCart
+      </h1>
+      <p style={{ fontSize: 13, color: "#6b6b6b", marginTop: 12, marginBottom: 20, lineHeight: 1.5 }}>
         Save food products to your creator storefront and earn commission.
       </p>
       <button
@@ -75,32 +74,31 @@ function IndexPopup() {
         disabled={loading}
         style={{
           width: "100%",
-          padding: "10px 16px",
-          backgroundColor: "#059669",
+          padding: "12px 16px",
+          backgroundColor: "#0a0a0a",
           color: "white",
           border: "none",
-          borderRadius: 8,
+          fontSize: 11,
           fontWeight: 600,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
           cursor: loading ? "wait" : "pointer",
           opacity: loading ? 0.7 : 1,
         }}
       >
-        {loading ? "Saving..." : "Save to PantryLink"}
+        {loading ? "Saving..." : "Save to GoodCart"}
       </button>
       {status && (
         <p
           style={{
             marginTop: 12,
             fontSize: 12,
-            color: status.startsWith("Saved") ? "#059669" : "#dc2626",
+            color: status.startsWith("Saved") ? "#0a0a0a" : "#dc2626",
           }}
         >
           {status}
         </p>
       )}
-      <p style={{ marginTop: 16, fontSize: 10, color: "#a8a29e" }}>
-        Supports Amazon, Walmart, Instacart, Thrive Market, iHerb, Vitacost, Target
-      </p>
     </div>
   );
 }

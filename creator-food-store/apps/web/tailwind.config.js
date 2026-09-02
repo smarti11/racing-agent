@@ -7,13 +7,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-        },
+        ink: "#0a0a0a",
+        cream: "#faf9f7",
+        muted: "#6b6b6b",
+        border: "#e8e6e3",
+        accent: "#0a0a0a",
+      },
+      fontFamily: {
+        sans: ["DM Sans", "system-ui", "sans-serif"],
+        display: ["DM Serif Display", "Georgia", "serif"],
+      },
+      letterSpacing: {
+        widest: "0.2em",
       },
     },
   },

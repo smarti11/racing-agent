@@ -4,17 +4,19 @@ import { Button } from "@repo/ui";
 export default function HomePage() {
   return (
     <div>
-      <section className="bg-gradient-to-b from-emerald-50 to-stone-50 px-4 py-20">
+      {/* Hero — ShopMy-style editorial */}
+      <section className="bg-white px-6 py-24 md:py-32">
         <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl">
-            Your taste. Your storefront.
-            <span className="block text-emerald-600">Earn from every bite.</span>
+          <p className="section-label">Curated for food lovers, not the algorithm</p>
+          <h1 className="mt-6 font-display text-4xl leading-tight text-ink md:text-6xl md:leading-[1.1]">
+            Shop the recommendations of the world&apos;s most trusted food curators
           </h1>
-          <p className="mt-6 text-lg text-stone-600">
-            PantryLink lets food creators build personalized storefronts of products
-            they love. When followers buy through your links, you earn commission.
+          <p className="mx-auto mt-8 max-w-2xl text-lg text-muted">
+            GoodCart lets creators build personalized food storefronts. When followers
+            buy through your links, you earn commission — just like the tastemakers you
+            already follow.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/signup?role=creator">
               <Button size="lg">Start your storefront</Button>
             </Link>
@@ -27,42 +29,78 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-center text-2xl font-bold">How it works</h2>
-        <div className="mt-12 grid gap-8 md:grid-cols-3">
-          {[
-            {
-              step: "1",
-              title: "Curate your picks",
-              desc: "Paste any food product URL from Amazon, Walmart, Instacart, and more.",
-            },
-            {
-              step: "2",
-              title: "Share your storefront",
-              desc: "Your personalized @handle page showcases everything you recommend.",
-            },
-            {
-              step: "3",
-              title: "Earn commission",
-              desc: "When followers buy through your links, you get paid weekly via Stripe.",
-            },
-          ].map((item) => (
-            <div key={item.step} className="rounded-xl border bg-white p-6 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-xl font-bold text-emerald-700">
-                {item.step}
-              </div>
-              <h3 className="mt-4 font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm text-stone-600">{item.desc}</p>
-            </div>
-          ))}
+      {/* Shop by Creator */}
+      <section className="border-t border-border bg-cream px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <p className="section-label">Shop by Creator</p>
+          <h2 className="mt-3 font-display text-3xl text-ink md:text-4xl">
+            Insider access to your favorite food tastemakers&apos; most loved products
+          </h2>
+          <p className="mt-4 max-w-2xl text-muted">
+            Follow creators who share your taste — from pantry staples and snacks to
+            meal kits and specialty ingredients. Every pick is personal, not algorithmic.
+          </p>
+          <Link href="/discover" className="mt-8 inline-block">
+            <Button variant="outline">Browse creators</Button>
+          </Link>
         </div>
       </section>
 
-      <section className="border-t bg-white px-4 py-12">
+      {/* Shop by Collection */}
+      <section className="border-t border-border bg-white px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <p className="section-label">Shop by Collection</p>
+          <h2 className="mt-3 font-display text-3xl text-ink md:text-4xl">
+            Curated shelves for every craving
+          </h2>
+          <p className="mt-4 max-w-2xl text-muted">
+            Morning routines, pantry staples, date-night ingredients — creators organize
+            their picks into collections so you can shop exactly what you need.
+          </p>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {[
+              { title: "Morning Routine", desc: "Coffee, oats, and everything in between" },
+              { title: "Pantry Staples", desc: "The ingredients you reach for every week" },
+              { title: "Treat Yourself", desc: "Snacks and specialty finds worth sharing" },
+            ].map((item) => (
+              <div key={item.title} className="shopmy-card p-8">
+                <h3 className="font-display text-xl text-ink">{item.title}</h3>
+                <p className="mt-2 text-sm text-muted">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* For Creators CTA */}
+      <section className="border-t border-border bg-ink px-6 py-20 text-white">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm text-stone-500">
-            PantryLink is a food-only creator commerce platform. We support affiliate
-            tracking through Amazon Associates, Impact, and direct brand partnerships.
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+            For creators
+          </p>
+          <h2 className="mt-4 font-display text-3xl md:text-4xl">
+            Turn your taste into lasting revenue
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-white/70">
+            Paste any food product URL, build your storefront in minutes, and earn
+            commission when your audience shops your recommendations.
+          </p>
+          <Link href="/signup?role=creator" className="mt-8 inline-block">
+            <Button
+              size="lg"
+              className="bg-white text-ink hover:bg-white/90"
+            >
+              Apply to be a creator
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Mobile note — ShopMy pattern */}
+      <section className="border-t border-border bg-cream px-6 py-12">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-sm text-muted">
+            The best things in life are worth sharing — especially what&apos;s in your cart.
           </p>
         </div>
       </section>

@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "PantryLink",
-    "slug": "pantrylink",
+    "name": "GoodCart",
+    "slug": "goodcart",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "pantrylink",
+    "scheme": "goodcart",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#059669"
+      "backgroundColor": "#0a0a0a"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pantrylink.app"
+      "bundleIdentifier": "com.goodcart.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#059669"
+        "backgroundColor": "#0a0a0a"
       },
-      "package": "com.pantrylink.app"
+      "package": "com.goodcart.app"
     },
     "plugins": ["expo-router", "expo-notifications"],
     "extra": {

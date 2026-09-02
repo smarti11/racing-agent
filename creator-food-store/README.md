@@ -1,4 +1,4 @@
-# PantryLink — Creator Food Storefront Platform
+# GoodCart — Creator Food Storefront Platform
 
 A ShopMy-style creator commerce platform focused exclusively on food products. Influencers and social media users build personalized storefronts of food products they recommend and earn affiliate commission when followers purchase through their tracked links.
 
@@ -49,8 +49,8 @@ Open http://localhost:3000
 
 ### Demo Accounts (after seed)
 
-- Creator: `chef@pantrylink.demo` — storefront at `/@grocerygirl`
-- Consumer: `shopper@pantrylink.demo`
+- Creator: `creator@goodcart.demo` — storefront at `/@grocerygirl`
+- Consumer: `shopper@goodcart.demo`
 
 (Password auth requires registration; seed creates users without passwords — use signup or Google OAuth.)
 

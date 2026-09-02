@@ -14,29 +14,29 @@ export const config: PlasmoCSConfig = {
 };
 
 function injectSaveButton() {
-  if (document.getElementById("pantrylink-save-btn")) return;
+  if (document.getElementById("goodcart-save-btn")) return;
 
   try {
     const identified = identifyRetailer(new URL(window.location.href));
     if (!identified || !isFoodRetailer(identified.retailer)) return;
 
     const btn = document.createElement("button");
-    btn.id = "pantrylink-save-btn";
-    btn.textContent = "🥗 Save to PantryLink";
+    btn.id = "goodcart-save-btn";
+    btn.textContent = "Save to GoodCart";
     btn.style.cssText = `
       position: fixed;
       bottom: 24px;
       right: 24px;
       z-index: 99999;
       padding: 12px 20px;
-      background: #059669;
+      background: #0a0a0a;
       color: white;
       border: none;
-      border-radius: 12px;
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       font-family: system-ui, sans-serif;
     `;
 
@@ -46,7 +46,7 @@ function injectSaveButton() {
         url: window.location.href,
         title: document.title,
       });
-      btn.textContent = "✓ Opening PantryLink...";
+      btn.textContent = "Opening GoodCart...";
     });
 
     document.body.appendChild(btn);

@@ -208,7 +208,7 @@ export function resolveProductFromUrl(url: string, titleHint?: string): Resolved
 
   if (!identified) {
     throw new Error(
-      "Unsupported retailer. PantryLink supports Amazon, Walmart, Instacart, Thrive Market, iHerb, Vitacost, and specialty food brands."
+      "Unsupported retailer. GoodCart supports Amazon, Walmart, Instacart, Thrive Market, iHerb, Vitacost, and specialty food brands."
     );
   }
 

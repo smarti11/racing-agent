@@ -6,17 +6,17 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variants = {
-  default: "bg-stone-100 text-stone-700",
-  success: "bg-emerald-100 text-emerald-800",
-  warning: "bg-amber-100 text-amber-800",
-  info: "bg-blue-100 text-blue-800",
+  default: "bg-cream text-ink border border-border",
+  success: "bg-ink text-white",
+  warning: "bg-cream text-ink border border-ink",
+  info: "bg-cream text-muted border border-border",
 };
 
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
         variants[variant],
         className
       )}

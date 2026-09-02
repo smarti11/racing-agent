@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   if (!creator) return { title: "Creator not found" };
   return {
-    title: `${creator.name} (@${handle}) | PantryLink`,
+    title: `${creator.name} (@${handle}) | GoodCart`,
     description: creator.bio ?? `Food recommendations by ${creator.name}`,
     openGraph: {
       title: `${creator.name}'s Food Picks`,

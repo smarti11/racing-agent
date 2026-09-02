@@ -60,7 +60,7 @@ async function main() {
   console.log("Seeding database...");
 
   const creator = await prisma.user.upsert({
-    where: { email: "chef@pantrylink.demo" },
+    where: { email: "creator@goodcart.demo" },
     update: {
       name: "Grocery Girl",
       handle: "grocerygirl",
@@ -68,7 +68,7 @@ async function main() {
       instagramUrl: "https://instagram.com/grocerygirl",
     },
     create: {
-      email: "chef@pantrylink.demo",
+      email: "creator@goodcart.demo",
       name: "Grocery Girl",
       handle: "grocerygirl",
       bio: "Sharing my favorite grocery finds, pantry staples, and snacks.",
@@ -79,10 +79,10 @@ async function main() {
   });
 
   const consumer = await prisma.user.upsert({
-    where: { email: "shopper@pantrylink.demo" },
+    where: { email: "shopper@goodcart.demo" },
     update: {},
     create: {
-      email: "shopper@pantrylink.demo",
+      email: "shopper@goodcart.demo",
       name: "Alex Shopper",
       handle: "alexshop",
       role: "CONSUMER",

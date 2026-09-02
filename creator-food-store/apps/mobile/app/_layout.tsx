@@ -28,8 +28,8 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: "#059669",
-            headerStyle: { backgroundColor: "#059669" },
+            tabBarActiveTintColor: "#0a0a0a",
+            headerStyle: { backgroundColor: "#0a0a0a" },
             headerTintColor: "#fff",
           }}
         >

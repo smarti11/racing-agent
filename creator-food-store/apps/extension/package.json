@@ -2,7 +2,7 @@
   "name": "extension",
   "version": "0.0.0",
   "private": true,
-  "displayName": "PantryLink — Save Food Products",
+  "displayName": "GoodCart — Save Food Products",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build"

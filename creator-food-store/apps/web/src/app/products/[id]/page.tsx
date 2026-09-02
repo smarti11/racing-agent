@@ -50,7 +50,7 @@ export default async function ProductPage({ params }: Props) {
             </p>
           )}
           {product.affiliateOffers[0] && (
-            <p className="text-sm text-emerald-600">
+            <p className="text-sm text-muted">
               {(product.affiliateOffers[0].commissionRate * 100).toFixed(0)}%
               creator commission
             </p>
@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: Props) {
             href={product.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-block rounded-lg bg-emerald-600 px-6 py-3 text-white hover:bg-emerald-700"
+            className="mt-6 inline-block bg-ink px-6 py-3 text-sm uppercase tracking-wider text-white hover:bg-ink/90"
           >
             View at {product.retailer}
           </a>
@@ -76,7 +76,7 @@ export default async function ProductPage({ params }: Props) {
                 href={`/@${cp.creator.handle}`}
                 className="flex items-center gap-3 rounded-lg border p-3 hover:bg-stone-50"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cream font-display text-ink">
                   👨‍🍳
                 </div>
                 <div>

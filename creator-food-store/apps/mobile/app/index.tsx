@@ -7,7 +7,8 @@ export default function DiscoverScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Discover Food Creators</Text>
+      <Text style={styles.title}>Discover</Text>
+      <Text style={styles.subtitle}>Curated food, not the algorithm</Text>
       {isLoading && <Text>Loading...</Text>}
 
       <Text style={styles.section}>Featured Creators</Text>
@@ -44,7 +45,8 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#fafaf9" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  title: { fontSize: 28, fontWeight: "300", fontFamily: "Georgia", marginBottom: 4 },
+  subtitle: { fontSize: 14, color: "#6b6b6b", marginBottom: 16 },
   section: { fontSize: 18, fontWeight: "600", marginTop: 16, marginBottom: 8 },
   card: {
     backgroundColor: "#fff",

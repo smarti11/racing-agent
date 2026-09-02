@@ -127,12 +127,12 @@ export default function DashboardPage() {
               <p className="text-sm text-red-600">{addProduct.error.message}</p>
             )}
             {addProduct.data && (
-              <div className="rounded-lg bg-emerald-50 p-3 text-sm">
-                <p className="font-medium text-emerald-800">Product added!</p>
-                <p className="text-emerald-700">
+              <div className="border border-border bg-cream p-4 text-sm">
+                <p className="font-medium text-ink">Product added!</p>
+                <p className="text-muted">
                   Tracked link: {addProduct.data.trackedLink}
                 </p>
-                <p className="text-emerald-600">
+                <p className="text-muted">
                   Commission: {(addProduct.data.commissionRate * 100).toFixed(0)}%
                 </p>
               </div>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <p className="font-medium text-emerald-600">
+                  <p className="font-medium text-ink">
                     ${tp.commission.toFixed(2)}
                   </p>
                 </div>
