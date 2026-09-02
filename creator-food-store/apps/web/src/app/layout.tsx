@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "GoodCart — Curated Grocery, Not the Algorithm",
   description:
     "Shop consumable grocery products recommended by creators — food, beverages, supplements, produce, dairy, and every grocery aisle.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

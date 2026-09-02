@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AffiliateDisclosure, Badge, Button } from "@repo/ui";
 import { trpc } from "@/lib/trpc";
+import { LogoMark } from "@/components/logo";
 
 interface ProductItem {
   id: string;
@@ -52,7 +53,7 @@ function ProductCard({
   const saveProduct = trpc.consumer.saveProduct.useMutation();
 
   return (
-    <div className="shopmy-card group flex flex-col">
+    <div className="shopmy-card group flex flex-col overflow-hidden">
       <div className="aspect-square overflow-hidden bg-cream">
         {item.product.imageUrl ? (
           <img
@@ -61,26 +62,30 @@ function ProductCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center font-display text-3xl text-muted">
-            GC
+          <div className="flex h-full items-center justify-center">
+            <LogoMark size={40} />
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col p-5">
-        {item.isPinned && <Badge variant="warning" className="mb-2 w-fit">Pinned</Badge>}
+        {item.isPinned && (
+          <Badge variant="warning" className="mb-2 w-fit">
+            Pinned
+          </Badge>
+        )}
         {item.product.brand && (
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
             {item.product.brand}
           </p>
         )}
-        <h3 className="mt-1 font-medium leading-snug text-ink line-clamp-2">
+        <h3 className="mt-1 line-clamp-2 font-medium leading-snug text-ink group-hover:text-brand">
           {item.product.name}
         </h3>
         {item.note && (
           <p className="mt-2 text-sm italic text-muted">&ldquo;{item.note}&rdquo;</p>
         )}
         {item.product.priceCents && (
-          <p className="mt-2 text-sm font-medium text-ink">
+          <p className="mt-2 text-sm font-medium text-brand">
             ${(item.product.priceCents / 100).toFixed(2)}
           </p>
         )}
@@ -90,8 +95,13 @@ function ProductCard({
           </p>
         )}
         <div className="mt-4 flex gap-2">
-          <a href={shopUrl} target="_blank" rel="noopener noreferrer sponsored" className="flex-1">
-            <Button size="sm" className="w-full">
+          <a
+            href={shopUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="flex-1"
+          >
+            <Button size="sm" className="w-full bg-brand hover:bg-brand-dark">
               Shop
             </Button>
           </a>
@@ -123,48 +133,55 @@ export function StorefrontView({
 
   return (
     <div>
-      {/* Creator header — ShopMy editorial profile */}
-      <section className="border-b border-border bg-white px-6 py-16">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 text-center md:flex-row md:text-left">
-          <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream">
+      <section className="relative overflow-hidden border-b border-border bg-brand-gradient px-6 py-16 text-white">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 text-center md:flex-row md:text-left">
+          <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white/30 bg-white/10 shadow-card backdrop-blur-sm">
             {creator.avatarUrl ? (
               <img
                 src={creator.avatarUrl}
                 alt=""
-                className="h-28 w-28 rounded-full object-cover"
+                className="h-full w-full object-cover"
               />
             ) : (
-              <span className="font-display text-4xl text-ink">
+              <span className="font-display text-5xl text-white">
                 {creator.name?.[0] ?? "G"}
               </span>
             )}
           </div>
           <div className="flex-1">
-            <p className="section-label">Curator</p>
-            <h1 className="mt-1 font-display text-4xl text-ink">{creator.name}</h1>
-            <p className="mt-1 text-sm uppercase tracking-widest text-muted">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+              Curator
+            </p>
+            <h1 className="mt-1 font-display text-4xl md:text-5xl">{creator.name}</h1>
+            <p className="mt-1 text-sm uppercase tracking-widest text-white/70">
               @{creator.handle}
             </p>
             {creator.bio && (
-              <p className="mt-4 max-w-xl text-muted">{creator.bio}</p>
+              <p className="mt-4 max-w-xl text-white/85">{creator.bio}</p>
             )}
-            <p className="mt-2 text-xs text-muted">
+            <p className="mt-2 text-sm text-white/60">
               {creator._count.followers} followers
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3 md:justify-start">
               {creator.instagramUrl && (
                 <a href={creator.instagramUrl} target="_blank" rel="noopener noreferrer">
-                  <Badge>Instagram</Badge>
+                  <Badge className="bg-white/20 text-white">Instagram</Badge>
                 </a>
               )}
               {creator.tiktokUrl && (
                 <a href={creator.tiktokUrl} target="_blank" rel="noopener noreferrer">
-                  <Badge>TikTok</Badge>
+                  <Badge className="bg-white/20 text-white">TikTok</Badge>
                 </a>
               )}
               <Button
                 size="sm"
                 variant={isFollowing ? "outline" : "primary"}
+                className={
+                  isFollowing
+                    ? "border-white text-white hover:bg-white/10"
+                    : "bg-white text-brand hover:bg-white/90"
+                }
                 onClick={() =>
                   isFollowing
                     ? unfollow.mutate({ creatorId: creator.id })
@@ -179,7 +196,7 @@ export function StorefrontView({
       </section>
 
       <div className="mx-auto max-w-6xl px-6 py-8">
-        <AffiliateDisclosure className="border border-border bg-cream p-4 text-xs" />
+        <AffiliateDisclosure className="rounded-lg border border-border bg-brand-muted/50 p-4 text-xs" />
 
         {creator.collections.map((collection) => (
           <section key={collection.id} className="mt-14">
@@ -188,7 +205,7 @@ export function StorefrontView({
             {collection.description && (
               <p className="mt-2 text-sm text-muted">{collection.description}</p>
             )}
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {collection.creatorProducts.map((item) => (
                 <ProductCard
                   key={item.id}
@@ -204,7 +221,7 @@ export function StorefrontView({
           <section className="mt-14">
             <p className="section-label">All picks</p>
             <h2 className="mt-1 font-display text-2xl text-ink">Shop everything</h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {creator.creatorProducts.map((item) => (
                 <ProductCard
                   key={item.id}
@@ -217,9 +234,10 @@ export function StorefrontView({
         )}
 
         {creator.creatorProducts.length === 0 && creator.collections.length === 0 && (
-          <p className="mt-16 text-center text-muted">
-            No products yet. Check back soon!
-          </p>
+          <div className="mt-16 text-center">
+            <LogoMark size={48} className="mx-auto opacity-40" />
+            <p className="mt-4 text-muted">No products yet. Check back soon!</p>
+          </div>
         )}
       </div>
     </div>

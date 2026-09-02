@@ -16,10 +16,22 @@
 
 @layer components {
   .section-label {
-    @apply text-xs font-semibold uppercase tracking-[0.2em] text-muted;
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-brand;
   }
 
   .shopmy-card {
-    @apply border border-border bg-white transition-all duration-300 hover:border-ink/20;
+    @apply border border-border bg-white shadow-card transition-all duration-300 hover:border-brand/30 hover:shadow-card-hover;
+  }
+
+  .brand-pill {
+    @apply inline-flex items-center gap-2 rounded-full bg-brand-muted px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-brand;
+  }
+
+  .page-hero {
+    @apply relative overflow-hidden bg-white bg-hero-pattern;
+  }
+
+  .auth-panel {
+    @apply relative hidden overflow-hidden bg-brand-gradient p-12 text-white lg:flex lg:w-1/2 lg:flex-col lg:justify-between;
   }
 }
