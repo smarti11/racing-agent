@@ -1,0 +1,12 @@
+{
+  "name": "@repo/affiliate-engine",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

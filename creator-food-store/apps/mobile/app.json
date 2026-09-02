@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "PantryLink",
+    "slug": "pantrylink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "pantrylink",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#059669"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pantrylink.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#059669"
+      },
+      "package": "com.pantrylink.app"
+    },
+    "plugins": ["expo-router", "expo-notifications"],
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    }
+  }
+}
