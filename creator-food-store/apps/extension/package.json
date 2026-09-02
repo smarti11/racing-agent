@@ -2,7 +2,7 @@
   "name": "extension",
   "version": "0.0.0",
   "private": true,
-  "displayName": "GoodCart — Save Food Products",
+  "displayName": "GoodCart — Save Grocery Products",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build"
@@ -27,7 +27,12 @@
       "https://thrivemarket.com/*",
       "https://www.iherb.com/*",
       "https://www.vitacost.com/*",
-      "https://www.target.com/*"
+      "https://www.kroger.com/*",
+      "https://www.costco.com/*",
+      "https://www.samsclub.com/*",
+      "https://www.heb.com/*",
+      "https://www.publix.com/*",
+      "https://www.gopuff.com/*"
     ],
     "permissions": ["activeTab", "storage"]
   }

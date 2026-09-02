@@ -6,9 +6,9 @@ import { TRPCProvider } from "@/lib/trpc";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GoodCart — Curated Food, Not the Algorithm",
+  title: "GoodCart — Curated Grocery, Not the Algorithm",
   description:
-    "Shop the food recommendations of the world's most trusted creators. Build your storefront and earn commission.",
+    "Shop consumable grocery products recommended by creators — food, beverages, supplements, produce, dairy, and every grocery aisle.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

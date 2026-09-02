@@ -9,14 +9,15 @@ export default function TermsPage() {
         <h2 className="font-display text-xl text-ink">1. Acceptance of Terms</h2>
         <p>
           By using GoodCart, you agree to these Terms of Service. GoodCart is a
-          food-only creator commerce platform that enables affiliate product
-          recommendations and commission-based earnings.
+          consumable grocery creator commerce platform — food, beverages, supplements,
+          and any single product found at a grocery store.
         </p>
 
         <h2 className="mt-8 font-display text-xl text-ink">2. Creator Responsibilities</h2>
         <ul className="list-disc pl-5">
           <li>Disclose affiliate relationships per FTC guidelines on all storefronts</li>
-          <li>Only add food, beverage, grocery, and related kitchen products</li>
+          <li>Only add consumable grocery products (food, beverages, supplements, produce, dairy, frozen, deli, bakery, pantry)</li>
+          <li>Do not add cookware, cleaning supplies, personal care, or non-consumable items</li>
           <li>Do not make unsubstantiated health claims about products</li>
         </ul>
 

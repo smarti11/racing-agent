@@ -4,16 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Badge, Card, CardContent } from "@repo/ui";
+import { GROCERY_CATEGORY_LABELS } from "@repo/affiliate-engine";
 
-const CATEGORIES = [
+const CATEGORY_FILTERS = [
   { value: "", label: "All" },
-  { value: "SNACKS", label: "Snacks" },
-  { value: "BEVERAGES", label: "Beverages" },
-  { value: "PANTRY", label: "Pantry" },
-  { value: "MEAL_KITS", label: "Meal Kits" },
-  { value: "SUPPLEMENTS", label: "Supplements" },
-  { value: "SPECIALTY", label: "Specialty" },
-] as const;
+  ...Object.entries(GROCERY_CATEGORY_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+];
 
 export default function DiscoverPage() {
   const [query, setQuery] = useState("");
@@ -26,10 +25,14 @@ export default function DiscoverPage() {
       | "SNACKS"
       | "BEVERAGES"
       | "PANTRY"
+      | "PRODUCE"
+      | "DAIRY"
+      | "FROZEN"
+      | "DELI"
+      | "BAKERY"
       | "MEAL_KITS"
       | "SUPPLEMENTS"
       | "SPECIALTY"
-      | "KITCHEN_TOOLS"
       | undefined,
     limit: 20,
   });
@@ -37,15 +40,16 @@ export default function DiscoverPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
       <p className="section-label">Discover</p>
-      <h1 className="mt-2 font-display text-4xl text-ink">Shop by curator</h1>
-      <p className="mt-3 max-w-xl text-muted">
-        Trending food products and creators worth following
+      <h1 className="mt-2 font-display text-4xl text-ink">Shop the grocery aisle</h1>
+      <p className="mt-3 max-w-2xl text-muted">
+        Food, beverages, supplements, produce, dairy, frozen, deli, bakery, and
+        every consumable product you&apos;d find at the grocery store.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
+        {CATEGORY_FILTERS.map((cat) => (
           <button
-            key={cat.value}
+            key={cat.value || "all"}
             onClick={() => setCategory(cat.value)}
             className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
               category === cat.value
@@ -60,7 +64,7 @@ export default function DiscoverPage() {
 
       <input
         type="search"
-        placeholder="Search food products..."
+        placeholder="Search snacks, drinks, supplements, produce..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="mt-6 w-full border border-border bg-white px-4 py-3 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
@@ -133,7 +137,11 @@ export default function DiscoverPage() {
                       </p>
                     )}
                     <div className="mt-3 flex gap-1">
-                      <Badge>{product.category.replace("_", " ")}</Badge>
+                      <Badge>
+                        {GROCERY_CATEGORY_LABELS[
+                          product.category as keyof typeof GROCERY_CATEGORY_LABELS
+                        ] ?? product.category.replace("_", " ")}
+                      </Badge>
                       {"_count" in product && (
                         <Badge variant="info">{product._count.creatorProducts} recs</Badge>
                       )}

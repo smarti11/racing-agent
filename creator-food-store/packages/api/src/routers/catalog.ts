@@ -1,23 +1,16 @@
 import { z } from "zod";
+import { GROCERY_CATEGORIES } from "@repo/affiliate-engine";
 import { prisma } from "@repo/db";
-import { router, publicProcedure, protectedProcedure } from "../trpc";
+import { router, publicProcedure } from "../trpc";
+
+const categoryEnum = z.enum(GROCERY_CATEGORIES);
 
 export const catalogRouter = router({
   search: publicProcedure
     .input(
       z.object({
         query: z.string().optional(),
-        category: z
-          .enum([
-            "SNACKS",
-            "BEVERAGES",
-            "PANTRY",
-            "MEAL_KITS",
-            "SUPPLEMENTS",
-            "SPECIALTY",
-            "KITCHEN_TOOLS",
-          ])
-          .optional(),
+        category: categoryEnum.optional(),
         limit: z.number().min(1).max(50).default(20),
         offset: z.number().min(0).default(0),
       })
@@ -25,6 +18,7 @@ export const catalogRouter = router({
     .query(async ({ input }) => {
       const where = {
         isApproved: true,
+        category: { not: "KITCHEN_TOOLS" as const },
         ...(input.category ? { category: input.category } : {}),
         ...(input.query
           ? {
@@ -53,6 +47,10 @@ export const catalogRouter = router({
       return { products, total };
     }),
 
+  categories: publicProcedure.query(() => {
+    return GROCERY_CATEGORIES;
+  }),
+
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
@@ -76,9 +74,11 @@ export const catalogRouter = router({
   discover: publicProcedure
     .input(z.object({ limit: z.number().min(1).max(20).default(10) }))
     .query(async ({ input }) => {
+      const consumableFilter = { isApproved: true, category: { not: "KITCHEN_TOOLS" as const } };
+
       const [trendingProducts, featuredCreators] = await Promise.all([
         prisma.product.findMany({
-          where: { isApproved: true },
+          where: consumableFilter,
           take: input.limit,
           orderBy: { creatorProducts: { _count: "desc" } },
           include: {

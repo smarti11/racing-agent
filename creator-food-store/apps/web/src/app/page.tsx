@@ -7,14 +7,14 @@ export default function HomePage() {
       {/* Hero — ShopMy-style editorial */}
       <section className="bg-white px-6 py-24 md:py-32">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="section-label">Curated for food lovers, not the algorithm</p>
+          <p className="section-label">Curated grocery, not the algorithm</p>
           <h1 className="mt-6 font-display text-4xl leading-tight text-ink md:text-6xl md:leading-[1.1]">
-            Shop the recommendations of the world&apos;s most trusted food curators
+            Shop every consumable aisle — from your favorite curators
           </h1>
           <p className="mx-auto mt-8 max-w-2xl text-lg text-muted">
-            GoodCart lets creators build personalized food storefronts. When followers
-            buy through your links, you earn commission — just like the tastemakers you
-            already follow.
+            GoodCart is for any single product you&apos;d find at the grocery store:
+            food, beverages, supplements, produce, dairy, frozen, deli, bakery, and
+            pantry staples. Creators earn commission when followers shop their picks.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/signup?role=creator">
@@ -37,8 +37,9 @@ export default function HomePage() {
             Insider access to your favorite food tastemakers&apos; most loved products
           </h2>
           <p className="mt-4 max-w-2xl text-muted">
-            Follow creators who share your taste — from pantry staples and snacks to
-            meal kits and specialty ingredients. Every pick is personal, not algorithmic.
+            Follow creators who share your taste — snacks, drinks, supplements,
+            produce, dairy, frozen foods, deli items, bakery goods, and everything
+            consumable from the grocery store.
           </p>
           <Link href="/discover" className="mt-8 inline-block">
             <Button variant="outline">Browse creators</Button>
@@ -59,9 +60,9 @@ export default function HomePage() {
           </p>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              { title: "Morning Routine", desc: "Coffee, oats, and everything in between" },
-              { title: "Pantry Staples", desc: "The ingredients you reach for every week" },
-              { title: "Treat Yourself", desc: "Snacks and specialty finds worth sharing" },
+              { title: "Beverages", desc: "Coffee, tea, juice, energy drinks, and more" },
+              { title: "Supplements", desc: "Vitamins, protein, greens, and wellness" },
+              { title: "Every Aisle", desc: "Produce, dairy, frozen, deli, bakery, pantry" },
             ].map((item) => (
               <div key={item.title} className="shopmy-card p-8">
                 <h3 className="font-display text-xl text-ink">{item.title}</h3>
@@ -82,8 +83,9 @@ export default function HomePage() {
             Turn your taste into lasting revenue
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">
-            Paste any food product URL, build your storefront in minutes, and earn
-            commission when your audience shops your recommendations.
+            Paste any grocery product URL — snacks, drinks, supplements, produce, or
+            anything consumable from the store. Build your storefront and earn when
+            your audience shops your recommendations.
           </p>
           <Link href="/signup?role=creator" className="mt-8 inline-block">
             <Button

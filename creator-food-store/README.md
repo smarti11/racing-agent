@@ -1,15 +1,15 @@
-# GoodCart — Creator Food Storefront Platform
+# GoodCart — Creator Grocery Storefront Platform
 
-A ShopMy-style creator commerce platform focused exclusively on food products. Influencers and social media users build personalized storefronts of food products they recommend and earn affiliate commission when followers purchase through their tracked links.
+A ShopMy-style creator commerce platform for **consumable grocery products** — food, beverages, supplements, produce, dairy, frozen, deli, bakery, pantry, and any single item you'd find at the grocery store.
 
 ## Features
 
 - **Creator Storefronts** — Public `@handle` pages with curated product shelves and collections
-- **Auto-Monetization** — Paste any food product URL; platform generates affiliate tracked links
+- **Auto-Monetization** — Paste any consumable grocery product URL; platform generates affiliate tracked links
 - **Affiliate Tracking** — Click logging, conversion postbacks (Amazon + Impact), attribution via sub-IDs
 - **Creator Dashboard** — Analytics for clicks, conversions, earnings, and payout history
 - **Stripe Connect Payouts** — Weekly creator payouts with 30-day hold period
-- **Product Catalog** — Searchable food catalog with category filters
+- **Product Catalog** — Searchable grocery catalog with aisle/category filters (snacks, beverages, supplements, produce, dairy, frozen, deli, bakery, pantry)
 - **Consumer Locker** — Save products, follow creators, price-drop alerts, purchase tracking
 - **Browser Extension** — Chrome extension to save products while browsing retailers
 - **Mobile App** — Expo React Native app (Discover, Locker, Earnings)
@@ -94,7 +94,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 ## Supported Retailers
 
-Amazon, Walmart, Instacart, Thrive Market, iHerb, Vitacost, Target, Blue Apron (food-only).
+Amazon, Walmart, Instacart, Kroger, Costco, Target, iHerb, Vitacost, Thrive Market, and more. Only consumable grocery products — no cookware or non-food items.
 
 ## License
 

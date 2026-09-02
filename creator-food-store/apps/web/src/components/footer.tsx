@@ -24,7 +24,7 @@ export function Footer() {
           </nav>
         </div>
         <p className="mt-8 text-center text-xs text-muted">
-          Curated for food lovers, not the algorithm.
+          Curated grocery, not the algorithm.
         </p>
       </div>
     </footer>

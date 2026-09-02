@@ -1,11 +1,6 @@
-export type FoodCategory =
-  | "SNACKS"
-  | "BEVERAGES"
-  | "PANTRY"
-  | "MEAL_KITS"
-  | "SUPPLEMENTS"
-  | "SPECIALTY"
-  | "KITCHEN_TOOLS";
+import type { GroceryCategory } from "./categories";
+
+export * from "./categories";
 
 export type AffiliateNetwork =
   | "AMAZON"
@@ -22,7 +17,7 @@ export interface ResolvedProduct {
   retailer: string;
   retailerId?: string;
   sourceUrl: string;
-  category: FoodCategory;
+  category: GroceryCategory;
   imageUrl?: string;
   priceCents?: number;
 }
@@ -48,7 +43,8 @@ export interface MonetizeResult {
   subId: string;
 }
 
-const FOOD_RETAILERS = new Set([
+/** Grocery & consumable retailers */
+const GROCERY_RETAILERS = new Set([
   "amazon",
   "walmart",
   "instacart",
@@ -57,10 +53,20 @@ const FOOD_RETAILERS = new Set([
   "vitacost",
   "wholefoods",
   "target",
+  "kroger",
+  "costco",
+  "samsclub",
+  "safeway",
+  "albertsons",
+  "heb",
+  "publix",
+  "freshdirect",
   "blueapron",
   "hellofresh",
   "butcherbox",
   "imperfectfoods",
+  "gopuff",
+  "sprouts",
 ]);
 
 const BLOCKED_RETAILERS = new Set([
@@ -70,7 +76,47 @@ const BLOCKED_RETAILERS = new Set([
   "ulta",
   "nike",
   "adidas",
+  "bestbuy",
+  "homedepot",
+  "lowes",
 ]);
+
+/** Keywords that indicate a non-consumable product (blocked) */
+const NON_CONSUMABLE_KEYWORDS = [
+  "cookware",
+  "frying pan",
+  "skillet",
+  "knife set",
+  "cutting board",
+  "blender",
+  "air fryer",
+  "instant pot",
+  "microwave oven",
+  "toaster",
+  "coffee maker",
+  "food processor",
+  "mixing bowl",
+  "storage container",
+  "tupperware",
+  "laundry detergent",
+  "dish soap",
+  "paper towel",
+  "toilet paper",
+  "cleaning spray",
+  "shampoo",
+  "conditioner",
+  "moisturizer",
+  "lipstick",
+  "mascara",
+  "t-shirt",
+  "sneakers",
+  "phone case",
+  "laptop",
+  "furniture",
+  "pet toy",
+  "dog leash",
+  "cat litter",
+];
 
 const RETAILER_PATTERNS: Array<{
   pattern: RegExp;
@@ -113,6 +159,56 @@ const RETAILER_PATTERNS: Array<{
     extractId: (url) => url.pathname.match(/\/(\d+)$/)?.[1],
   },
   {
+    pattern: /kroger\.com/i,
+    retailer: "kroger",
+    extractId: (url) => url.pathname.match(/\/p\/[^/]+\/(\d+)/)?.[1],
+  },
+  {
+    pattern: /costco\.com/i,
+    retailer: "costco",
+    extractId: (url) => url.pathname.match(/\.product\.(\d+)/)?.[1],
+  },
+  {
+    pattern: /samsclub\.com/i,
+    retailer: "samsclub",
+    extractId: (url) => url.pathname.match(/\/ip\/[^/]+\/(\d+)/)?.[1],
+  },
+  {
+    pattern: /safeway\.com/i,
+    retailer: "safeway",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /albertsons\.com/i,
+    retailer: "albertsons",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /heb\.com/i,
+    retailer: "heb",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /publix\.com/i,
+    retailer: "publix",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /freshdirect\.com/i,
+    retailer: "freshdirect",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /gopuff\.com/i,
+    retailer: "gopuff",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
+    pattern: /sprouts\.com/i,
+    retailer: "sprouts",
+    extractId: (url) => url.pathname.split("/").pop(),
+  },
+  {
     pattern: /blueapron\.com/i,
     retailer: "blueapron",
     extractId: (url) => url.pathname.replace(/^\//, ""),
@@ -124,14 +220,58 @@ const RETAILER_PATTERNS: Array<{
   },
 ];
 
-const CATEGORY_KEYWORDS: Record<FoodCategory, string[]> = {
-  SNACKS: ["bar", "chip", "snack", "cookie", "cracker", "nuts"],
-  BEVERAGES: ["water", "coffee", "tea", "juice", "drink", "soda", "kombucha"],
-  PANTRY: ["oat", "flour", "oil", "sauce", "spice", "rice", "pasta", "bean"],
-  MEAL_KITS: ["meal kit", "meal-kit", "blue apron", "hello fresh"],
-  SUPPLEMENTS: ["vitamin", "supplement", "protein powder", "ag1", "greens"],
-  SPECIALTY: ["gourmet", "artisan", "organic", "specialty"],
-  KITCHEN_TOOLS: ["pan", "knife", "blender", "mixer", "utensil"],
+const CATEGORY_KEYWORDS: Record<GroceryCategory, string[]> = {
+  SNACKS: [
+    "bar", "chip", "snack", "cookie", "cracker", "nuts", "popcorn", "trail mix",
+    "granola bar", "jerky", "candy", "chocolate",
+  ],
+  BEVERAGES: [
+    "water", "coffee", "tea", "juice", "drink", "soda", "kombucha", "seltzer",
+    "sparkling water", "energy drink", "sports drink", "lemonade", "milk",
+    "almond milk", "oat milk", "protein shake", "smoothie", "beer", "wine",
+    "cocktail", "espresso", "cold brew", "hydration",
+  ],
+  PANTRY: [
+    "oat", "flour", "oil", "sauce", "spice", "rice", "pasta", "bean", "cereal",
+    "honey", "jam", "peanut butter", "vinegar", "broth", "stock", "canned",
+    "soup", "tuna", "salsa", "mustard", "ketchup", "mayo", "seasoning",
+  ],
+  PRODUCE: [
+    "apple", "banana", "berry", "lettuce", "spinach", "kale", "tomato", "avocado",
+    "onion", "potato", "carrot", "broccoli", "fruit", "vegetable", "organic produce",
+    "salad", "herbs", "citrus", "melon", "grape", "mushroom",
+  ],
+  DAIRY: [
+    "milk", "cheese", "yogurt", "butter", "cream", "egg", "cottage cheese",
+    "sour cream", "cream cheese", "kefir", "ghee",
+  ],
+  FROZEN: [
+    "frozen", "ice cream", "popsicle", "frozen pizza", "frozen meal",
+    "frozen vegetable", "frozen fruit", "frozen waffle", "gelato", "sorbet",
+  ],
+  DELI: [
+    "deli", "rotisserie", "prepared", "hummus", "guacamole", "sushi", "sandwich",
+    "salad kit", "charcuterie", "olives", "dip",
+  ],
+  BAKERY: [
+    "bread", "bagel", "muffin", "croissant", "tortilla", "bun", "roll",
+    "cake", "pastry", "donut", "doughnut", "pita",
+  ],
+  MEAL_KITS: [
+    "meal kit", "meal-kit", "blue apron", "hello fresh", "dinner kit",
+    "recipe kit", "subscription box",
+  ],
+  SUPPLEMENTS: [
+    "vitamin", "supplement", "protein powder", "ag1", "greens", "collagen",
+    "probiotic", "omega", "multivitamin", "creatine", "electrolyte",
+    "fish oil", "magnesium", "zinc", "ashwagandha", "turmeric", "capsule",
+    "tablet", "gummy vitamin", "prebiotic", "fiber supplement", "bcaa",
+    "whey", "plant protein", "superfood",
+  ],
+  SPECIALTY: [
+    "gourmet", "artisan", "organic", "specialty", "gluten-free", "vegan",
+    "keto", "paleo", "imported", "fair trade",
+  ],
 };
 
 export function parseUrl(rawUrl: string): URL {
@@ -155,15 +295,25 @@ export function identifyRetailer(url: URL): { retailer: string; retailerId?: str
   return null;
 }
 
+/** @deprecated Use isGroceryRetailer */
 export function isFoodRetailer(retailer: string): boolean {
-  if (BLOCKED_RETAILERS.has(retailer)) return false;
-  return FOOD_RETAILERS.has(retailer);
+  return isGroceryRetailer(retailer);
 }
 
-export function inferCategory(url: URL, title?: string): FoodCategory {
+export function isGroceryRetailer(retailer: string): boolean {
+  if (BLOCKED_RETAILERS.has(retailer)) return false;
+  return GROCERY_RETAILERS.has(retailer);
+}
+
+export function isConsumableProduct(url: URL, title?: string): boolean {
+  const haystack = `${url.pathname} ${title ?? ""}`.toLowerCase();
+  return !NON_CONSUMABLE_KEYWORDS.some((kw) => haystack.includes(kw));
+}
+
+export function inferCategory(url: URL, title?: string): GroceryCategory {
   const haystack = `${url.pathname} ${title ?? ""}`.toLowerCase();
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS) as [
-    FoodCategory,
+    GroceryCategory,
     string[],
   ][]) {
     if (keywords.some((kw) => haystack.includes(kw))) return category;
@@ -208,12 +358,20 @@ export function resolveProductFromUrl(url: string, titleHint?: string): Resolved
 
   if (!identified) {
     throw new Error(
-      "Unsupported retailer. GoodCart supports Amazon, Walmart, Instacart, Thrive Market, iHerb, Vitacost, and specialty food brands."
+      "Unsupported retailer. GoodCart supports grocery stores including Amazon, Walmart, Instacart, Kroger, Costco, Target, iHerb, Vitacost, and more."
     );
   }
 
-  if (!isFoodRetailer(identified.retailer)) {
-    throw new Error("Only food and grocery products are supported.");
+  if (!isGroceryRetailer(identified.retailer)) {
+    throw new Error(
+      "Only consumable grocery products are supported — food, beverages, supplements, and items from any grocery aisle."
+    );
+  }
+
+  if (!isConsumableProduct(parsed, titleHint)) {
+    throw new Error(
+      "This product doesn't appear to be consumable. GoodCart is for grocery items you eat or drink — not cookware, cleaning supplies, or personal care."
+    );
   }
 
   const category = inferCategory(parsed, titleHint);

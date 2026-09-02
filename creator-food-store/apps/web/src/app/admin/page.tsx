@@ -65,7 +65,7 @@ export default function AdminPage() {
                   onClick={() =>
                     item.productId &&
                     reject.mutate(
-                      { productId: item.productId, reason: "Non-food product" },
+                      { productId: item.productId, reason: "Non-consumable product" },
                       { onSuccess: () => utils.admin.moderationQueue.invalidate() }
                     )
                   }

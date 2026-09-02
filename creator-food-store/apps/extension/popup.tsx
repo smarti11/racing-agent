@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { identifyRetailer, isFoodRetailer } from "@repo/affiliate-engine";
+import { identifyRetailer, isGroceryRetailer, isConsumableProduct } from "@repo/affiliate-engine";
 
 const API_URL = process.env.PLASMO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -21,8 +21,13 @@ function IndexPopup() {
       const url = new URL(tab.url);
       const identified = identifyRetailer(url);
 
-      if (!identified || !isFoodRetailer(identified.retailer)) {
-        setStatus("This page is not a supported food retailer.");
+      if (!identified || !isGroceryRetailer(identified.retailer)) {
+        setStatus("This page is not a supported grocery retailer.");
+        return;
+      }
+
+      if (!isConsumableProduct(url, tab.title)) {
+        setStatus("Only consumable grocery products are supported.");
         return;
       }
 
@@ -67,7 +72,7 @@ function IndexPopup() {
         GoodCart
       </h1>
       <p style={{ fontSize: 13, color: "#6b6b6b", marginTop: 12, marginBottom: 20, lineHeight: 1.5 }}>
-        Save food products to your creator storefront and earn commission.
+        Save consumable grocery products to your storefront and earn commission.
       </p>
       <button
         onClick={saveCurrentPage}

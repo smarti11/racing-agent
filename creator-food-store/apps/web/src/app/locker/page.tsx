@@ -19,7 +19,7 @@ export default function LockerPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-3xl font-bold">My Locker</h1>
-      <p className="mt-2 text-stone-600">Your saved food products and price alerts</p>
+      <p className="mt-2 text-muted">Your saved grocery products and price alerts</p>
 
       {feed && feed.length > 0 && (
         <section className="mt-8">

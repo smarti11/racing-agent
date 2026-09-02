@@ -1,5 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo";
-import { identifyRetailer, isFoodRetailer } from "@repo/affiliate-engine";
+import { identifyRetailer, isGroceryRetailer, isConsumableProduct } from "@repo/affiliate-engine";
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -18,7 +18,8 @@ function injectSaveButton() {
 
   try {
     const identified = identifyRetailer(new URL(window.location.href));
-    if (!identified || !isFoodRetailer(identified.retailer)) return;
+    if (!identified || !isGroceryRetailer(identified.retailer)) return;
+    if (!isConsumableProduct(new URL(window.location.href), document.title)) return;
 
     const btn = document.createElement("button");
     btn.id = "goodcart-save-btn";
