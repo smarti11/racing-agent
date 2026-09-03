@@ -30,15 +30,17 @@ export PORT
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${HOME}/.local/share/pnpm:${PATH}"
 
+# Bind 0.0.0.0 so Tailscale / LAN phones can reach the Mini (not just localhost).
 # Use `exec next` (not `pnpm start -- --port`) — pnpm was forwarding "--" as a path.
 cd "$WEB"
+HOST="${HOST:-0.0.0.0}"
 NEXT_BIN="${ROOT}/node_modules/.bin/next"
 if [[ -x "$NEXT_BIN" ]]; then
-  exec "$NEXT_BIN" start -p "$PORT"
+  exec "$NEXT_BIN" start -H "$HOST" -p "$PORT"
 fi
 
 if command -v pnpm >/dev/null 2>&1; then
-  exec pnpm exec next start -p "$PORT"
+  exec pnpm exec next start -H "$HOST" -p "$PORT"
 fi
 
 echo "next binary not found. Run ./scripts/mac-mini-setup.sh" >&2
