@@ -11,3 +11,6 @@ build
 .expo
 .plasmo
 web-ext-artifacts
+logs/
+*.out.log
+*.err.log
