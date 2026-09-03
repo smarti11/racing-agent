@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-ink antialiased font-sans;
+  }
+
+  h1, h2, h3 {
+    font-family: "DM Serif Display", Georgia, serif;
+  }
+}
+
+@layer components {
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-brand;
+  }
+
+  .shopmy-card {
+    @apply border border-border bg-white shadow-card transition-all duration-300 hover:border-brand/30 hover:shadow-card-hover;
+  }
+
+  .brand-pill {
+    @apply inline-flex items-center gap-2 rounded-full bg-brand-muted px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-brand;
+  }
+
+  .page-hero {
+    @apply relative overflow-hidden bg-white bg-hero-pattern;
+  }
+
+  .auth-panel {
+    @apply relative hidden overflow-hidden bg-brand-gradient p-12 text-white lg:flex lg:w-1/2 lg:flex-col lg:justify-between;
+  }
+}
