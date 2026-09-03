@@ -25,23 +25,21 @@ if [[ ! -f "${WEB}/.env" ]]; then
   exit 1
 fi
 
-# Prefer absolute SQLite path so launchd cwd quirks don't break the DB
 export DATABASE_URL="${DATABASE_URL:-file:${DB_PATH}}"
 export PORT
 
-# Resolve pnpm / node for launchd (minimal PATH)
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${HOME}/.local/share/pnpm:${PATH}"
 
-if command -v pnpm >/dev/null 2>&1; then
-  exec pnpm --filter web start -- --port "$PORT"
-fi
-
-# Fallback: next binary from node_modules
+# Use `exec next` (not `pnpm start -- --port`) — pnpm was forwarding "--" as a path.
+cd "$WEB"
 NEXT_BIN="${ROOT}/node_modules/.bin/next"
 if [[ -x "$NEXT_BIN" ]]; then
-  cd "$WEB"
-  exec "$NEXT_BIN" start --port "$PORT"
+  exec "$NEXT_BIN" start -p "$PORT"
 fi
 
-echo "pnpm/next not found. Install Node 20+ and run ./scripts/mac-mini-setup.sh" >&2
+if command -v pnpm >/dev/null 2>&1; then
+  exec pnpm exec next start -p "$PORT"
+fi
+
+echo "next binary not found. Run ./scripts/mac-mini-setup.sh" >&2
 exit 1
