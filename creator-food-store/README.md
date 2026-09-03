@@ -25,7 +25,7 @@ A ShopMy-style creator commerce platform for **consumable grocery products** —
 - **Database**: SQLite (dev) / PostgreSQL (production) via Prisma
 - **Payments**: Stripe Connect
 
-## Getting Started
+## Getting Started (dev)
 
 ```bash
 cd creator-food-store
@@ -40,7 +40,7 @@ DATABASE_URL="file:./dev.db" pnpm seed
 cd ../../apps/web
 cp ../.env .env
 # Set DATABASE_URL in apps/web/.env to absolute path, e.g.:
-# DATABASE_URL="file:/full/path/to/creator-food-store/packages/db/dev.db"
+# DATABASE_URL="file:/full/path/to/creator-food-store/packages/db/prisma/dev.db"
 
 pnpm dev
 ```
@@ -49,10 +49,61 @@ Open http://localhost:3000
 
 ### Demo Accounts (after seed)
 
-- Creator: `creator@goodcart.demo` — storefront at `/@grocerygirl`
+- Creators: `/@grocerygirl`, `/@fitfuel`, `/@pantrypro`
+- Seed emails: `creator@goodcart.demo`, `fitfuel@goodcart.demo`, `pantrypro@goodcart.demo`
 - Consumer: `shopper@goodcart.demo`
 
 (Password auth requires registration; seed creates users without passwords — use signup or Google OAuth.)
+
+## Host on a Mac mini (recommended first deploy)
+
+Same pattern as the racing-agent LaunchAgents. SQLite is fine on the Mini (always-on disk).
+
+**Prerequisites:** Node.js 20+, internet for `pnpm install` / optional Cloudflare Tunnel.
+
+```bash
+# From your clone (example path)
+cd ~/agents/racing-agent/creator-food-store
+
+# 1) Install deps, create .env, seed DB, production build
+chmod +x scripts/*.sh launchd/*.sh
+./scripts/mac-mini-setup.sh
+
+# 2) Register LaunchAgent (starts on login/reboot, KeepAlive)
+./launchd/install.sh
+
+# 3) Optional: public HTTPS URL for phone / friends
+./scripts/tunnel.sh
+```
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/mac-mini-setup.sh` | One-time (or re-run) install + build + seed |
+| `scripts/run-web.sh` | Start Next.js production server (port 3000) |
+| `launchd/install.sh` | Install + start `com.smarti11.goodcart.web` |
+| `launchd/uninstall.sh` | Stop + remove LaunchAgent |
+| `scripts/tunnel.sh` | Cloudflare quick tunnel → `*.trycloudflare.com` |
+
+**Useful checks:**
+
+```bash
+launchctl print gui/$(id -u)/com.smarti11.goodcart.web | head
+lsof -nP -iTCP:3000 -sTCP:LISTEN
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
+tail -f logs/com.smarti11.goodcart.web.out.log
+```
+
+**Local URLs:** `http://127.0.0.1:3000/` · `/discover` · `/@grocerygirl`
+
+**Rebuild after code updates:**
+
+```bash
+git pull
+./scripts/mac-mini-setup.sh   # reinstall + rebuild + reseed
+./launchd/install.sh          # restart service
+```
+
+Keep the Mini awake (System Settings → Energy → prevent automatic sleeping when display is off) if you want 24/7 access.
 
 ## Project Structure
 
