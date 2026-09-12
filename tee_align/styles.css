@@ -48,6 +48,7 @@ body {
 #camera {
   background: #000;
   transform: scaleX(1);
+  pointer-events: none;
 }
 
 #overlay {
@@ -59,7 +60,8 @@ body {
   position: absolute;
   inset: 0;
   z-index: 4;
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 .marker-handle {
@@ -181,12 +183,12 @@ body {
 
 .label-aim {
   position: absolute;
-  top: 28%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(11, 26, 18, 0.45);
+  will-change: transform, left, top;
 }
 
 .controls {
@@ -206,6 +208,10 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.control-row.rotate-always {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 #live-controls:not(.hidden) {

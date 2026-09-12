@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div id="app">
@@ -37,12 +37,15 @@
     </header>
 
     <div class="hud-labels" aria-hidden="true">
-      <span class="label-aim">AIM — fairway target</span>
+      <span id="label-aim" class="label-aim">AIM — fairway target</span>
     </div>
 
     <footer class="controls">
       <button type="button" id="btn-start" class="primary">Enable camera</button>
       <div class="control-row hidden" id="live-controls">
+        <button type="button" id="btn-rot-ccw" class="secondary" aria-label="Rotate counter-clockwise">Rotate ↺</button>
+        <button type="button" id="btn-rot-cw" class="secondary" aria-label="Rotate clockwise">Rotate ↻</button>
+        <button type="button" id="btn-rot-reset" class="secondary">Level</button>
         <button type="button" id="btn-color" class="secondary">Line: lime</button>
         <button type="button" id="btn-link" class="secondary" aria-pressed="true">Equal lock: on</button>
         <button type="button" id="btn-thick" class="secondary">Thick lines</button>
@@ -55,15 +58,15 @@
         <h1>Set tee markers square</h1>
         <ol>
           <li>Stand behind the teeing ground, looking down the hole.</li>
-          <li>Put the vertical <strong>AIM</strong> line on the fairway spot you want the tee to face.</li>
-          <li><strong>Drag</strong> the on-screen <strong>L</strong> and <strong>R</strong> markers along the horizontal line to the spacing you want (Equal lock keeps them mirrored).</li>
-          <li>Place the physical tee markers to match those on-screen handles.</li>
+          <li>Put the <strong>AIM</strong> line on the fairway spot you want the tee to face.</li>
+          <li>Use <strong>Rotate</strong> (or two fingers) to twist the marker line around the center until the tee face looks right — AIM stays square to it.</li>
+          <li><strong>Drag</strong> <strong>L</strong> / <strong>R</strong> along that line for spacing, then place physical markers to match.</li>
         </ol>
         <p class="help-note">Works best in Safari on iPhone. Use the rear camera outdoors; pick a line color that shows against grass or sky.</p>
         <button type="button" id="btn-close-help" class="primary">Got it</button>
       </div>
     </aside>
   </div>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

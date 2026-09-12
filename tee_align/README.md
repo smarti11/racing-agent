@@ -7,9 +7,10 @@ Simple iPhone camera overlay for greenskeepers: square tee markers to a fairway 
 1. Open `index.html` in **Safari on iPhone** (see hosting below — camera requires HTTPS).
 2. Tap **Enable camera** and allow access.
 3. Stand behind the teeing ground, looking down the hole.
-4. Put the vertical **AIM** line on the fairway spot you want the tee to face.
-5. **Drag** the on-screen **L** and **R** markers along the horizontal line to your desired width (**Equal lock** keeps them mirrored).
-6. Place the physical tee markers to match those handles.
+4. Put the **AIM** line on the fairway spot you want the tee to face.
+5. **Rotate** the tee-face line with **Rotate ↺ / ↻**, **Level**, or a **two-finger twist** (AIM stays perpendicular).
+6. **Drag** the on-screen **L** and **R** markers along that line to your desired width (**Equal lock** keeps them mirrored).
+7. Place the physical tee markers to match those on-screen handles.
 
 Use **Line color** if lime washes out against grass or sky. **Thick lines** helps in bright sun.
 
@@ -29,6 +30,6 @@ iPhone camera access needs a **secure origin** (HTTPS). Localhost works on the c
 |---|---|
 | `index.html` | Page shell |
 | `styles.css` | Layout / outdoor-readable HUD |
-| `app.js` | Rear camera + aim/marker overlay |
+| `app.js` | Rear camera + rotatable aim/marker overlay |
 
 No build step and no backend.

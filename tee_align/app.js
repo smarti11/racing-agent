@@ -8,11 +8,17 @@
   const btnColor = document.getElementById("btn-color");
   const btnThick = document.getElementById("btn-thick");
   const btnLink = document.getElementById("btn-link");
+  const btnRotCcw = document.getElementById("btn-rot-ccw");
+  const btnRotCw = document.getElementById("btn-rot-cw");
+  const btnRotReset = document.getElementById("btn-rot-reset");
   const help = document.getElementById("help");
   const btnHelp = document.getElementById("btn-help");
   const btnCloseHelp = document.getElementById("btn-close-help");
   const markerL = document.getElementById("marker-l");
   const markerR = document.getElementById("marker-r");
+  const labelAim = document.getElementById("label-aim");
+  const markersLayer = document.getElementById("markers");
+  const appEl = document.getElementById("app");
 
   const COLORS = [
     { id: "lime", value: "#c8f542", glow: "rgba(200, 245, 66, 0.35)" },
@@ -22,7 +28,8 @@
   ];
 
   const EDGE_PAD = 36;
-  const MIN_GAP = 28;
+  const MIN_GAP_FRAC = 0.1;
+  const ROT_STEP = (5 * Math.PI) / 180;
 
   let colorIndex = 0;
   let thick = true;
@@ -30,7 +37,8 @@
   let stream = null;
   let raf = 0;
 
-  // Distances from screen center as a fraction of half-width (0.15–0.92)
+  // Marker-line angle around screen Z (0 = horizontal). AIM stays perpendicular.
+  let angle = 0;
   let leftFrac = 0.42;
   let rightFrac = 0.42;
 
@@ -51,28 +59,61 @@
 
   function clampFrac(frac) {
     const maxFrac = Math.max(0.12, (halfWidth() - EDGE_PAD) / halfWidth());
-    return Math.min(maxFrac, Math.max(0.12, frac));
+    return Math.min(maxFrac, Math.max(MIN_GAP_FRAC, frac));
   }
 
-  function markerX(side) {
-    const cx = window.innerWidth / 2;
+  function center() {
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  }
+
+  function markerDir() {
+    return { x: Math.cos(angle), y: Math.sin(angle) };
+  }
+
+  function aimDir() {
+    return { x: -Math.sin(angle), y: Math.cos(angle) };
+  }
+
+  function markerPos(side) {
+    const c = center();
+    const d = markerDir();
     const hw = halfWidth();
-    return side === "l" ? cx - leftFrac * hw : cx + rightFrac * hw;
+    const dist = (side === "l" ? -leftFrac : rightFrac) * hw;
+    return { x: c.x + d.x * dist, y: c.y + d.y * dist };
+  }
+
+  function angleLabel() {
+    let deg = Math.round((angle * 180) / Math.PI);
+    deg = ((((deg + 180) % 360) + 360) % 360) - 180;
+    if (Math.abs(deg) < 1) return "level";
+    return `${deg > 0 ? "+" : ""}${deg}°`;
+  }
+
+  function statusHint() {
+    const diff = Math.abs(leftFrac - rightFrac);
+    if (!equalLock && diff > 0.02) {
+      return `Rotated ${angleLabel()} · L/R unequal — turn Equal lock on`;
+    }
+    return `Rotated ${angleLabel()} · drag L/R · Rotate or two-finger twist`;
   }
 
   function positionHandles() {
-    markerL.style.left = `${markerX("l")}px`;
-    markerR.style.left = `${markerX("r")}px`;
-    markerL.style.top = "50%";
-    markerR.style.top = "50%";
-  }
+    const l = markerPos("l");
+    const r = markerPos("r");
+    const deg = (angle * 180) / Math.PI;
 
-  function spacingHint() {
-    const diff = Math.abs(leftFrac - rightFrac);
-    if (!equalLock && diff > 0.02) {
-      return "L/R spacing unequal — turn Equal lock on, or match by eye";
-    }
-    return "Drag L/R markers · aim vertical line at fairway target";
+    markerL.style.left = `${l.x}px`;
+    markerL.style.top = `${l.y}px`;
+    markerR.style.left = `${r.x}px`;
+    markerR.style.top = `${r.y}px`;
+
+    const c = center();
+    const fx = Math.sin(angle);
+    const fy = -Math.cos(angle);
+    const labelDist = Math.min(window.innerHeight, window.innerWidth) * 0.22;
+    labelAim.style.left = `${c.x + fx * labelDist}px`;
+    labelAim.style.top = `${c.y + fy * labelDist}px`;
+    labelAim.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
   }
 
   function resizeCanvas() {
@@ -92,17 +133,26 @@
   function drawOverlay() {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const cx = w / 2;
-    const cy = h / 2;
+    const c = center();
     const color = COLORS[colorIndex];
     const lineW = thick ? 4 : 2;
     const dash = thick ? [14, 10] : [10, 8];
-    const lx = markerX("l");
-    const rx = markerX("r");
+    const md = markerDir();
+    const ad = aimDir();
+    const reach = Math.hypot(w, h);
+    const l = markerPos("l");
+    const r = markerPos("r");
 
     ctx.clearRect(0, 0, w, h);
 
-    const vignette = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.2, cx, cy, Math.max(w, h) * 0.75);
+    const vignette = ctx.createRadialGradient(
+      c.x,
+      c.y,
+      Math.min(w, h) * 0.2,
+      c.x,
+      c.y,
+      Math.max(w, h) * 0.75
+    );
     vignette.addColorStop(0, "rgba(0,0,0,0)");
     vignette.addColorStop(1, "rgba(0,0,0,0.28)");
     ctx.fillStyle = vignette;
@@ -115,49 +165,52 @@
     ctx.shadowColor = color.glow;
     ctx.shadowBlur = thick ? 10 : 6;
 
-    // Vertical AIM line
     ctx.beginPath();
     ctx.setLineDash([]);
-    ctx.moveTo(cx, 0);
-    ctx.lineTo(cx, h);
+    ctx.moveTo(c.x - ad.x * reach, c.y - ad.y * reach);
+    ctx.lineTo(c.x + ad.x * reach, c.y + ad.y * reach);
     ctx.stroke();
 
-    // Horizontal MARKER line
     ctx.beginPath();
     ctx.setLineDash(dash);
-    ctx.moveTo(0, cy);
-    ctx.lineTo(w, cy);
+    ctx.moveTo(c.x - md.x * reach, c.y - md.y * reach);
+    ctx.lineTo(c.x + md.x * reach, c.y + md.y * reach);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Center crosshair
     const box = thick ? 28 : 22;
-    ctx.lineWidth = lineW;
-    ctx.strokeRect(cx - box / 2, cy - box / 2, box, box);
+    ctx.strokeRect(c.x - box / 2, c.y - box / 2, box, box);
 
-    // Span between dragged markers
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = Math.max(2, lineW);
+    ctx.globalAlpha = 0.4;
     ctx.beginPath();
-    ctx.moveTo(lx, cy);
-    ctx.lineTo(rx, cy);
+    ctx.moveTo(l.x, l.y);
+    ctx.lineTo(r.x, r.y);
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // Drop lines at marker positions
     ctx.lineWidth = Math.max(2, lineW - 1);
-    for (const x of [lx, rx]) {
+    const tick = 34;
+    for (const p of [l, r]) {
       ctx.beginPath();
-      ctx.moveTo(x, cy - 34);
-      ctx.lineTo(x, cy + 34);
+      ctx.moveTo(p.x - ad.x * tick, p.y - ad.y * tick);
+      ctx.lineTo(p.x + ad.x * tick, p.y + ad.y * tick);
       ctx.stroke();
     }
 
-    // Arrowhead toward fairway
+    const fx = Math.sin(angle);
+    const fy = -Math.cos(angle);
+    const tip = 56;
+    const base = 74;
+    const tx = c.x + fx * tip;
+    const ty = c.y + fy * tip;
+    const bx = c.x + fx * base;
+    const by = c.y + fy * base;
+    const px = -fy;
+    const py = fx;
     ctx.beginPath();
-    ctx.moveTo(cx, 56);
-    ctx.lineTo(cx - 10, 74);
-    ctx.lineTo(cx + 10, 74);
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(bx + px * 10, by + py * 10);
+    ctx.lineTo(bx - px * 10, by - py * 10);
     ctx.closePath();
     ctx.fill();
 
@@ -165,43 +218,47 @@
     raf = requestAnimationFrame(drawOverlay);
   }
 
+  function projectOntoMarkerAxis(clientX, clientY) {
+    const c = center();
+    const d = markerDir();
+    return (clientX - c.x) * d.x + (clientY - c.y) * d.y;
+  }
+
   function bindDrag(el, side) {
     let dragging = false;
     let pointerId = null;
 
-    const onDown = (e) => {
-      if (help && !help.hidden) return;
+    el.addEventListener("pointerdown", (e) => {
+      if (!help.hidden) return;
       dragging = true;
       pointerId = e.pointerId;
       el.classList.add("is-dragging");
       el.setPointerCapture(pointerId);
       e.preventDefault();
-    };
+      e.stopPropagation();
+    });
 
-    const onMove = (e) => {
+    el.addEventListener("pointermove", (e) => {
       if (!dragging || e.pointerId !== pointerId) return;
-      const cx = window.innerWidth / 2;
       const hw = halfWidth();
-      let x = e.clientX;
+      let along = projectOntoMarkerAxis(e.clientX, e.clientY);
 
       if (side === "l") {
-        x = Math.min(cx - MIN_GAP, Math.max(EDGE_PAD, x));
-        leftFrac = clampFrac((cx - x) / hw);
+        along = Math.min(-MIN_GAP_FRAC * hw, Math.max(-(hw - EDGE_PAD), along));
+        leftFrac = clampFrac(-along / hw);
         if (equalLock) rightFrac = leftFrac;
       } else {
-        x = Math.max(cx + MIN_GAP, Math.min(window.innerWidth - EDGE_PAD, x));
-        rightFrac = clampFrac((x - cx) / hw);
+        along = Math.max(MIN_GAP_FRAC * hw, Math.min(hw - EDGE_PAD, along));
+        rightFrac = clampFrac(along / hw);
         if (equalLock) leftFrac = rightFrac;
       }
 
       positionHandles();
-      if (!statusEl.classList.contains("error")) {
-        setStatus(spacingHint());
-      }
+      if (!statusEl.classList.contains("error")) setStatus(statusHint());
       e.preventDefault();
-    };
+    });
 
-    const onUp = (e) => {
+    const endDrag = (e) => {
       if (!dragging || e.pointerId !== pointerId) return;
       dragging = false;
       el.classList.remove("is-dragging");
@@ -211,15 +268,66 @@
         /* ignore */
       }
       pointerId = null;
-      if (!statusEl.classList.contains("error")) {
-        setStatus(spacingHint());
-      }
+      if (!statusEl.classList.contains("error")) setStatus(statusHint());
     };
 
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerup", onUp);
-    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("pointerup", endDrag);
+    el.addEventListener("pointercancel", endDrag);
+  }
+
+  const activePointers = new Map();
+  let pinchAngle0 = null;
+  let angleAtPinchStart = 0;
+
+  function pairAngle(a, b) {
+    return Math.atan2(b.y - a.y, b.x - a.x);
+  }
+
+  function onPinchDown(e) {
+    if (e.target.closest(".marker-handle, button, .help-sheet, .controls, .top-bar")) return;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size === 2) {
+      const pts = [...activePointers.values()];
+      pinchAngle0 = pairAngle(pts[0], pts[1]);
+      angleAtPinchStart = angle;
+    }
+  }
+
+  function onPinchMove(e) {
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size === 2 && pinchAngle0 != null) {
+      const pts = [...activePointers.values()];
+      angle = angleAtPinchStart + (pairAngle(pts[0], pts[1]) - pinchAngle0);
+      positionHandles();
+      if (!statusEl.classList.contains("error")) setStatus(statusHint());
+    }
+  }
+
+  function onPinchEnd(e) {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size < 2) pinchAngle0 = null;
+  }
+
+  markersLayer.addEventListener("pointerdown", onPinchDown);
+  markersLayer.addEventListener("pointermove", onPinchMove);
+  markersLayer.addEventListener("pointerup", onPinchEnd);
+  markersLayer.addEventListener("pointercancel", onPinchEnd);
+  appEl.addEventListener("pointerdown", onPinchDown);
+  appEl.addEventListener("pointermove", onPinchMove);
+  appEl.addEventListener("pointerup", onPinchEnd);
+  appEl.addEventListener("pointercancel", onPinchEnd);
+
+  function nudgeAngle(delta) {
+    angle += delta;
+    positionHandles();
+    if (!statusEl.classList.contains("error")) setStatus(statusHint());
+  }
+
+  function resetAngle() {
+    angle = 0;
+    positionHandles();
+    if (!statusEl.classList.contains("error")) setStatus(statusHint());
   }
 
   async function startCamera() {
@@ -227,7 +335,6 @@
       setStatus("Camera needs HTTPS (or localhost). Open this page over a secure link.", true);
       return;
     }
-
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus("This browser cannot access the camera.", true);
       return;
@@ -237,9 +344,7 @@
     setStatus("Starting rear camera…");
 
     try {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-      }
+      if (stream) stream.getTracks().forEach((t) => t.stop());
 
       stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -255,7 +360,7 @@
 
       btnStart.classList.add("hidden");
       liveControls.classList.remove("hidden");
-      setStatus(spacingHint());
+      setStatus(statusHint());
       cancelAnimationFrame(raf);
       drawOverlay();
     } catch (err) {
@@ -274,8 +379,7 @@
 
   function cycleColor() {
     colorIndex = (colorIndex + 1) % COLORS.length;
-    const c = COLORS[colorIndex];
-    btnColor.textContent = `Line: ${c.id}`;
+    btnColor.textContent = `Line: ${COLORS[colorIndex].id}`;
     applyLineColor();
   }
 
@@ -294,7 +398,7 @@
       rightFrac = leftFrac;
       positionHandles();
     }
-    setStatus(spacingHint());
+    setStatus(statusHint());
   }
 
   function openHelp() {
@@ -314,26 +418,30 @@
   bindDrag(markerR, "r");
   applyLineColor();
 
+  const rotateRow = document.createElement("div");
+  rotateRow.className = "control-row rotate-always";
+  rotateRow.append(btnRotCcw, btnRotCw, btnRotReset);
+  btnStart.insertAdjacentElement("afterend", rotateRow);
+
   btnStart.addEventListener("click", startCamera);
   btnColor.addEventListener("click", cycleColor);
   btnThick.addEventListener("click", toggleThickness);
   btnLink.addEventListener("click", toggleEqualLock);
+  btnRotCcw.addEventListener("click", () => nudgeAngle(-ROT_STEP));
+  btnRotCw.addEventListener("click", () => nudgeAngle(ROT_STEP));
+  btnRotReset.addEventListener("click", resetAngle);
   btnHelp.addEventListener("click", openHelp);
   btnCloseHelp.addEventListener("click", closeHelp);
 
   window.addEventListener("resize", resizeCanvas);
-  window.addEventListener("orientationchange", () => {
-    setTimeout(resizeCanvas, 250);
-  });
+  window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 250));
 
   resizeCanvas();
   drawOverlay();
-  setStatus("Drag L/R markers anytime · Enable camera for live view");
+  setStatus("Rotate tee-face line · drag L/R · Enable camera for live view");
 
   try {
-    if (!localStorage.getItem("teeAlignHelpSeen")) {
-      openHelp();
-    }
+    if (!localStorage.getItem("teeAlignHelpSeen")) openHelp();
   } catch (_) {
     openHelp();
   }
@@ -349,11 +457,7 @@
     }
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && stream) {
-      requestWakeLock();
-    }
+    if (document.visibilityState === "visible" && stream) requestWakeLock();
   });
-  btnStart.addEventListener("click", () => {
-    requestWakeLock();
-  });
+  btnStart.addEventListener("click", requestWakeLock);
 })();
