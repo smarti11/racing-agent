@@ -8,7 +8,8 @@ Simple iPhone camera overlay for greenskeepers: square tee markers to a fairway 
 2. Tap **Enable camera** and allow access.
 3. Stand behind the teeing ground, looking down the hole.
 4. Put the vertical **AIM** line on the fairway spot you want the tee to face.
-5. Place left and right tee markers on the horizontal line, equal distance from the center cross.
+5. **Drag** the on-screen **L** and **R** markers along the horizontal line to your desired width (**Equal lock** keeps them mirrored).
+6. Place the physical tee markers to match those handles.
 
 Use **Line color** if lime washes out against grass or sky. **Thick lines** helps in bright sun.
 

@@ -7,9 +7,12 @@
   const liveControls = document.getElementById("live-controls");
   const btnColor = document.getElementById("btn-color");
   const btnThick = document.getElementById("btn-thick");
+  const btnLink = document.getElementById("btn-link");
   const help = document.getElementById("help");
   const btnHelp = document.getElementById("btn-help");
   const btnCloseHelp = document.getElementById("btn-close-help");
+  const markerL = document.getElementById("marker-l");
+  const markerR = document.getElementById("marker-r");
 
   const COLORS = [
     { id: "lime", value: "#c8f542", glow: "rgba(200, 245, 66, 0.35)" },
@@ -18,14 +21,58 @@
     { id: "black", value: "#111111", glow: "rgba(0, 0, 0, 0.35)" },
   ];
 
+  const EDGE_PAD = 36;
+  const MIN_GAP = 28;
+
   let colorIndex = 0;
   let thick = true;
+  let equalLock = true;
   let stream = null;
   let raf = 0;
+
+  // Distances from screen center as a fraction of half-width (0.15–0.92)
+  let leftFrac = 0.42;
+  let rightFrac = 0.42;
 
   function setStatus(msg, isError = false) {
     statusEl.textContent = msg || "";
     statusEl.classList.toggle("error", Boolean(isError));
+  }
+
+  function applyLineColor() {
+    const c = COLORS[colorIndex];
+    document.documentElement.style.setProperty("--line", c.value);
+    document.documentElement.style.setProperty("--line-glow", c.glow);
+  }
+
+  function halfWidth() {
+    return Math.max(1, window.innerWidth / 2);
+  }
+
+  function clampFrac(frac) {
+    const maxFrac = Math.max(0.12, (halfWidth() - EDGE_PAD) / halfWidth());
+    return Math.min(maxFrac, Math.max(0.12, frac));
+  }
+
+  function markerX(side) {
+    const cx = window.innerWidth / 2;
+    const hw = halfWidth();
+    return side === "l" ? cx - leftFrac * hw : cx + rightFrac * hw;
+  }
+
+  function positionHandles() {
+    markerL.style.left = `${markerX("l")}px`;
+    markerR.style.left = `${markerX("r")}px`;
+    markerL.style.top = "50%";
+    markerR.style.top = "50%";
+  }
+
+  function spacingHint() {
+    const diff = Math.abs(leftFrac - rightFrac);
+    if (!equalLock && diff > 0.02) {
+      return "L/R spacing unequal — turn Equal lock on, or match by eye";
+    }
+    return "Drag L/R markers · aim vertical line at fairway target";
   }
 
   function resizeCanvas() {
@@ -37,6 +84,9 @@
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    leftFrac = clampFrac(leftFrac);
+    rightFrac = clampFrac(rightFrac);
+    positionHandles();
   }
 
   function drawOverlay() {
@@ -47,10 +97,11 @@
     const color = COLORS[colorIndex];
     const lineW = thick ? 4 : 2;
     const dash = thick ? [14, 10] : [10, 8];
+    const lx = markerX("l");
+    const rx = markerX("r");
 
     ctx.clearRect(0, 0, w, h);
 
-    // Soft vignette so lines read outdoors
     const vignette = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.2, cx, cy, Math.max(w, h) * 0.75);
     vignette.addColorStop(0, "rgba(0,0,0,0)");
     vignette.addColorStop(1, "rgba(0,0,0,0.28)");
@@ -64,14 +115,14 @@
     ctx.shadowColor = color.glow;
     ctx.shadowBlur = thick ? 10 : 6;
 
-    // Vertical AIM line (line of play)
+    // Vertical AIM line
     ctx.beginPath();
     ctx.setLineDash([]);
     ctx.moveTo(cx, 0);
     ctx.lineTo(cx, h);
     ctx.stroke();
 
-    // Horizontal MARKER line (tee face)
+    // Horizontal MARKER line
     ctx.beginPath();
     ctx.setLineDash(dash);
     ctx.moveTo(0, cy);
@@ -79,26 +130,30 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Center crosshair box
+    // Center crosshair
     const box = thick ? 28 : 22;
     ctx.lineWidth = lineW;
     ctx.strokeRect(cx - box / 2, cy - box / 2, box, box);
 
-    // Tick marks for equal left/right spacing cues
-    const ticks = [0.18, 0.32];
+    // Span between dragged markers
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = Math.max(2, lineW);
+    ctx.beginPath();
+    ctx.moveTo(lx, cy);
+    ctx.lineTo(rx, cy);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Drop lines at marker positions
     ctx.lineWidth = Math.max(2, lineW - 1);
-    for (const t of ticks) {
-      const dx = w * t;
-      for (const side of [-1, 1]) {
-        const x = cx + side * dx;
-        ctx.beginPath();
-        ctx.moveTo(x, cy - 12);
-        ctx.lineTo(x, cy + 12);
-        ctx.stroke();
-      }
+    for (const x of [lx, rx]) {
+      ctx.beginPath();
+      ctx.moveTo(x, cy - 34);
+      ctx.lineTo(x, cy + 34);
+      ctx.stroke();
     }
 
-    // Arrowhead toward fairway (top of AIM line)
+    // Arrowhead toward fairway
     ctx.beginPath();
     ctx.moveTo(cx, 56);
     ctx.lineTo(cx - 10, 74);
@@ -108,6 +163,63 @@
 
     ctx.restore();
     raf = requestAnimationFrame(drawOverlay);
+  }
+
+  function bindDrag(el, side) {
+    let dragging = false;
+    let pointerId = null;
+
+    const onDown = (e) => {
+      if (help && !help.hidden) return;
+      dragging = true;
+      pointerId = e.pointerId;
+      el.classList.add("is-dragging");
+      el.setPointerCapture(pointerId);
+      e.preventDefault();
+    };
+
+    const onMove = (e) => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      const cx = window.innerWidth / 2;
+      const hw = halfWidth();
+      let x = e.clientX;
+
+      if (side === "l") {
+        x = Math.min(cx - MIN_GAP, Math.max(EDGE_PAD, x));
+        leftFrac = clampFrac((cx - x) / hw);
+        if (equalLock) rightFrac = leftFrac;
+      } else {
+        x = Math.max(cx + MIN_GAP, Math.min(window.innerWidth - EDGE_PAD, x));
+        rightFrac = clampFrac((x - cx) / hw);
+        if (equalLock) leftFrac = rightFrac;
+      }
+
+      positionHandles();
+      if (!statusEl.classList.contains("error")) {
+        setStatus(spacingHint());
+      }
+      e.preventDefault();
+    };
+
+    const onUp = (e) => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+      el.classList.remove("is-dragging");
+      try {
+        el.releasePointerCapture(pointerId);
+      } catch (_) {
+        /* ignore */
+      }
+      pointerId = null;
+      if (!statusEl.classList.contains("error")) {
+        setStatus(spacingHint());
+      }
+    };
+
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
   }
 
   async function startCamera() {
@@ -143,7 +255,7 @@
 
       btnStart.classList.add("hidden");
       liveControls.classList.remove("hidden");
-      setStatus("Aim vertical line at fairway target · place markers on horizontal line");
+      setStatus(spacingHint());
       cancelAnimationFrame(raf);
       drawOverlay();
     } catch (err) {
@@ -164,12 +276,25 @@
     colorIndex = (colorIndex + 1) % COLORS.length;
     const c = COLORS[colorIndex];
     btnColor.textContent = `Line: ${c.id}`;
-    document.documentElement.style.setProperty("--line", c.value);
+    applyLineColor();
   }
 
   function toggleThickness() {
     thick = !thick;
     btnThick.textContent = thick ? "Thick lines" : "Thin lines";
+  }
+
+  function toggleEqualLock() {
+    equalLock = !equalLock;
+    btnLink.textContent = equalLock ? "Equal lock: on" : "Equal lock: off";
+    btnLink.setAttribute("aria-pressed", equalLock ? "true" : "false");
+    if (equalLock) {
+      const mid = (leftFrac + rightFrac) / 2;
+      leftFrac = clampFrac(mid);
+      rightFrac = leftFrac;
+      positionHandles();
+    }
+    setStatus(spacingHint());
   }
 
   function openHelp() {
@@ -185,9 +310,14 @@
     }
   }
 
+  bindDrag(markerL, "l");
+  bindDrag(markerR, "r");
+  applyLineColor();
+
   btnStart.addEventListener("click", startCamera);
   btnColor.addEventListener("click", cycleColor);
   btnThick.addEventListener("click", toggleThickness);
+  btnLink.addEventListener("click", toggleEqualLock);
   btnHelp.addEventListener("click", openHelp);
   btnCloseHelp.addEventListener("click", closeHelp);
 
@@ -198,6 +328,7 @@
 
   resizeCanvas();
   drawOverlay();
+  setStatus("Drag L/R markers anytime · Enable camera for live view");
 
   try {
     if (!localStorage.getItem("teeAlignHelpSeen")) {
@@ -207,7 +338,6 @@
     openHelp();
   }
 
-  // Wake Lock when supported — keeps screen on while setting markers
   let wakeLock = null;
   async function requestWakeLock() {
     try {

@@ -55,6 +55,73 @@ body {
   z-index: 2;
 }
 
+.markers-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.marker-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 72px;
+  height: 96px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.marker-handle:active,
+.marker-handle.is-dragging {
+  cursor: grabbing;
+}
+
+.marker-knob {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  background: rgba(11, 26, 18, 0.55);
+  box-shadow:
+    0 0 0 6px var(--line-glow),
+    0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.marker-handle.is-dragging .marker-knob {
+  transform: scale(1.12);
+  background: var(--line);
+}
+
+.marker-tag {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(11, 26, 18, 0.7);
+  border: 1px solid rgba(247, 244, 234, 0.22);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
 .top-bar {
   position: absolute;
   top: 0;
@@ -122,24 +189,6 @@ body {
   background: rgba(11, 26, 18, 0.45);
 }
 
-.label-left,
-.label-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-220%);
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: rgba(11, 26, 18, 0.45);
-}
-
-.label-left {
-  left: 8%;
-}
-
-.label-right {
-  right: 8%;
-}
-
 .controls {
   position: absolute;
   left: 0;
@@ -157,6 +206,14 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+#live-controls:not(.hidden) {
+  grid-template-columns: 1fr 1fr;
+}
+
+#live-controls #btn-thick {
+  grid-column: 1 / -1;
 }
 
 .control-row.hidden,

@@ -10,12 +10,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 <body>
   <div id="app">
     <video id="camera" playsinline autoplay muted></video>
     <canvas id="overlay" aria-hidden="true"></canvas>
+
+    <div id="markers" class="markers-layer">
+      <button type="button" id="marker-l" class="marker-handle" aria-label="Drag left tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">L · drag</span>
+      </button>
+      <button type="button" id="marker-r" class="marker-handle" aria-label="Drag right tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">R · drag</span>
+      </button>
+    </div>
 
     <header class="top-bar">
       <div class="brand">
@@ -27,14 +38,13 @@
 
     <div class="hud-labels" aria-hidden="true">
       <span class="label-aim">AIM — fairway target</span>
-      <span class="label-left">L marker</span>
-      <span class="label-right">R marker</span>
     </div>
 
     <footer class="controls">
       <button type="button" id="btn-start" class="primary">Enable camera</button>
       <div class="control-row hidden" id="live-controls">
         <button type="button" id="btn-color" class="secondary">Line: lime</button>
+        <button type="button" id="btn-link" class="secondary" aria-pressed="true">Equal lock: on</button>
         <button type="button" id="btn-thick" class="secondary">Thick lines</button>
       </div>
       <p id="status" class="status" role="status"></p>
@@ -46,14 +56,14 @@
         <ol>
           <li>Stand behind the teeing ground, looking down the hole.</li>
           <li>Put the vertical <strong>AIM</strong> line on the fairway spot you want the tee to face.</li>
-          <li>Place the left and right tee markers on the horizontal line, equal distance from the center cross.</li>
-          <li>That keeps the tee face pointed at your target.</li>
+          <li><strong>Drag</strong> the on-screen <strong>L</strong> and <strong>R</strong> markers along the horizontal line to the spacing you want (Equal lock keeps them mirrored).</li>
+          <li>Place the physical tee markers to match those on-screen handles.</li>
         </ol>
         <p class="help-note">Works best in Safari on iPhone. Use the rear camera outdoors; pick a line color that shows against grass or sky.</p>
         <button type="button" id="btn-close-help" class="primary">Got it</button>
       </div>
     </aside>
   </div>
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
