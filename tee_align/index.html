@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b1a12" />
+  <title>Tee Align</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=3" />
+</head>
+<body>
+  <div id="app">
+    <video id="camera" playsinline autoplay muted></video>
+    <canvas id="overlay" aria-hidden="true"></canvas>
+
+    <div id="markers" class="markers-layer">
+      <button type="button" id="marker-l" class="marker-handle" aria-label="Drag left tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">L · drag</span>
+      </button>
+      <button type="button" id="marker-r" class="marker-handle" aria-label="Drag right tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">R · drag</span>
+      </button>
+    </div>
+
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-mark">Tee Align</span>
+        <span class="brand-sub">Marker square-up</span>
+      </div>
+      <button type="button" id="btn-help" class="icon-btn" aria-label="How to use">?</button>
+    </header>
+
+    <div class="hud-labels" aria-hidden="true">
+      <span id="label-aim" class="label-aim">AIM — fairway target</span>
+    </div>
+
+    <footer class="controls">
+      <button type="button" id="btn-start" class="primary">Enable camera</button>
+      <div class="control-row hidden" id="live-controls">
+        <button type="button" id="btn-rot-ccw" class="secondary" aria-label="Rotate counter-clockwise">Rotate ↺</button>
+        <button type="button" id="btn-rot-cw" class="secondary" aria-label="Rotate clockwise">Rotate ↻</button>
+        <button type="button" id="btn-rot-reset" class="secondary">Level</button>
+        <button type="button" id="btn-color" class="secondary">Line: lime</button>
+        <button type="button" id="btn-link" class="secondary" aria-pressed="true">Equal lock: on</button>
+        <button type="button" id="btn-thick" class="secondary">Thick lines</button>
+      </div>
+      <p id="status" class="status" role="status"></p>
+    </footer>
+
+    <aside id="help" class="help-sheet" hidden>
+      <div class="help-inner">
+        <h1>Set tee markers square</h1>
+        <ol>
+          <li>Stand behind the teeing ground, looking down the hole.</li>
+          <li>Put the <strong>AIM</strong> line on the fairway spot you want the tee to face.</li>
+          <li>Use <strong>Rotate</strong> (or two fingers) to twist the marker line around the center until the tee face looks right — AIM stays square to it.</li>
+          <li><strong>Drag</strong> <strong>L</strong> / <strong>R</strong> along that line for spacing, then place physical markers to match.</li>
+        </ol>
+        <p class="help-note">Works best in Safari on iPhone. Use the rear camera outdoors; pick a line color that shows against grass or sky.</p>
+        <button type="button" id="btn-close-help" class="primary">Got it</button>
+      </div>
+    </aside>
+  </div>
+  <script src="app.js?v=3"></script>
+</body>
+</html>

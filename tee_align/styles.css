@@ -1,0 +1,334 @@
+:root {
+  --turf-deep: #0b1a12;
+  --turf-mid: #143524;
+  --lime: #c8f542;
+  --sand: #f0e2c0;
+  --ink: #f7f4ea;
+  --danger: #ff6b4a;
+  --line: #c8f542;
+  --line-glow: rgba(200, 245, 66, 0.35);
+  --pad: max(12px, env(safe-area-inset-left));
+  --pad-r: max(12px, env(safe-area-inset-right));
+  --pad-b: max(16px, env(safe-area-inset-bottom));
+  --pad-t: max(12px, env(safe-area-inset-top));
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(120% 80% at 50% 0%, #1c3d2a 0%, var(--turf-deep) 55%, #050d09 100%);
+  color: var(--ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#camera,
+#overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#camera {
+  background: #000;
+  transform: scaleX(1);
+  pointer-events: none;
+}
+
+#overlay {
+  pointer-events: none;
+  z-index: 2;
+}
+
+.markers-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.marker-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 72px;
+  height: 96px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.marker-handle:active,
+.marker-handle.is-dragging {
+  cursor: grabbing;
+}
+
+.marker-knob {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  background: rgba(11, 26, 18, 0.55);
+  box-shadow:
+    0 0 0 6px var(--line-glow),
+    0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.marker-handle.is-dragging .marker-knob {
+  transform: scale(1.12);
+  background: var(--line);
+}
+
+.marker-tag {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(11, 26, 18, 0.7);
+  border: 1px solid rgba(247, 244, 234, 0.22);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: calc(var(--pad-t) + 8px) var(--pad-r) 0 var(--pad);
+  background: linear-gradient(to bottom, rgba(5, 13, 9, 0.72), transparent);
+}
+
+.brand-mark {
+  display: block;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+
+.brand-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(247, 244, 234, 0.28);
+  background: rgba(11, 26, 18, 0.55);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  backdrop-filter: blur(8px);
+}
+
+.hud-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.label-aim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(11, 26, 18, 0.45);
+  will-change: transform, left, top;
+}
+
+.controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px var(--pad) calc(var(--pad-b) + 12px) var(--pad-r);
+  background: linear-gradient(to top, rgba(5, 13, 9, 0.88), rgba(5, 13, 9, 0.35) 55%, transparent);
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.control-row.rotate-always {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+#live-controls:not(.hidden) {
+  grid-template-columns: 1fr 1fr;
+}
+
+#live-controls #btn-thick {
+  grid-column: 1 / -1;
+}
+
+.control-row.hidden,
+.hidden {
+  display: none !important;
+}
+
+button.primary,
+button.secondary {
+  appearance: none;
+  border: 0;
+  border-radius: 14px;
+  min-height: 48px;
+  padding: 0 16px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+button.primary {
+  background: var(--lime);
+  color: #102016;
+}
+
+button.secondary {
+  background: rgba(247, 244, 234, 0.12);
+  color: var(--ink);
+  border: 1px solid rgba(247, 244, 234, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--sand);
+  text-align: center;
+}
+
+.status.error {
+  color: var(--danger);
+}
+
+.help-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: end center;
+  background: rgba(5, 13, 9, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.help-sheet[hidden] {
+  display: none;
+}
+
+.help-inner {
+  width: min(100%, 440px);
+  margin: 0;
+  padding: 28px 22px calc(var(--pad-b) + 22px);
+  border-radius: 28px 28px 0 0;
+  background:
+    linear-gradient(160deg, rgba(32, 72, 48, 0.95), rgba(11, 26, 18, 0.98)),
+    var(--turf-mid);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+  animation: rise 280ms ease-out;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.help-inner h1 {
+  margin: 0 0 14px;
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+}
+
+.help-inner ol {
+  margin: 0 0 14px;
+  padding-left: 1.2rem;
+  line-height: 1.45;
+}
+
+.help-inner li + li {
+  margin-top: 8px;
+}
+
+.help-note {
+  margin: 0 0 18px;
+  color: var(--sand);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.help-inner .primary {
+  width: 100%;
+}
