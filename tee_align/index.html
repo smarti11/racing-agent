@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b1a12" />
+  <title>Tee Align</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <video id="camera" playsinline autoplay muted></video>
+    <canvas id="overlay" aria-hidden="true"></canvas>
+
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-mark">Tee Align</span>
+        <span class="brand-sub">Marker square-up</span>
+      </div>
+      <button type="button" id="btn-help" class="icon-btn" aria-label="How to use">?</button>
+    </header>
+
+    <div class="hud-labels" aria-hidden="true">
+      <span class="label-aim">AIM — fairway target</span>
+      <span class="label-left">L marker</span>
+      <span class="label-right">R marker</span>
+    </div>
+
+    <footer class="controls">
+      <button type="button" id="btn-start" class="primary">Enable camera</button>
+      <div class="control-row hidden" id="live-controls">
+        <button type="button" id="btn-color" class="secondary">Line: lime</button>
+        <button type="button" id="btn-thick" class="secondary">Thick lines</button>
+      </div>
+      <p id="status" class="status" role="status"></p>
+    </footer>
+
+    <aside id="help" class="help-sheet" hidden>
+      <div class="help-inner">
+        <h1>Set tee markers square</h1>
+        <ol>
+          <li>Stand behind the teeing ground, looking down the hole.</li>
+          <li>Put the vertical <strong>AIM</strong> line on the fairway spot you want the tee to face.</li>
+          <li>Place the left and right tee markers on the horizontal line, equal distance from the center cross.</li>
+          <li>That keeps the tee face pointed at your target.</li>
+        </ol>
+        <p class="help-note">Works best in Safari on iPhone. Use the rear camera outdoors; pick a line color that shows against grass or sky.</p>
+        <button type="button" id="btn-close-help" class="primary">Got it</button>
+      </div>
+    </aside>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
