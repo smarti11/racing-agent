@@ -197,10 +197,11 @@
       ctx.stroke();
     }
 
+    // Arrow points toward the fairway (top of screen when level), away from the tee.
     const fx = Math.sin(angle);
     const fy = -Math.cos(angle);
-    const tip = 56;
-    const base = 74;
+    const tip = 78; // farther from center = fairway direction
+    const base = 58; // closer to center
     const tx = c.x + fx * tip;
     const ty = c.y + fy * tip;
     const bx = c.x + fx * base;
