@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b1a12" />
+  <title>Tee Align</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=5" />
+</head>
+<body>
+  <div id="app">
+    <video id="camera" playsinline autoplay muted></video>
+    <canvas id="freeze" hidden></canvas>
+    <canvas id="overlay"></canvas>
+
+    <div id="markers" class="markers-layer">
+      <button type="button" id="marker-l" class="marker-handle" aria-label="Drag left tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">L · drag</span>
+      </button>
+      <button type="button" id="marker-r" class="marker-handle" aria-label="Drag right tee marker">
+        <span class="marker-knob"></span>
+        <span class="marker-tag">R · drag</span>
+      </button>
+    </div>
+
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-mark">Tee Align</span>
+        <span class="brand-sub">Marker square-up</span>
+      </div>
+      <div class="top-right">
+        <div class="level-meter" title="Phone level">
+          <div id="level-well" class="level-well">
+            <span id="level-bubble" class="level-bubble"></span>
+            <span class="level-cross"></span>
+          </div>
+          <span id="level-text" class="level-text">Level —</span>
+        </div>
+        <button type="button" id="btn-help" class="icon-btn" aria-label="How to use">?</button>
+      </div>
+    </header>
+
+    <div class="hud-labels" aria-hidden="true">
+      <span id="label-aim" class="label-aim">AIM — fairway target</span>
+      <span id="spacing-badge" class="spacing-badge">EQUAL · —</span>
+    </div>
+
+    <footer class="controls">
+      <button type="button" id="btn-start" class="primary">Enable camera</button>
+
+      <div class="control-row rotate-always">
+        <button type="button" id="btn-rot-ccw" class="secondary" aria-label="Rotate counter-clockwise">Rotate ↺</button>
+        <button type="button" id="btn-snap-level" class="secondary">Snap level</button>
+        <button type="button" id="btn-rot-cw" class="secondary" aria-label="Rotate clockwise">Rotate ↻</button>
+      </div>
+
+      <div id="action-controls" class="control-row hidden">
+        <button type="button" id="btn-freeze" class="secondary" aria-pressed="false">Freeze</button>
+        <button type="button" id="btn-photo" class="secondary">Save photo</button>
+      </div>
+
+      <div id="live-controls" class="control-row hidden">
+        <button type="button" id="btn-color" class="secondary">Line: lime</button>
+        <button type="button" id="btn-link" class="secondary" aria-pressed="true">Equal lock: on</button>
+        <button type="button" id="btn-sun" class="secondary" aria-pressed="false">Sun mode: off</button>
+        <button type="button" id="btn-reset-angle" class="secondary">Reset angle</button>
+      </div>
+
+      <p id="status" class="status" role="status"></p>
+    </footer>
+
+    <aside id="help" class="help-sheet" hidden>
+      <div class="help-inner">
+        <h1>Set tee markers square</h1>
+        <ol>
+          <li>Stand behind the teeing ground, looking down the hole.</li>
+          <li>Watch the <strong>level bubble</strong> — keep the phone steady and mostly upright.</li>
+          <li>Put <strong>AIM</strong> on the fairway target. Use <strong>Snap level</strong> to square the tee-face to gravity, or Rotate / two-finger twist.</li>
+          <li><strong>Drag L/R</strong> for spacing (Equal lock mirrors). Check the spacing badge.</li>
+          <li>Tap <strong>Freeze</strong> before walking out to place markers. <strong>Save photo</strong> keeps a record. <strong>Sun mode</strong> boosts outdoor contrast.</li>
+        </ol>
+        <p class="help-note">Works best in Safari on iPhone over HTTPS. Use the rear camera outdoors.</p>
+        <button type="button" id="btn-close-help" class="primary">Got it</button>
+      </div>
+    </aside>
+  </div>
+  <script src="app.js?v=5"></script>
+</body>
+</html>
