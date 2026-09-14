@@ -1,48 +1,62 @@
 (() => {
   const video = document.getElementById("camera");
+  const freezeCanvas = document.getElementById("freeze");
+  const freezeCtx = freezeCanvas.getContext("2d");
   const canvas = document.getElementById("overlay");
   const ctx = canvas.getContext("2d");
+
   const statusEl = document.getElementById("status");
   const btnStart = document.getElementById("btn-start");
   const liveControls = document.getElementById("live-controls");
+  const actionControls = document.getElementById("action-controls");
   const btnColor = document.getElementById("btn-color");
-  const btnThick = document.getElementById("btn-thick");
   const btnLink = document.getElementById("btn-link");
+  const btnSun = document.getElementById("btn-sun");
+  const btnResetAngle = document.getElementById("btn-reset-angle");
   const btnRotCcw = document.getElementById("btn-rot-ccw");
   const btnRotCw = document.getElementById("btn-rot-cw");
-  const btnRotReset = document.getElementById("btn-rot-reset");
+  const btnSnapLevel = document.getElementById("btn-snap-level");
+  const btnFreeze = document.getElementById("btn-freeze");
+  const btnPhoto = document.getElementById("btn-photo");
   const help = document.getElementById("help");
   const btnHelp = document.getElementById("btn-help");
   const btnCloseHelp = document.getElementById("btn-close-help");
   const markerL = document.getElementById("marker-l");
   const markerR = document.getElementById("marker-r");
   const labelAim = document.getElementById("label-aim");
+  const spacingBadge = document.getElementById("spacing-badge");
+  const levelBubble = document.getElementById("level-bubble");
+  const levelText = document.getElementById("level-text");
+  const levelWell = document.getElementById("level-well");
   const markersLayer = document.getElementById("markers");
   const appEl = document.getElementById("app");
 
   const COLORS = [
     { id: "lime", value: "#c8f542", glow: "rgba(200, 245, 66, 0.35)" },
-    { id: "white", value: "#ffffff", glow: "rgba(255, 255, 255, 0.3)" },
-    { id: "yellow", value: "#ffe566", glow: "rgba(255, 229, 102, 0.35)" },
-    { id: "black", value: "#111111", glow: "rgba(0, 0, 0, 0.35)" },
+    { id: "white", value: "#ffffff", glow: "rgba(255, 255, 255, 0.35)" },
+    { id: "yellow", value: "#ffe566", glow: "rgba(255, 229, 102, 0.4)" },
+    { id: "black", value: "#111111", glow: "rgba(0, 0, 0, 0.4)" },
   ];
 
   const EDGE_PAD = 36;
   const MIN_GAP_FRAC = 0.1;
   const ROT_STEP = (5 * Math.PI) / 180;
+  const LEVEL_OK_DEG = 2.5;
 
   let colorIndex = 0;
-  let thick = true;
   let equalLock = true;
+  let sunMode = false;
+  let frozen = false;
   let stream = null;
   let raf = 0;
-
-  // Marker-line angle around screen Z (0 = horizontal). AIM stays perpendicular.
   let angle = 0;
   let leftFrac = 0.42;
   let rightFrac = 0.42;
+  let phoneRollDeg = 0;
+  let phonePitchDeg = 0;
+  let orientationReady = false;
 
-  function setStatus(msg, isError = false) {
+  function setStatus(msg, isError) {
     statusEl.textContent = msg || "";
     statusEl.classList.toggle("error", Boolean(isError));
   }
@@ -85,64 +99,176 @@
   function angleLabel() {
     let deg = Math.round((angle * 180) / Math.PI);
     deg = ((((deg + 180) % 360) + 360) % 360) - 180;
-    if (Math.abs(deg) < 1) return "level";
-    return `${deg > 0 ? "+" : ""}${deg}°`;
+    if (Math.abs(deg) < 1) return "0°";
+    return (deg > 0 ? "+" : "") + deg + "°";
   }
 
-  function statusHint() {
+  function spacingInfo() {
     const diff = Math.abs(leftFrac - rightFrac);
-    if (!equalLock && diff > 0.02) {
-      return `Rotated ${angleLabel()} · L/R unequal — turn Equal lock on`;
+    const equal = equalLock || diff <= 0.02;
+    if (equal) {
+      const mid = Math.round(((leftFrac + rightFrac) / 2) * 100);
+      return { text: "EQUAL · " + mid + "% width", equal: true };
     }
-    return `Rotated ${angleLabel()} · drag L/R · Rotate or two-finger twist`;
+    return {
+      text: "UNEVEN · L" + Math.round(leftFrac * 100) + "% R" + Math.round(rightFrac * 100) + "%",
+      equal: false,
+    };
+  }
+
+  function updateSpacingBadge() {
+    const s = spacingInfo();
+    spacingBadge.textContent = s.text;
+    spacingBadge.classList.toggle("is-equal", s.equal);
+    spacingBadge.classList.toggle("is-uneven", !s.equal);
+  }
+
+  function refreshHud() {
+    updateSpacingBadge();
+    if (!statusEl.classList.contains("error")) {
+      const s = spacingInfo();
+      const freezeBit = frozen ? " · FROZEN" : "";
+      let levelBit = "";
+      if (orientationReady) {
+        const ok = Math.abs(phoneRollDeg) <= LEVEL_OK_DEG && Math.abs(phonePitchDeg) <= 6;
+        levelBit = ok ? " · phone level" : " · phone tilt " + Math.round(phoneRollDeg) + "°";
+      }
+      setStatus("Aim " + angleLabel() + " · " + s.text + freezeBit + levelBit, false);
+    }
   }
 
   function positionHandles() {
     const l = markerPos("l");
     const r = markerPos("r");
     const deg = (angle * 180) / Math.PI;
-
-    markerL.style.left = `${l.x}px`;
-    markerL.style.top = `${l.y}px`;
-    markerR.style.left = `${r.x}px`;
-    markerR.style.top = `${r.y}px`;
+    markerL.style.left = l.x + "px";
+    markerL.style.top = l.y + "px";
+    markerR.style.left = r.x + "px";
+    markerR.style.top = r.y + "px";
 
     const c = center();
     const fx = Math.sin(angle);
     const fy = -Math.cos(angle);
     const labelDist = Math.min(window.innerHeight, window.innerWidth) * 0.22;
-    labelAim.style.left = `${c.x + fx * labelDist}px`;
-    labelAim.style.top = `${c.y + fy * labelDist}px`;
-    labelAim.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+    labelAim.style.left = c.x + fx * labelDist + "px";
+    labelAim.style.top = c.y + fy * labelDist + "px";
+    labelAim.style.transform = "translate(-50%, -50%) rotate(" + deg + "deg)";
+    updateSpacingBadge();
   }
 
-  function resizeCanvas() {
+  function resizeCanvases() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = window.innerWidth;
     const h = window.innerHeight;
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
+    [canvas, freezeCanvas].forEach(function (c) {
+      c.width = Math.floor(w * dpr);
+      c.height = Math.floor(h * dpr);
+      c.style.width = w + "px";
+      c.style.height = h + "px";
+    });
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    freezeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     leftFrac = clampFrac(leftFrac);
     rightFrac = clampFrac(rightFrac);
     positionHandles();
+    if (frozen) captureFreezeFrame();
   }
 
-  function drawOverlay() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+  function strokeWidth() {
+    return sunMode ? 7 : 4;
+  }
+
+  function drawGuideLines(g, w, h) {
     const c = center();
     const color = COLORS[colorIndex];
-    const lineW = thick ? 4 : 2;
-    const dash = thick ? [14, 10] : [10, 8];
+    const lineW = strokeWidth();
+    const dash = sunMode ? [18, 12] : [14, 10];
     const md = markerDir();
     const ad = aimDir();
     const reach = Math.hypot(w, h);
     const l = markerPos("l");
     const r = markerPos("r");
 
+    g.save();
+
+    if (sunMode) {
+      g.strokeStyle = "#000";
+      g.lineWidth = lineW + 4;
+      g.beginPath();
+      g.setLineDash([]);
+      g.moveTo(c.x - ad.x * reach, c.y - ad.y * reach);
+      g.lineTo(c.x + ad.x * reach, c.y + ad.y * reach);
+      g.stroke();
+      g.beginPath();
+      g.setLineDash(dash);
+      g.moveTo(c.x - md.x * reach, c.y - md.y * reach);
+      g.lineTo(c.x + md.x * reach, c.y + md.y * reach);
+      g.stroke();
+      g.setLineDash([]);
+    }
+
+    g.strokeStyle = color.value;
+    g.fillStyle = color.value;
+    g.lineWidth = lineW;
+    g.shadowColor = color.glow;
+    g.shadowBlur = sunMode ? 14 : 8;
+
+    g.beginPath();
+    g.setLineDash([]);
+    g.moveTo(c.x - ad.x * reach, c.y - ad.y * reach);
+    g.lineTo(c.x + ad.x * reach, c.y + ad.y * reach);
+    g.stroke();
+
+    g.beginPath();
+    g.setLineDash(dash);
+    g.moveTo(c.x - md.x * reach, c.y - md.y * reach);
+    g.lineTo(c.x + md.x * reach, c.y + md.y * reach);
+    g.stroke();
+    g.setLineDash([]);
+
+    const box = sunMode ? 34 : 28;
+    g.strokeRect(c.x - box / 2, c.y - box / 2, box, box);
+
+    g.globalAlpha = 0.45;
+    g.beginPath();
+    g.moveTo(l.x, l.y);
+    g.lineTo(r.x, r.y);
+    g.stroke();
+    g.globalAlpha = 1;
+
+    g.lineWidth = Math.max(2, lineW - 1);
+    const tick = sunMode ? 42 : 34;
+    [l, r].forEach(function (p) {
+      g.beginPath();
+      g.moveTo(p.x - ad.x * tick, p.y - ad.y * tick);
+      g.lineTo(p.x + ad.x * tick, p.y + ad.y * tick);
+      g.stroke();
+    });
+
+    const fx = Math.sin(angle);
+    const fy = -Math.cos(angle);
+    const tip = 78;
+    const base = 58;
+    const tx = c.x + fx * tip;
+    const ty = c.y + fy * tip;
+    const bx = c.x + fx * base;
+    const by = c.y + fy * base;
+    const px = -fy;
+    const py = fx;
+    g.beginPath();
+    g.moveTo(tx, ty);
+    g.lineTo(bx + px * 10, by + py * 10);
+    g.lineTo(bx - px * 10, by - py * 10);
+    g.closePath();
+    g.fill();
+
+    g.restore();
+  }
+
+  function drawOverlay() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const c = center();
     ctx.clearRect(0, 0, w, h);
 
     const vignette = ctx.createRadialGradient(
@@ -154,69 +280,52 @@
       Math.max(w, h) * 0.75
     );
     vignette.addColorStop(0, "rgba(0,0,0,0)");
-    vignette.addColorStop(1, "rgba(0,0,0,0.28)");
+    vignette.addColorStop(1, sunMode ? "rgba(0,0,0,0.38)" : "rgba(0,0,0,0.28)");
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.save();
-    ctx.strokeStyle = color.value;
-    ctx.fillStyle = color.value;
-    ctx.lineWidth = lineW;
-    ctx.shadowColor = color.glow;
-    ctx.shadowBlur = thick ? 10 : 6;
-
-    ctx.beginPath();
-    ctx.setLineDash([]);
-    ctx.moveTo(c.x - ad.x * reach, c.y - ad.y * reach);
-    ctx.lineTo(c.x + ad.x * reach, c.y + ad.y * reach);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.setLineDash(dash);
-    ctx.moveTo(c.x - md.x * reach, c.y - md.y * reach);
-    ctx.lineTo(c.x + md.x * reach, c.y + md.y * reach);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    const box = thick ? 28 : 22;
-    ctx.strokeRect(c.x - box / 2, c.y - box / 2, box, box);
-
-    ctx.globalAlpha = 0.4;
-    ctx.beginPath();
-    ctx.moveTo(l.x, l.y);
-    ctx.lineTo(r.x, r.y);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    ctx.lineWidth = Math.max(2, lineW - 1);
-    const tick = 34;
-    for (const p of [l, r]) {
-      ctx.beginPath();
-      ctx.moveTo(p.x - ad.x * tick, p.y - ad.y * tick);
-      ctx.lineTo(p.x + ad.x * tick, p.y + ad.y * tick);
-      ctx.stroke();
-    }
-
-    // Arrow points toward the fairway (top of screen when level), away from the tee.
-    const fx = Math.sin(angle);
-    const fy = -Math.cos(angle);
-    const tip = 78; // farther from center = fairway direction
-    const base = 58; // closer to center
-    const tx = c.x + fx * tip;
-    const ty = c.y + fy * tip;
-    const bx = c.x + fx * base;
-    const by = c.y + fy * base;
-    const px = -fy;
-    const py = fx;
-    ctx.beginPath();
-    ctx.moveTo(tx, ty);
-    ctx.lineTo(bx + px * 10, by + py * 10);
-    ctx.lineTo(bx - px * 10, by - py * 10);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
+    drawGuideLines(ctx, w, h);
     raf = requestAnimationFrame(drawOverlay);
+  }
+
+  function captureFreezeFrame() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    freezeCtx.fillStyle = "#000";
+    freezeCtx.fillRect(0, 0, w, h);
+    try {
+      const vw = video.videoWidth || w;
+      const vh = video.videoHeight || h;
+      const scale = Math.max(w / vw, h / vh);
+      const dw = vw * scale;
+      const dh = vh * scale;
+      freezeCtx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function setFrozen(next) {
+    if (next && !stream) {
+      setStatus("Enable the camera before freezing.", true);
+      return;
+    }
+    frozen = next;
+    btnFreeze.textContent = frozen ? "Live" : "Freeze";
+    btnFreeze.setAttribute("aria-pressed", frozen ? "true" : "false");
+    document.body.classList.toggle("is-frozen", frozen);
+    freezeCanvas.hidden = !frozen;
+    if (frozen) {
+      captureFreezeFrame();
+      try {
+        video.pause();
+      } catch (e) {
+        /* ignore */
+      }
+    } else {
+      video.play().catch(function () {});
+    }
+    refreshHud();
   }
 
   function projectOntoMarkerAxis(clientX, clientY) {
@@ -229,8 +338,8 @@
     let dragging = false;
     let pointerId = null;
 
-    el.addEventListener("pointerdown", (e) => {
-      if (!help.hidden) return;
+    el.addEventListener("pointerdown", function (e) {
+      if (!help.hidden || frozen) return;
       dragging = true;
       pointerId = e.pointerId;
       el.classList.add("is-dragging");
@@ -239,11 +348,10 @@
       e.stopPropagation();
     });
 
-    el.addEventListener("pointermove", (e) => {
+    el.addEventListener("pointermove", function (e) {
       if (!dragging || e.pointerId !== pointerId) return;
       const hw = halfWidth();
       let along = projectOntoMarkerAxis(e.clientX, e.clientY);
-
       if (side === "l") {
         along = Math.min(-MIN_GAP_FRAC * hw, Math.max(-(hw - EDGE_PAD), along));
         leftFrac = clampFrac(-along / hw);
@@ -253,24 +361,23 @@
         rightFrac = clampFrac(along / hw);
         if (equalLock) leftFrac = rightFrac;
       }
-
       positionHandles();
-      if (!statusEl.classList.contains("error")) setStatus(statusHint());
+      refreshHud();
       e.preventDefault();
     });
 
-    const endDrag = (e) => {
+    function endDrag(e) {
       if (!dragging || e.pointerId !== pointerId) return;
       dragging = false;
       el.classList.remove("is-dragging");
       try {
         el.releasePointerCapture(pointerId);
-      } catch (_) {
+      } catch (err) {
         /* ignore */
       }
       pointerId = null;
-      if (!statusEl.classList.contains("error")) setStatus(statusHint());
-    };
+      refreshHud();
+    }
 
     el.addEventListener("pointerup", endDrag);
     el.addEventListener("pointercancel", endDrag);
@@ -285,23 +392,24 @@
   }
 
   function onPinchDown(e) {
+    if (frozen) return;
     if (e.target.closest(".marker-handle, button, .help-sheet, .controls, .top-bar")) return;
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (activePointers.size === 2) {
-      const pts = [...activePointers.values()];
+      const pts = Array.from(activePointers.values());
       pinchAngle0 = pairAngle(pts[0], pts[1]);
       angleAtPinchStart = angle;
     }
   }
 
   function onPinchMove(e) {
-    if (!activePointers.has(e.pointerId)) return;
+    if (!activePointers.has(e.pointerId) || frozen) return;
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (activePointers.size === 2 && pinchAngle0 != null) {
-      const pts = [...activePointers.values()];
+      const pts = Array.from(activePointers.values());
       angle = angleAtPinchStart + (pairAngle(pts[0], pts[1]) - pinchAngle0);
       positionHandles();
-      if (!statusEl.classList.contains("error")) setStatus(statusHint());
+      refreshHud();
     }
   }
 
@@ -320,32 +428,94 @@
   appEl.addEventListener("pointercancel", onPinchEnd);
 
   function nudgeAngle(delta) {
+    if (frozen) return;
     angle += delta;
     positionHandles();
-    if (!statusEl.classList.contains("error")) setStatus(statusHint());
+    refreshHud();
   }
 
   function resetAngle() {
+    if (frozen) return;
     angle = 0;
     positionHandles();
-    if (!statusEl.classList.contains("error")) setStatus(statusHint());
+    refreshHud();
+  }
+
+  function updateLevelMeter() {
+    const span = 12;
+    const x = Math.max(-1, Math.min(1, phoneRollDeg / span));
+    const y = Math.max(-1, Math.min(1, phonePitchDeg / span));
+    levelBubble.style.left = 50 + x * 34 + "%";
+    levelBubble.style.top = 50 + y * 34 + "%";
+    const isLevel =
+      orientationReady &&
+      Math.abs(phoneRollDeg) <= LEVEL_OK_DEG &&
+      Math.abs(phonePitchDeg) <= 6;
+    levelWell.classList.toggle("is-level", isLevel);
+    if (!orientationReady) levelText.textContent = "Level —";
+    else if (isLevel) levelText.textContent = "Level OK";
+    else levelText.textContent = "Tilt " + Math.round(phoneRollDeg) + "°";
+  }
+
+  let levelTick = 0;
+  function onOrientation(e) {
+    if (e.gamma == null || e.beta == null) return;
+    orientationReady = true;
+    phoneRollDeg = e.gamma;
+    phonePitchDeg = e.beta - 90;
+    updateLevelMeter();
+    levelTick = (levelTick + 1) % 10;
+    if (levelTick === 0 && !statusEl.classList.contains("error")) refreshHud();
+  }
+
+  async function ensureOrientationPermission() {
+    try {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === "granted") {
+          window.addEventListener("deviceorientation", onOrientation, true);
+          return true;
+        }
+        return false;
+      }
+      window.addEventListener("deviceorientation", onOrientation, true);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function snapToGravityLevel() {
+    if (frozen) return;
+    if (!orientationReady) {
+      setStatus("Move the phone a bit, then tap Snap level again.", true);
+      return;
+    }
+    angle = (-phoneRollDeg * Math.PI) / 180;
+    positionHandles();
+    setStatus("Snapped to gravity level · " + angleLabel(), false);
+    refreshHud();
   }
 
   async function startCamera() {
     if (!window.isSecureContext) {
-      setStatus("Camera needs HTTPS (or localhost). Open this page over a secure link.", true);
+      setStatus("Camera needs HTTPS (or localhost).", true);
       return;
     }
-    if (!navigator.mediaDevices?.getUserMedia) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setStatus("This browser cannot access the camera.", true);
       return;
     }
 
     btnStart.disabled = true;
-    setStatus("Starting rear camera…");
+    setStatus("Starting rear camera…", false);
+    await ensureOrientationPermission();
 
     try {
-      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
 
       stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -361,7 +531,9 @@
 
       btnStart.classList.add("hidden");
       liveControls.classList.remove("hidden");
-      setStatus(statusHint());
+      actionControls.classList.remove("hidden");
+      setFrozen(false);
+      refreshHud();
       cancelAnimationFrame(raf);
       drawOverlay();
     } catch (err) {
@@ -369,7 +541,7 @@
       btnStart.disabled = false;
       const name = err && err.name;
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        setStatus("Camera permission blocked. Enable it in Safari settings for this site.", true);
+        setStatus("Camera permission blocked. Enable it in Safari for this site.", true);
       } else if (name === "NotFoundError") {
         setStatus("No camera found on this device.", true);
       } else {
@@ -380,13 +552,8 @@
 
   function cycleColor() {
     colorIndex = (colorIndex + 1) % COLORS.length;
-    btnColor.textContent = `Line: ${COLORS[colorIndex].id}`;
+    btnColor.textContent = "Line: " + COLORS[colorIndex].id;
     applyLineColor();
-  }
-
-  function toggleThickness() {
-    thick = !thick;
-    btnThick.textContent = thick ? "Thick lines" : "Thin lines";
   }
 
   function toggleEqualLock() {
@@ -399,7 +566,86 @@
       rightFrac = leftFrac;
       positionHandles();
     }
-    setStatus(statusHint());
+    refreshHud();
+  }
+
+  function toggleSunMode() {
+    sunMode = !sunMode;
+    document.body.classList.toggle("sun-mode", sunMode);
+    btnSun.textContent = sunMode ? "Sun mode: on" : "Sun mode: off";
+    btnSun.setAttribute("aria-pressed", sunMode ? "true" : "false");
+    refreshHud();
+  }
+
+  function savePhoto() {
+    if (!stream && !frozen) {
+      setStatus("Enable the camera first.", true);
+      return;
+    }
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const out = document.createElement("canvas");
+    out.width = Math.floor(w * dpr);
+    out.height = Math.floor(h * dpr);
+    const octx = out.getContext("2d");
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.fillStyle = "#000";
+    octx.fillRect(0, 0, w, h);
+
+    try {
+      if (frozen) {
+        octx.drawImage(freezeCanvas, 0, 0, freezeCanvas.width, freezeCanvas.height, 0, 0, w, h);
+      } else {
+        const vw = video.videoWidth || w;
+        const vh = video.videoHeight || h;
+        const scale = Math.max(w / vw, h / vh);
+        const dw = vw * scale;
+        const dh = vh * scale;
+        octx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
+    drawGuideLines(octx, w, h);
+
+    const s = spacingInfo();
+    octx.fillStyle = "rgba(5,13,9,0.65)";
+    octx.fillRect(12, h - 64, w - 24, 48);
+    octx.fillStyle = "#f7f4ea";
+    octx.font = "600 16px 'Libre Franklin', sans-serif";
+    octx.fillText("Tee Align · " + s.text + " · aim " + angleLabel(), 24, h - 34);
+
+    out.toBlob(function (blob) {
+      if (!blob) {
+        setStatus("Could not create photo.", true);
+        return;
+      }
+      const file = new File([blob], "tee-align-" + Date.now() + ".jpg", { type: "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: "Tee Align" })
+          .then(function () { setStatus("Photo shared.", false); })
+          .catch(function (err) {
+            if (!err || err.name !== "AbortError") downloadBlob(blob, file.name);
+          });
+        return;
+      }
+      downloadBlob(blob, file.name);
+    }, "image/jpeg", 0.92);
+  }
+
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    setStatus("Photo saved.", false);
   }
 
   function openHelp() {
@@ -410,7 +656,7 @@
     help.hidden = true;
     try {
       localStorage.setItem("teeAlignHelpSeen", "1");
-    } catch (_) {
+    } catch (e) {
       /* ignore */
     }
   }
@@ -418,46 +664,55 @@
   bindDrag(markerL, "l");
   bindDrag(markerR, "r");
   applyLineColor();
-
-  const rotateRow = document.createElement("div");
-  rotateRow.className = "control-row rotate-always";
-  rotateRow.append(btnRotCcw, btnRotCw, btnRotReset);
-  btnStart.insertAdjacentElement("afterend", rotateRow);
+  updateLevelMeter();
+  updateSpacingBadge();
 
   btnStart.addEventListener("click", startCamera);
   btnColor.addEventListener("click", cycleColor);
-  btnThick.addEventListener("click", toggleThickness);
   btnLink.addEventListener("click", toggleEqualLock);
-  btnRotCcw.addEventListener("click", () => nudgeAngle(-ROT_STEP));
-  btnRotCw.addEventListener("click", () => nudgeAngle(ROT_STEP));
-  btnRotReset.addEventListener("click", resetAngle);
+  btnSun.addEventListener("click", toggleSunMode);
+  btnResetAngle.addEventListener("click", resetAngle);
+  btnRotCcw.addEventListener("click", function () { nudgeAngle(-ROT_STEP); });
+  btnRotCw.addEventListener("click", function () { nudgeAngle(ROT_STEP); });
+  btnSnapLevel.addEventListener("click", function () {
+    ensureOrientationPermission().then(function () { snapToGravityLevel(); });
+  });
+  btnFreeze.addEventListener("click", function () { setFrozen(!frozen); });
+  btnPhoto.addEventListener("click", savePhoto);
   btnHelp.addEventListener("click", openHelp);
   btnCloseHelp.addEventListener("click", closeHelp);
 
-  window.addEventListener("resize", resizeCanvas);
-  window.addEventListener("orientationchange", () => setTimeout(resizeCanvas, 250));
+  if (
+    typeof DeviceOrientationEvent !== "undefined" &&
+    typeof DeviceOrientationEvent.requestPermission !== "function"
+  ) {
+    window.addEventListener("deviceorientation", onOrientation, true);
+  }
 
-  resizeCanvas();
+  window.addEventListener("resize", resizeCanvases);
+  window.addEventListener("orientationchange", function () {
+    setTimeout(resizeCanvases, 250);
+  });
+
+  resizeCanvases();
   drawOverlay();
-  setStatus("Rotate tee-face line · drag L/R · Enable camera for live view");
+  setStatus("Enable camera · Snap level · drag L/R · Freeze to place markers", false);
 
   try {
     if (!localStorage.getItem("teeAlignHelpSeen")) openHelp();
-  } catch (_) {
+  } catch (e) {
     openHelp();
   }
 
   let wakeLock = null;
   async function requestWakeLock() {
     try {
-      if ("wakeLock" in navigator) {
-        wakeLock = await navigator.wakeLock.request("screen");
-      }
-    } catch (_) {
+      if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+    } catch (e) {
       /* ignore */
     }
   }
-  document.addEventListener("visibilitychange", () => {
+  document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible" && stream) requestWakeLock();
   });
   btnStart.addEventListener("click", requestWakeLock);
