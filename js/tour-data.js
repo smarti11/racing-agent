@@ -3,7 +3,7 @@
  * Coordinates are WGS84; unlockRadiusMeters is generous for GPS drift in narrow streets.
  */
 window.TOUR = {
-  id: "passi-di-firenze-v2",
+  id: "passi-di-firenze-v3",
   brand: "Passi",
   title: "Passi di Firenze",
   tagline: "A walking audio tour of Florence’s historic heart.",
@@ -158,7 +158,7 @@ window.TOUR = {
       lat: 43.7687,
       lng: 11.262,
       walkFromPrev: "Descend from the piazzale, cross the Arno (Ponte alle Grazie), then continue to Piazza Santa Croce.",
-      audio: "audio/08-santa-croce.mp3",
+      audio: "audio/09-santa-croce.mp3",
       durationSec: 56,
       script: [
         "Piazza Santa Croce opens wide before the Franciscan basilica — Florence’s pantheon. Inside rest Michelangelo, Galileo, Machiavelli, Rossini; outside, the façade’s Star of David recalls architect Matas and the square’s long civic life.",
