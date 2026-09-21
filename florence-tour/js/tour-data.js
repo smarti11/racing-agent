@@ -1,18 +1,18 @@
 /**
- * Passi di Firenze — classic historic-center loop (~2.5–3 km, ~2 hours with stops).
+ * Passi di Firenze — historic-center loop with hillside viewpoint (~4 km, ~2.5 hours with stops).
  * Coordinates are WGS84; unlockRadiusMeters is generous for GPS drift in narrow streets.
  */
 window.TOUR = {
-  id: "passi-di-firenze-v1",
+  id: "passi-di-firenze-v2",
   brand: "Passi",
   title: "Passi di Firenze",
   tagline: "A walking audio tour of Florence’s historic heart.",
-  durationLabel: "About 2 hours · 8 stops",
-  distanceLabel: "~3 km loop",
+  durationLabel: "About 2.5 hours · 9 stops",
+  distanceLabel: "~4 km loop",
   startHint: "Begin at the steps of the Duomo. Allow location access, or use “I’m here” to unlock each stop while testing.",
   unlockRadiusMeters: 90,
-  mapCenter: [43.7711, 11.2532],
-  mapZoom: 15,
+  mapCenter: [43.7685, 11.2575],
+  mapZoom: 14,
   stops: [
     {
       id: "duomo",
@@ -130,23 +130,40 @@ window.TOUR = {
         "You are now in the Oltrarno — literally ‘beyond the Arno.’ This bank feels more lived-in: workshops, neighborhood trattorie, laundry lines, the hum of a Florence that is not only a museum.",
         "Ahead, Palazzo Pitti spreads like a stone cliff. The Medici bought it and made it their grand residence; the Boboli Gardens climb the hill behind. Even if you skip the ticket lines today, notice how the palace turns its back on the river and claims the slope.",
         "Artisans still work leather and wood a few streets west toward Santo Spirito. If you have time after the tour, wander there for a slower Florence.",
-        "Retrace to the bridge, cross back, and bear east along the north bank toward the great Franciscan church of Santa Croce."
+        "For the next stop, head east along the south bank — Via de’ Bardi / Via di San Niccolò — then climb toward Piazzale Michelangelo. The hill is real; take your time."
+      ]
+    },
+    {
+      id: "piazzale-michelangelo",
+      order: 8,
+      name: "Piazzale Michelangelo",
+      shortName: "Piazzale",
+      lat: 43.7629,
+      lng: 11.265,
+      walkFromPrev: "From the Oltrarno, walk east (Via de’ Bardi / San Niccolò), then up to the terrace — about 15–20 minutes uphill.",
+      audio: "audio/09-piazzale-michelangelo.wav",
+      durationSec: 18,
+      script: [
+        "You have earned this view. Piazzale Michelangelo is Florence’s balcony — laid out in the 1860s when the city briefly served as Italy’s capital and wanted a stage for its own skyline.",
+        "The bronze David here is a replica; the original lives at the Accademia. Still, he faces the city he once guarded in stone, and the panorama does the rest: Duomo, Palazzo Vecchio, bridges stitched across the Arno, hills fading to blue.",
+        "Sunset crowds gather for a reason. Even at midday, trace the route you have already walked — from the marble cathedral down through the civic squares and over the goldsmiths’ bridge.",
+        "When you leave, descend toward Porta San Niccolò and cross the river again (Ponte alle Grazie or nearby), then walk to Piazza Santa Croce for the final stop."
       ]
     },
     {
       id: "santa-croce",
-      order: 8,
+      order: 9,
       name: "Piazza Santa Croce",
       shortName: "Santa Croce",
       lat: 43.7687,
       lng: 11.262,
-      walkFromPrev: "Recross Ponte Vecchio, then east via Por Santa Maria / Via dei Neri toward Santa Croce.",
+      walkFromPrev: "Descend from the piazzale, cross the Arno (Ponte alle Grazie), then continue to Piazza Santa Croce.",
       audio: "audio/08-santa-croce.wav",
       durationSec: 19,
       script: [
         "Piazza Santa Croce opens wide before the Franciscan basilica — Florence’s pantheon. Inside rest Michelangelo, Galileo, Machiavelli, Rossini; outside, the façade’s Star of David recalls architect Matas and the square’s long civic life.",
         "This piazza has hosted tournaments, sermons, and the Calcio Storico — a violent Renaissance football still played in June on sand dumped over these stones.",
-        "Stand with your back to the church and look west. You have walked a loop through faith, guild, republic, river, and memory. The dome you started beneath still punctures the skyline if you know where to glance.",
+        "Stand with your back to the church and look toward the hills. You have walked faith, guild, republic, river, viewpoint, and memory. The dome you started beneath still punctures the skyline if you know where to glance.",
         "Your tour ends here. Rest on the steps, find a gelato, or step inside Santa Croce when the light is soft. Grazie for walking with Passi — Florence rewards those who move at the city’s own pace."
       ]
     }

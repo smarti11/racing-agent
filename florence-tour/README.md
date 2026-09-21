@@ -10,7 +10,7 @@ Interactive walking audio tour of Florence’s historic center.
 - **Scripts + placeholder audio** — full narration text per stop; soft ambient WAVs stand in until real voiceovers exist
 - **Progress** — unlocked / heard state saved in `localStorage`
 
-## Route (8 stops, ~3 km)
+## Route (9 stops, ~4 km)
 
 1. Piazza del Duomo  
 2. Baptistery  
@@ -19,7 +19,8 @@ Interactive walking audio tour of Florence’s historic center.
 5. Piazza della Signoria  
 6. Ponte Vecchio  
 7. Oltrarno (Via Guicciardini)  
-8. Piazza Santa Croce  
+8. Piazzale Michelangelo  
+9. Piazza Santa Croce  
 
 ## Run locally
 
