@@ -261,26 +261,37 @@ img {
 .tour__main {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "map"
+    "stops";
   min-height: 0;
+}
+
+.map-panel {
+  grid-area: map;
+}
+
+.stops-panel {
+  grid-area: stops;
 }
 
 @media (min-width: 900px) {
   .tour__main {
     grid-template-columns: minmax(280px, 360px) 1fr;
+    grid-template-areas: "stops map";
     height: calc(100dvh - 3.5rem - 5.5rem);
   }
 }
 
 .map-panel {
   position: relative;
-  min-height: 42vh;
+  min-height: 48vh;
   background: #c5d5d8;
 }
 
 @media (min-width: 900px) {
   .map-panel {
     min-height: 0;
-    order: 2;
   }
 }
 
@@ -332,7 +343,6 @@ img {
   .stops-panel {
     border-top: none;
     border-right: 1px solid rgba(14, 28, 34, 0.08);
-    order: 1;
   }
 }
 
@@ -526,6 +536,13 @@ img {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+#im-here-btn:not(:disabled) {
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.35);
 }
 
 .player .btn--ghost {

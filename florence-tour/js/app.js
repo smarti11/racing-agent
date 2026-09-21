@@ -175,6 +175,12 @@
         <span class="stop-badge">${badge}</span>
       `;
       btn.addEventListener("click", () => selectStop(stop.id));
+      // Double-click / long-press alternative: unlock from the list itself
+      btn.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+        selectStop(stop.id);
+        if (!state.unlocked.has(stop.id)) imHere();
+      });
       li.appendChild(btn);
       els.stopList.appendChild(li);
     });
@@ -404,8 +410,16 @@
   function imHere() {
     const stop = activeStop();
     if (!stop) return;
+    const wasLocked = !state.unlocked.has(stop.id);
     unlockStop(stop.id, "I’m here");
     selectStop(stop.id);
+    if (wasLocked) {
+      // Ensure play is ready and script visible after manual unlock
+      state.scriptOpen = true;
+      els.scriptDrawer.classList.add("is-open");
+      els.scriptToggle.textContent = "Hide script";
+      els.playBtn.focus();
+    }
   }
 
   function toggleScript() {
