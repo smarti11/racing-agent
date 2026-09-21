@@ -131,7 +131,7 @@
         title: stop.name,
       }).addTo(map);
 
-      marker.on("click", () => selectStop(stop.id));
+      marker.on("click", () => activateStop(stop.id));
       stopMarkers.set(stop.id, marker);
     });
 
@@ -174,13 +174,7 @@
         </span>
         <span class="stop-badge">${badge}</span>
       `;
-      btn.addEventListener("click", () => selectStop(stop.id));
-      // Double-click / long-press alternative: unlock from the list itself
-      btn.addEventListener("dblclick", (e) => {
-        e.preventDefault();
-        selectStop(stop.id);
-        if (!state.unlocked.has(stop.id)) imHere();
-      });
+      btn.addEventListener("click", () => activateStop(stop.id));
       li.appendChild(btn);
       els.stopList.appendChild(li);
     });
@@ -217,8 +211,8 @@
 
     els.playerTitle.textContent = `${stop.order}. ${stop.name}`;
     els.playerSub.textContent = unlocked
-      ? "Placeholder ambient audio · read along with the script"
-      : "Locked — walk closer or tap I’m here";
+      ? "Tap ▶ or the stop number to play · read along with the script"
+      : "Locked — tap the stop again to unlock & play, or I’m here";
     els.walkCue.textContent = stop.walkFromPrev;
 
     renderScript(stop);
@@ -229,7 +223,9 @@
     els.markDoneBtn.disabled = !unlocked;
     els.imHereBtn.disabled = unlocked;
 
-    if (els.audio.src && !els.audio.paused) {
+    const switching =
+      els.audio.dataset.stopId && els.audio.dataset.stopId !== stop.id;
+    if (switching && !els.audio.paused) {
       els.audio.pause();
       updatePlayButton();
     }
@@ -239,6 +235,7 @@
       if (els.audio.dataset.stopId !== stop.id) {
         els.audio.src = abs;
         els.audio.dataset.stopId = stop.id;
+        els.audio.load();
         els.timeDur.textContent = formatTime(stop.durationSec);
         els.scrub.value = 0;
         els.timeCur.textContent = "0:00";
@@ -256,6 +253,66 @@
 
     if (opts.pan !== false && map) {
       map.panTo([stop.lat, stop.lng], { animate: true });
+    }
+
+    if (opts.autoplay && unlocked) {
+      playCurrent();
+    }
+  }
+
+  /** Tap a stop number/pin: unlock if needed, then play. */
+  function activateStop(id) {
+    const stop = stopById(id);
+    if (!stop) return;
+
+    if (!state.unlocked.has(id)) {
+      state.unlocked.add(id);
+      saveProgress();
+      setGeoStatus(`Unlocked: ${stop.shortName} (tapped)`);
+    }
+
+    selectStop(id, { autoplay: true });
+  }
+
+  let playToken = 0;
+
+  function playCurrent() {
+    const stop = activeStop();
+    if (!stop || !state.unlocked.has(stop.id)) return;
+
+    const token = ++playToken;
+    const abs = new URL(stop.audio, window.location.href).href;
+    if (els.audio.dataset.stopId !== stop.id || !els.audio.getAttribute("src")) {
+      els.audio.src = abs;
+      els.audio.dataset.stopId = stop.id;
+      els.audio.load();
+    }
+    els.audio.volume = 1;
+
+    const tryPlay = () => {
+      if (token !== playToken) return;
+      const p = els.audio.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          if (token !== playToken) return;
+          els.playerSub.textContent = "Playing — read along with the script";
+          updatePlayButton();
+        }).catch(() => {
+          if (token !== playToken) return;
+          els.playerSub.textContent = "Tap ▶ to start audio";
+          setGeoStatus("Tap the ▶ button to play — browser blocked autoplay.");
+          updatePlayButton();
+        });
+      } else {
+        updatePlayButton();
+      }
+    };
+
+    if (els.audio.readyState >= 2) {
+      tryPlay();
+    } else {
+      els.audio.addEventListener("canplay", tryPlay, { once: true });
+      setTimeout(tryPlay, 400);
     }
   }
 
@@ -369,19 +426,17 @@
 
   function togglePlay() {
     const stop = activeStop();
-    if (!stop || !state.unlocked.has(stop.id)) return;
-    if (!els.audio.src) {
-      els.audio.src = new URL(stop.audio, window.location.href).href;
-      els.audio.dataset.stopId = stop.id;
+    if (!stop || !state.unlocked.has(stop.id)) {
+      if (stop) activateStop(stop.id);
+      return;
     }
-    if (els.audio.paused) {
-      els.audio.play().catch(() => {
-        setGeoStatus("Tap play again — browser blocked autoplay.");
-      });
+    if (els.audio.paused || els.audio.ended) {
+      playCurrent();
     } else {
       els.audio.pause();
+      els.playerSub.textContent = "Paused";
+      updatePlayButton();
     }
-    updatePlayButton();
   }
 
   function onTimeUpdate() {
@@ -410,16 +465,10 @@
   function imHere() {
     const stop = activeStop();
     if (!stop) return;
-    const wasLocked = !state.unlocked.has(stop.id);
-    unlockStop(stop.id, "I’m here");
-    selectStop(stop.id);
-    if (wasLocked) {
-      // Ensure play is ready and script visible after manual unlock
-      state.scriptOpen = true;
-      els.scriptDrawer.classList.add("is-open");
-      els.scriptToggle.textContent = "Hide script";
-      els.playBtn.focus();
-    }
+    activateStop(stop.id);
+    state.scriptOpen = true;
+    els.scriptDrawer.classList.add("is-open");
+    els.scriptToggle.textContent = "Hide script";
   }
 
   function toggleScript() {
