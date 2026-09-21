@@ -282,7 +282,8 @@
 
     const token = ++playToken;
     const abs = new URL(stop.audio, window.location.href).href;
-    if (els.audio.dataset.stopId !== stop.id || !els.audio.getAttribute("src")) {
+    // Always (re)assign src so retries recover from a failed load / dead tunnel
+    if (els.audio.dataset.stopId !== stop.id || !els.audio.getAttribute("src") || els.audio.error) {
       els.audio.src = abs;
       els.audio.dataset.stopId = stop.id;
       els.audio.load();
@@ -291,6 +292,12 @@
 
     const tryPlay = () => {
       if (token !== playToken) return;
+      if (els.audio.error) {
+        els.playerSub.textContent = "Audio failed — tap ▶ to retry";
+        setGeoStatus("Could not load audio file. Tap ▶ again.");
+        updatePlayButton();
+        return;
+      }
       const p = els.audio.play();
       if (p && typeof p.then === "function") {
         p.then(() => {
@@ -453,13 +460,25 @@
     const stop = activeStop();
     if (!stop || !state.unlocked.has(stop.id)) return;
     state.done.add(stop.id);
-    // Unlock next stop when leaving? Keep GPS/manual for next — but unlock next for flow continuity after hearing
     const next = TOUR.stops.find((s) => s.order === stop.order + 1);
-    if (next) unlockStop(next.id, "next after listening");
     saveProgress();
     renderStopList();
     refreshMarkers();
-    if (next) selectStop(next.id);
+    if (next) {
+      state.unlocked.add(next.id);
+      saveProgress();
+      // Do not autoplay here — browsers block play() outside a tap. Cue the next stop clearly.
+      selectStop(next.id, { autoplay: false });
+      els.playerSub.textContent = `Next: ${next.shortName} — tap ▶ to play`;
+      setGeoStatus(`Ready for stop ${next.order}: ${next.shortName}. Tap ▶.`);
+      els.playBtn.disabled = false;
+      els.playBtn.focus();
+    } else {
+      els.playerSub.textContent = "Tour complete — grazie for walking with Passi";
+      setGeoStatus("All stops heard.");
+      renderStopList();
+      refreshMarkers();
+    }
   }
 
   function imHere() {
@@ -495,6 +514,13 @@
     els.audio.addEventListener("ended", () => {
       updatePlayButton();
       markDone();
+    });
+    els.audio.addEventListener("error", () => {
+      const stop = activeStop();
+      const name = stop ? stop.shortName : "this stop";
+      els.playerSub.textContent = `Audio failed for ${name} — tap ▶ to retry`;
+      setGeoStatus("Audio failed to load. Check your connection, then tap ▶.");
+      updatePlayButton();
     });
 
     document.getElementById("reset-progress")?.addEventListener("click", () => {
