@@ -33,9 +33,9 @@ python3 -m http.server 8090
 
 Open http://localhost:8090/
 
-## Replace placeholder audio
+## Replace audio
 
-Files in `audio/*.wav` are quiet ambient pads. Drop in recorded MP3/WAV voiceovers with the same filenames (or update paths in `js/tour-data.js`). Keep the on-screen scripts in sync with the recordings.
+Narration MP3s in `audio/` are generated with neural TTS from the scripts in `js/tour-data.js`. Swap in recorded human voiceovers anytime (same filenames) or regenerate after editing scripts.
 
 ## Notes
 

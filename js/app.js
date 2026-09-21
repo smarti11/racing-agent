@@ -211,7 +211,7 @@
 
     els.playerTitle.textContent = `${stop.order}. ${stop.name}`;
     els.playerSub.textContent = unlocked
-      ? "Tap ▶ or the stop number to play · read along with the script"
+      ? "Tap ▶ or the stop number to hear the guide"
       : "Locked — tap the stop again to unlock & play, or I’m here";
     els.walkCue.textContent = stop.walkFromPrev;
 
