@@ -73,12 +73,19 @@
           <button type="button" class="btn btn--ghost btn--small" id="mark-done-btn">Mark heard · next</button>
         </div>
         <div class="script-drawer is-open" id="script-drawer">
+          <div id="photo-gallery" class="photo-gallery" hidden></div>
           <h3>Narration script</h3>
           <p class="script-note">Spoken guide audio with on-screen script — follow along as you walk.</p>
           <div id="script-body"></div>
         </div>
         <audio id="tour-audio" preload="auto" playsinline webkit-playsinline></audio>
       </footer>
+    </div>
+
+    <div class="lightbox" id="lightbox" hidden>
+      <button type="button" class="btn btn--ghost btn--small lightbox__close" id="lightbox-close">Close</button>
+      <img id="lightbox-img" alt="" />
+      <p class="lightbox__caption" id="lightbox-caption"></p>
     </div>
 
     <script

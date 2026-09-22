@@ -35,6 +35,11 @@
     walkCue: document.getElementById("walk-cue"),
     markDoneBtn: document.getElementById("mark-done-btn"),
     audio: document.getElementById("tour-audio"),
+    photoGallery: document.getElementById("photo-gallery"),
+    lightbox: document.getElementById("lightbox"),
+    lightboxImg: document.getElementById("lightbox-img"),
+    lightboxCaption: document.getElementById("lightbox-caption"),
+    lightboxClose: document.getElementById("lightbox-close"),
   };
 
   let map;
@@ -194,6 +199,46 @@
     });
   }
 
+  function renderPhotos(stop) {
+    const photos = stop.photos || [];
+    if (!els.photoGallery) return;
+    els.photoGallery.innerHTML = "";
+    if (!photos.length) {
+      els.photoGallery.hidden = true;
+      return;
+    }
+    els.photoGallery.hidden = false;
+    photos.forEach((photo) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "photo-card";
+      const img = document.createElement("img");
+      img.src = photo.src;
+      img.alt = photo.caption || stop.name;
+      img.loading = "lazy";
+      const cap = document.createElement("figcaption");
+      cap.textContent = photo.caption || "";
+      btn.appendChild(img);
+      btn.appendChild(cap);
+      btn.addEventListener("click", () => openLightbox(photo.src, photo.caption || stop.name));
+      els.photoGallery.appendChild(btn);
+    });
+  }
+
+  function openLightbox(src, caption) {
+    if (!els.lightbox) return;
+    els.lightboxImg.src = src;
+    els.lightboxImg.alt = caption || "";
+    els.lightboxCaption.textContent = caption || "";
+    els.lightbox.hidden = false;
+  }
+
+  function closeLightbox() {
+    if (!els.lightbox) return;
+    els.lightbox.hidden = true;
+    els.lightboxImg.removeAttribute("src");
+  }
+
   function highlightScript(progress) {
     const paras = els.scriptBody.querySelectorAll("p");
     if (!paras.length) return;
@@ -216,6 +261,7 @@
     els.walkCue.textContent = stop.walkFromPrev;
 
     renderScript(stop);
+    renderPhotos(stop);
     highlightScript(0);
 
     els.playBtn.disabled = !unlocked;
@@ -502,6 +548,13 @@
     els.locateBtn.addEventListener("click", locateOnce);
     els.scriptToggle.addEventListener("click", toggleScript);
     els.markDoneBtn.addEventListener("click", markDone);
+    els.lightboxClose?.addEventListener("click", closeLightbox);
+    els.lightbox?.addEventListener("click", (e) => {
+      if (e.target === els.lightbox) closeLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+    });
 
     els.scrub.addEventListener("input", () => {
       if (!els.audio.duration) return;
