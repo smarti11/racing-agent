@@ -3,7 +3,7 @@
  * Coordinates are WGS84; unlockRadiusMeters is generous for GPS drift in narrow streets.
  */
 window.TOUR = {
-  id: "passi-di-firenze-v4",
+  id: "passi-di-firenze-v5",
   brand: "Passi",
   title: "Passi di Firenze",
   tagline: "A walking audio tour of Florence’s historic heart.",
@@ -130,12 +130,34 @@ window.TOUR = {
       lng: 11.2531,
       walkFromPrev: "Through the Uffizi courtyard to the Arno, then onto the bridge.",
       audio: "audio/06-ponte-vecchio.mp3",
-      durationSec: 47,
+      durationSec: 75,
+      photos: [
+        {
+          src: "images/signoria/david-replica.jpg",
+          caption: "You leave David at the palace door — the Republic’s nerve, staring toward the river."
+        },
+        {
+          src: "images/signoria/hercules-cacus.jpg",
+          caption: "Hercules and Cacus: Medici muscle beside the doorway the Vasari Corridor escapes."
+        },
+        {
+          src: "images/signoria/neptune-fountain.jpg",
+          caption: "Neptune’s fountain — the square’s sea god before you trade stone for the Arno."
+        },
+        {
+          src: "images/signoria/judith-holofernes.jpg",
+          caption: "Judith’s raised sword: civic warning you carry in mind as you walk to the bridge."
+        },
+        {
+          src: "images/signoria/palace-door.jpg",
+          caption: "Palazzo Vecchio’s guarded door — start of the private skyway over Ponte Vecchio."
+        }
+      ],
       script: [
-        "The Ponte Vecchio has spanned the Arno since 1345, shops clinging to its sides like barnacles. Butchers worked here first; the Medici replaced them with goldsmiths so the corridor above would smell of metal, not meat.",
-        "Walk to mid-span and look both ways along the river. Upstream and down, Florence folds into ochre walls and green shutters. Floods have tested this bridge; it alone survived 1944 when others were destroyed.",
-        "The Vasari Corridor runs above the eastern shops — a private skyway from Palazzo Vecchio to Palazzo Pitti. Power preferred not to touch the street.",
-        "Cross fully into the Oltrarno. Your next stop is just beyond the bridge, on the quieter south bank."
+        "You have just left Florence’s outdoor sculpture court. David still guards the palace door; Hercules pins Cacus in Medici triumph; Neptune claims the fountain; Judith lifts her blade. That whole allegory of power sits behind you now — and the Medici preferred not to walk through it with everyone else.",
+        "From those palace walls, Giorgio Vasari built a corridor that slips above the street, through the Uffizi, and out across the Ponte Vecchio — a private skyway so rulers could move from Palazzo Vecchio to Palazzo Pitti without touching the crowd. Look up at the eastern shops: that enclosed passage is their escape hatch from the square of statues.",
+        "The bridge itself has stood since 1345. Butchers clung here first; Cosimo de’ Medici swapped them for goldsmiths so the corridor above would smell of metal, not meat. Stand mid-span: the Arno stretches both ways, ochre walls and green shutters, the only historic bridge to survive 1944.",
+        "Cross fully into the Oltrarno. You have walked from marble myth to working gold — Florence’s argument between republic, dynasty, and river. Your next stop is just beyond, on the quieter south bank."
       ]
     },
     {
