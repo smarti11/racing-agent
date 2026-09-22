@@ -3,7 +3,7 @@
  * Coordinates are WGS84; unlockRadiusMeters is generous for GPS drift in narrow streets.
  */
 window.TOUR = {
-  id: "passi-di-firenze-v3",
+  id: "passi-di-firenze-v4",
   brand: "Passi",
   title: "Passi di Firenze",
   tagline: "A walking audio tour of Florence’s historic heart.",
@@ -91,10 +91,32 @@ window.TOUR = {
       lng: 11.2555,
       walkFromPrev: "Continue south into the wide civic square.",
       audio: "audio/05-signoria.mp3",
-      durationSec: 49,
+      durationSec: 53,
+      photos: [
+        {
+          src: "images/signoria/david-replica.jpg",
+          caption: "Michelangelo’s David (replica) at Palazzo Vecchio"
+        },
+        {
+          src: "images/signoria/hercules-cacus.jpg",
+          caption: "Hercules and Cacus — Baccio Bandinelli"
+        },
+        {
+          src: "images/signoria/neptune-fountain.jpg",
+          caption: "Fountain of Neptune — Bartolomeo Ammannati"
+        },
+        {
+          src: "images/signoria/judith-holofernes.jpg",
+          caption: "Judith and Holofernes — Donatello"
+        },
+        {
+          src: "images/signoria/palace-door.jpg",
+          caption: "Guarded doorway — Palazzo Vecchio"
+        }
+      ],
       script: [
         "Piazza della Signoria is Florence without soft edges. Palazzo Vecchio’s fortress tower still watches the square where the Republic debated, Medici ruled, and Savonarola burned.",
-        "Face the palace. A copy of Michelangelo’s David stands where the original once guarded the doorway — a republican emblem of defiant youth. Neptune’s fountain and Cellini’s Perseus nearby remind you this was also a Medici outdoor gallery.",
+        "Face the palace. A copy of Michelangelo’s David stands where the original once guarded the doorway — a republican emblem of defiant youth. Beside him, Bandinelli’s Hercules and Cacus flexes Medici muscle; Ammannati’s Neptune rises from the fountain; Donatello’s Judith still raises her sword.",
         "Under the Loggia dei Lanzi, sculptures stand in open air like an unfinished conversation between myth and power. Tourists pose; the stone keeps older scores.",
         "When you leave, pass the Uffizi’s narrow courtyard toward the river — the Vasari corridor once let rulers walk above the crowd to the Ponte Vecchio."
       ]
