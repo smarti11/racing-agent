@@ -186,7 +186,22 @@ _ICONIC_EXACT = {
     "buckingham palace",
     "tower of london",
     "eiffel tower",
+    "tour eiffel",
+    "arc de triomphe",
+    "arc du triomphe",
+    "notre-dame de paris",
+    "notre dame de paris",
+    "cathedral of notre dame",
+    "cathedral of notre-dame",
+    "cathédrale notre-dame de paris",
     "statue of liberty",
+    "colosseum",
+    "the colosseum",
+    "pantheon",
+    "the pantheon",
+    "sacré-cœur",
+    "sacre-coeur",
+    "basilica of the sacred heart of paris",
 }
 
 _ICONIC_CONTAINS_RE = re.compile(
@@ -194,9 +209,15 @@ _ICONIC_CONTAINS_RE = re.compile(
     r"\bsmithsonian institution\b|"
     r"\bnational museum of\b|"
     r"\bnational air and space museum\b|"
+    r"\beiffel tower\b|\btour eiffel\b|"
+    r"\barc de triomphe\b|\barc du triomphe\b|"
+    r"\bnotre[- ]dame de paris\b|"
+    r"\bcathedral of notre[- ]dame\b|"
+    r"\bcathédrale notre[- ]dame\b|"
     r"\blouvre\b|\bcolosseum\b|\bpantheon\b|\buffizi\b|"
     r"\bvatican\b|\bsagrada familia\b|\bacropolis\b|"
-    r"\bempire state building\b|\bgolden gate bridge\b"
+    r"\bempire state building\b|\bgolden gate bridge\b|"
+    r"\bsacré[- ]cœur\b|\bsacre[- ]coeur\b"
     r")",
     re.I,
 )
@@ -206,7 +227,11 @@ _NOISE_NAME_RE = re.compile(
     r"peace vigil|carousel|bicycle|bike share|kindergarten|parking|"
     r"pollinator|garden path|tunnel|gift shop|visitor center restroom|"
     r"metro station|\bstation\b|bus stop|atm\b|"
-    r"fellowship|conference center|commission on|task force"
+    r"fellowship|conference center|commission on|task force|"
+    r"tower tours|treasury of|crypte |pavilion|gustave eiffel's office|"
+    r"carrousel de la tour|"
+    r"pr[êe]tres du|priests of|hotel de cassini|h[ôo]tel de castries|"
+    r"h[ôo]tel de brienne|tribunal de commerce"
     r")",
     re.I,
 )
@@ -214,12 +239,17 @@ _NOISE_NAME_RE = re.compile(
 
 def _is_iconic_name(name: str) -> bool:
     low = name.lower().strip()
+    if _NOISE_NAME_RE.search(low):
+        return False
     if low in _ICONIC_EXACT:
         return True
     if _ICONIC_CONTAINS_RE.search(low):
         return True
     # "White House" alone — not "White House Conference Center"
     if re.fullmatch(r"(the )?white house", low):
+        return True
+    # Bare Notre-Dame / Notre Dame when it's clearly the cathedral (not a side chapel).
+    if re.fullmatch(r"(cathedral of )?notre[- ]dame( de paris)?", low):
         return True
     return False
 
@@ -249,10 +279,18 @@ def _poi_score(name: str, tags: dict) -> int:
 
     if historic in ("monument", "castle", "palace", "cathedral", "ruins", "fort"):
         score += 5
+    elif building == "cathedral" or historic == "church" and building == "cathedral":
+        score += 5
     elif historic in ("memorial", "church"):
         score += 2  # many tiny memorials; don't outrank museums
     elif historic:
         score += 1
+
+    # Cathedrals / triumphal arches are headline tourist stops even when historic=church.
+    if building in ("cathedral", "triumphal_arch", "tower") and (tags.get("wikipedia") or iconic):
+        score += 14
+    if historic == "monument" and tourism == "attraction" and tags.get("wikipedia"):
+        score += 8
 
     # Landmark government / civic buildings (White House, Capitol) — not every office=government museum.
     if iconic and (building in ("government", "civic", "public", "palace") or office == "government"):
@@ -278,7 +316,7 @@ def _poi_score(name: str, tags: dict) -> int:
         score -= 20
 
     if iconic:
-        score += 22
+        score += 28
 
     # National / Smithsonian museums are what visitors mean by "the Smithsonian".
     if re.search(r"\b(national museum|smithsonian|national gallery|national archives)\b", low):
@@ -862,10 +900,60 @@ def synthesize_audio(text: str, dest: Path) -> int:
         return 0
 
 
+def _name_family(name: str) -> str:
+    """Collapse near-duplicate attractions (Louvre Museum / Pyramid / Palace)."""
+    low = re.sub(r"[^a-z0-9]+", " ", name.lower()).strip()
+    for stem in (
+        "louvre",
+        "eiffel",
+        "notre dame",
+        "arc de triomphe",
+        "smithsonian",
+        "white house",
+        "washington monument",
+        "lincoln memorial",
+        "pantheon",
+        "orsay",
+        "sacre coeur",
+        "sacr coeur",
+        "sacred heart",
+        "invalides",
+    ):
+        # Normalize accents for family matching
+        norm = (
+            low.replace("é", "e")
+            .replace("è", "e")
+            .replace("ê", "e")
+            .replace("ô", "o")
+            .replace("ç", "c")
+        )
+        if stem in norm or stem in low:
+            return stem.replace(" ", "_")
+    # First two significant tokens
+    parts = [p for p in low.split() if p not in {"the", "of", "de", "du", "la", "le", "des", "national", "museum"}]
+    return " ".join(parts[:2]) if parts else low
+
+
+def _too_close_duplicate(candidate: dict, selected: list[dict], min_m: float = 220) -> bool:
+    """Skip a stop if we already picked a same-family site nearby."""
+    fam = _name_family(candidate["name"])
+    for s in selected:
+        if _name_family(s["name"]) != fam:
+            continue
+        if haversine_m(candidate["lat"], candidate["lng"], s["lat"], s["lng"]) < min_m:
+            return True
+        # Same family even a bit farther (Louvre cluster spans ~200–400m)
+        if fam in {"louvre", "notre dame", "eiffel", "smithsonian"} and haversine_m(
+            candidate["lat"], candidate["lng"], s["lat"], s["lng"]
+        ) < 550:
+            return True
+    return False
+
+
 def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     """
-    Take top-scored stops, with light category diversity so a capital walk
-    is not all tiny memorials when museums / civic landmarks exist.
+    Prefer world-famous landmarks first, then diversify museum/monument/civic,
+    and avoid stuffing the list with three flavors of the same site.
     """
     if len(pois) <= stop_count:
         return list(pois)
@@ -873,13 +961,16 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     def _category(p: dict) -> str:
         tags = p.get("tags") or {}
         name = p["name"].lower()
-        # Museums first — many archives/museums also carry office=government.
         if tags.get("tourism") in ("museum", "gallery") or "smithsonian" in name or "national museum" in name:
             return "museum"
         hist = (tags.get("historic") or "").lower()
-        if hist in ("monument", "memorial", "palace", "castle"):
+        building = (tags.get("building") or "").lower()
+        if hist in ("monument", "memorial", "palace", "castle", "cathedral") or building in (
+            "cathedral",
+            "triumphal_arch",
+            "tower",
+        ):
             return "monument"
-        # Civic = iconic seats of government (White House, Capitol), not every civic building.
         if re.fullmatch(r"(the )?white house", name) or "capitol" in name:
             return "civic"
         if tags.get("building") == "government" and _is_iconic_name(p["name"]):
@@ -890,22 +981,48 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
 
     selected: list[dict] = []
     seen = set()
-    # Seed one of each major category when available (highest score first).
+
+    def _add(p: dict) -> bool:
+        if p["name"] in seen or _too_close_duplicate(p, selected):
+            return False
+        selected.append(p)
+        seen.add(p["name"])
+        return True
+
+    # 1) Force world-famous names into the tour whenever mapped nearby.
+    iconics = [p for p in pois if _is_iconic_name(p["name"])]
+    # Cap iconics so a 12-stop tour still has room for local flavor, but keep the big ones.
+    iconic_slots = min(len(iconics), max(3, stop_count // 2 + 1))
+    for p in iconics:
+        if len(selected) >= iconic_slots:
+            break
+        _add(p)
+
+    # 2) Seed category diversity.
     for want in ("civic", "museum", "monument"):
-        for p in pois:
-            if _category(p) == want and p["name"] not in seen:
-                selected.append(p)
-                seen.add(p["name"])
-                break
         if len(selected) >= stop_count:
             break
+        for p in pois:
+            if _category(p) == want and _add(p):
+                break
+
+    # 3) Fill remaining by score.
     for p in pois:
         if len(selected) >= stop_count:
             break
-        if p["name"] not in seen:
+        _add(p)
+
+    # If dedupe left us short, relax proximity and fill.
+    if len(selected) < stop_count:
+        for p in pois:
+            if len(selected) >= stop_count:
+                break
+            if p["name"] in seen:
+                continue
             selected.append(p)
             seen.add(p["name"])
-    return selected
+
+    return selected[:stop_count]
 
 
 def generate_pack(
@@ -918,22 +1035,39 @@ def generate_pack(
     stop_count = max(3, min(int(stop_count), 12))
     geo = geocode(place_query)
     city = geo["name"]
-    pois: list[dict] = []
-    for r in (radius_m, 3200, 4800):
+    # Wider rings for bigger stop counts — Eiffel/Arc sit ~4–4.5km from Paris center.
+    if stop_count >= 10:
+        radii = (max(radius_m, 3500), 5000, 6500)
+    elif stop_count >= 6:
+        radii = (max(radius_m, 2800), 4500, 6000)
+    else:
+        radii = (radius_m, 3500, 5000)
+
+    merged: dict[str, dict] = {}
+    last_err: Exception | None = None
+    for r in radii:
         try:
-            pois = fetch_pois(geo["lat"], geo["lon"], radius_m=r)
-        except RuntimeError:
-            if pois:
-                break
+            batch = fetch_pois(geo["lat"], geo["lon"], radius_m=r)
+        except RuntimeError as e:
+            last_err = e
+            if merged:
+                continue
             continue
-        if len(pois) >= max(stop_count, 8):
-            break
+        for p in batch:
+            key = p["name"].strip().lower()
+            prev = merged.get(key)
+            if prev is None or p["score"] > prev["score"]:
+                merged[key] = p
+        # Keep widening so far-flung icons (Eiffel, Arc) enter the pool even when
+        # the inner ring already has "enough" minor POIs.
+    pois = sorted(merged.values(), key=lambda p: (-p["score"], p["dist"]))
     if len(pois) < 3:
         raise ValueError(
             f"Not enough mapped attractions near “{place_query}”. Try a larger city or a well-known historic center."
+            + (f" ({last_err})" if last_err and not merged else "")
         )
 
-    # Pick the best-scored landmarks (with civic/museum diversity), then order a walk.
+    # Pick the best-scored landmarks (iconics first), then order a walk.
     must_see = _pick_tour_stops(pois, stop_count)
     chosen = nearest_neighbor_order(must_see, geo["lat"], geo["lon"])
 
