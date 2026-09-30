@@ -127,21 +127,164 @@ def _pretty_place_name(head: str) -> str:
     return " ".join(out) or head
 
 
-def _overpass_query(lat: float, lon: float, radius_m: int) -> str:
-    # Prefer nodes first (faster); include ways as a second pass only if needed.
+def _overpass_tourism_query(lat: float, lon: float, radius_m: int) -> str:
+    """Fast pass: common tourist POIs as nodes/ways."""
     return f"""
     [out:json][timeout:25];
     (
       node["tourism"="attraction"](around:{radius_m},{lat},{lon});
       node["tourism"="museum"](around:{radius_m},{lat},{lon});
-      node["historic"~"monument|castle|ruins|church|cathedral|memorial"](around:{radius_m},{lat},{lon});
+      node["tourism"="gallery"](around:{radius_m},{lat},{lon});
+      node["historic"~"monument|castle|ruins|church|cathedral|memorial|palace|fort"](around:{radius_m},{lat},{lon});
       node["amenity"="place_of_worship"]["name"](around:{radius_m},{lat},{lon});
       way["tourism"="attraction"](around:{radius_m},{lat},{lon});
       way["tourism"="museum"](around:{radius_m},{lat},{lon});
-      way["historic"~"monument|castle|church|cathedral"](around:{radius_m},{lat},{lon});
+      way["tourism"="gallery"](around:{radius_m},{lat},{lon});
+      way["historic"~"monument|castle|church|cathedral|palace|fort"](around:{radius_m},{lat},{lon});
     );
     out center tags;
     """
+
+
+def _overpass_landmark_query(lat: float, lon: float, radius_m: int) -> str:
+    """
+    Second pass: government/civic landmarks often mapped as relations
+    without tourism=* (e.g. White House, Smithsonian Institution Building).
+    """
+    return f"""
+    [out:json][timeout:25];
+    (
+      nwr["building"="government"]["wikipedia"](around:{radius_m},{lat},{lon});
+      nwr["office"="government"]["wikipedia"](around:{radius_m},{lat},{lon});
+      nwr["building"="civic"]["wikipedia"](around:{radius_m},{lat},{lon});
+      nwr["building"="public"]["wikipedia"](around:{radius_m},{lat},{lon});
+      nwr["historic"="palace"](around:{radius_m},{lat},{lon});
+      relation["tourism"="attraction"](around:{radius_m},{lat},{lon});
+      relation["tourism"="museum"](around:{radius_m},{lat},{lon});
+    );
+    out center tags;
+    """
+
+
+# Exact / near-exact landmark names tourists expect (avoid matching side offices).
+_ICONIC_EXACT = {
+    "white house",
+    "the white house",
+    "united states capitol",
+    "us capitol",
+    "u.s. capitol",
+    "smithsonian institution building",
+    "smithsonian castle",
+    "the castle",
+    "lincoln memorial",
+    "jefferson memorial",
+    "washington monument",
+    "national archives",
+    "us national archives",
+    "u.s. national archives",
+    "national gallery of art",
+    "buckingham palace",
+    "tower of london",
+    "eiffel tower",
+    "statue of liberty",
+}
+
+_ICONIC_CONTAINS_RE = re.compile(
+    r"("
+    r"\bsmithsonian institution\b|"
+    r"\bnational museum of\b|"
+    r"\bnational air and space museum\b|"
+    r"\blouvre\b|\bcolosseum\b|\bpantheon\b|\buffizi\b|"
+    r"\bvatican\b|\bsagrada familia\b|\bacropolis\b|"
+    r"\bempire state building\b|\bgolden gate bridge\b"
+    r")",
+    re.I,
+)
+
+_NOISE_NAME_RE = re.compile(
+    r"("
+    r"peace vigil|carousel|bicycle|bike share|kindergarten|parking|"
+    r"pollinator|garden path|tunnel|gift shop|visitor center restroom|"
+    r"metro station|\bstation\b|bus stop|atm\b|"
+    r"fellowship|conference center|commission on|task force"
+    r")",
+    re.I,
+)
+
+
+def _is_iconic_name(name: str) -> bool:
+    low = name.lower().strip()
+    if low in _ICONIC_EXACT:
+        return True
+    if _ICONIC_CONTAINS_RE.search(low):
+        return True
+    # "White House" alone — not "White House Conference Center"
+    if re.fullmatch(r"(the )?white house", low):
+        return True
+    return False
+
+
+def _poi_score(name: str, tags: dict) -> int:
+    """Rank what a walking tourist would actually want to stop for."""
+    low = name.lower()
+    if _NOISE_NAME_RE.search(low):
+        return -50
+
+    score = 0
+    tourism = tags.get("tourism")
+    historic = (tags.get("historic") or "").lower()
+    building = (tags.get("building") or "").lower()
+    office = (tags.get("office") or "").lower()
+    amenity = (tags.get("amenity") or "").lower()
+    iconic = _is_iconic_name(name)
+
+    if tourism == "attraction":
+        score += 5
+    elif tourism == "museum":
+        score += 8  # museums are primary tourist stops
+    elif tourism == "gallery":
+        score += 7
+    elif tourism == "zoo":
+        score += 6
+
+    if historic in ("monument", "castle", "palace", "cathedral", "ruins", "fort"):
+        score += 5
+    elif historic in ("memorial", "church"):
+        score += 2  # many tiny memorials; don't outrank museums
+    elif historic:
+        score += 1
+
+    # Landmark government / civic buildings (White House, Capitol) — not every office=government museum.
+    if iconic and (building in ("government", "civic", "public", "palace") or office == "government"):
+        score += 18
+    elif building == "government" and (tags.get("wikipedia") or tags.get("wikidata")):
+        score += 10
+    elif building in ("civic", "public") and tags.get("wikipedia") and tourism not in ("museum", "gallery"):
+        score += 8
+
+    if tags.get("wikipedia"):
+        score += 4
+    elif tags.get("wikidata"):
+        score += 2
+    if tags.get("name:en"):
+        score += 1
+    if tags.get("heritage") or tags.get("heritage:operator"):
+        score += 2
+
+    # Demote street furniture / fountain memorials unless iconic by name.
+    if amenity == "fountain" and not iconic:
+        score -= 8
+    if amenity in ("community_centre", "kindergarten", "bicycle_rental"):
+        score -= 20
+
+    if iconic:
+        score += 22
+
+    # National / Smithsonian museums are what visitors mean by "the Smithsonian".
+    if re.search(r"\b(national museum|smithsonian|national gallery|national archives)\b", low):
+        score += 10
+
+    return score
 
 
 def _parse_poi_elements(elements: list, origin_lat: float, origin_lon: float) -> list[dict]:
@@ -163,17 +306,9 @@ def _parse_poi_elements(elements: list, origin_lat: float, origin_lon: float) ->
             if "lat" not in c:
                 continue
             plat, plon = float(c["lat"]), float(c["lon"])
-        score = 0
-        if tags.get("tourism") == "attraction":
-            score += 5
-        if tags.get("tourism") == "museum":
-            score += 4
-        if tags.get("historic"):
-            score += 3
-        if tags.get("wikipedia") or tags.get("wikidata"):
-            score += 2
-        if tags.get("name:en"):
-            score += 1
+        score = _poi_score(name.strip(), tags)
+        if score < 0:
+            continue
         pois.append(
             {
                 "name": name.strip(),
@@ -188,20 +323,40 @@ def _parse_poi_elements(elements: list, origin_lat: float, origin_lon: float) ->
     return pois
 
 
-def fetch_pois(lat: float, lon: float, radius_m: int = 1800) -> list[dict]:
-    query = _overpass_query(lat, lon, radius_m)
+def _overpass_elements(query: str) -> list:
     data = urllib.parse.urlencode({"data": query}).encode()
     last_err: Exception | None = None
     for endpoint in OVERPASS_ENDPOINTS:
         for attempt in range(2):
             try:
                 payload = _http_json(endpoint, data=data, timeout=40)
-                return _parse_poi_elements(payload.get("elements") or [], lat, lon)
+                return payload.get("elements") or []
             except Exception as e:
                 last_err = e
                 time.sleep(0.8 + attempt)
                 continue
-    raise RuntimeError(f"Attraction lookup timed out. Please try again in a moment. ({last_err})")
+    if last_err:
+        raise RuntimeError(str(last_err))
+    return []
+
+
+def fetch_pois(lat: float, lon: float, radius_m: int = 1800) -> list[dict]:
+    elements: list = []
+    last_err: Exception | None = None
+    try:
+        elements.extend(_overpass_elements(_overpass_tourism_query(lat, lon, radius_m)))
+    except Exception as e:
+        last_err = e
+    try:
+        elements.extend(_overpass_elements(_overpass_landmark_query(lat, lon, radius_m)))
+    except Exception as e:
+        last_err = e
+        # Landmark pass is additive; tourism-only results are still usable.
+    if not elements:
+        raise RuntimeError(
+            f"Attraction lookup timed out. Please try again in a moment. ({last_err})"
+        )
+    return _parse_poi_elements(elements, lat, lon)
 
 
 def haversine_m(a_lat, a_lon, b_lat, b_lon) -> float:
@@ -707,33 +862,79 @@ def synthesize_audio(text: str, dest: Path) -> int:
         return 0
 
 
+def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
+    """
+    Take top-scored stops, with light category diversity so a capital walk
+    is not all tiny memorials when museums / civic landmarks exist.
+    """
+    if len(pois) <= stop_count:
+        return list(pois)
+
+    def _category(p: dict) -> str:
+        tags = p.get("tags") or {}
+        name = p["name"].lower()
+        # Museums first — many archives/museums also carry office=government.
+        if tags.get("tourism") in ("museum", "gallery") or "smithsonian" in name or "national museum" in name:
+            return "museum"
+        hist = (tags.get("historic") or "").lower()
+        if hist in ("monument", "memorial", "palace", "castle"):
+            return "monument"
+        # Civic = iconic seats of government (White House, Capitol), not every civic building.
+        if re.fullmatch(r"(the )?white house", name) or "capitol" in name:
+            return "civic"
+        if tags.get("building") == "government" and _is_iconic_name(p["name"]):
+            return "civic"
+        if tags.get("tourism") == "attraction":
+            return "attraction"
+        return "other"
+
+    selected: list[dict] = []
+    seen = set()
+    # Seed one of each major category when available (highest score first).
+    for want in ("civic", "museum", "monument"):
+        for p in pois:
+            if _category(p) == want and p["name"] not in seen:
+                selected.append(p)
+                seen.add(p["name"])
+                break
+        if len(selected) >= stop_count:
+            break
+    for p in pois:
+        if len(selected) >= stop_count:
+            break
+        if p["name"] not in seen:
+            selected.append(p)
+            seen.add(p["name"])
+    return selected
+
+
 def generate_pack(
     place_query: str,
     stop_count: int,
     *,
     with_audio: bool = True,
-    radius_m: int = 1800,
+    radius_m: int = 2200,
 ) -> dict:
     stop_count = max(3, min(int(stop_count), 12))
     geo = geocode(place_query)
     city = geo["name"]
     pois: list[dict] = []
-    for r in (radius_m, 2800, 4500):
+    for r in (radius_m, 3200, 4800):
         try:
             pois = fetch_pois(geo["lat"], geo["lon"], radius_m=r)
         except RuntimeError:
             if pois:
                 break
             continue
-        if len(pois) >= stop_count:
+        if len(pois) >= max(stop_count, 8):
             break
     if len(pois) < 3:
         raise ValueError(
             f"Not enough mapped attractions near “{place_query}”. Try a larger city or a well-known historic center."
         )
 
-    # Pick the best-scored landmarks first (what tourists want), then order a walk.
-    must_see = pois[:stop_count]
+    # Pick the best-scored landmarks (with civic/museum diversity), then order a walk.
+    must_see = _pick_tour_stops(pois, stop_count)
     chosen = nearest_neighbor_order(must_see, geo["lat"], geo["lon"])
 
     tour_id = f"ondemand-{slugify(city)}-{stop_count}-{int(time.time())}"
