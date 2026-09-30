@@ -23,6 +23,11 @@ OVERPASS_ENDPOINTS = (
     "https://overpass.kumi.systems/api/interpreter",
 )
 WIKI = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+WIKI_API = "https://en.wikipedia.org/w/api.php"
+WIKIDATA_ENTITY = "https://www.wikidata.org/wiki/Special:EntityData/{qid}.json"
+WIKIDATA_LABEL = "https://www.wikidata.org/w/api.php"
+
+_label_cache: dict[str, str] = {}
 
 
 def _http_json(url: str, data: bytes | None = None, timeout: int = 45) -> dict | list:
@@ -97,7 +102,7 @@ def geocode(place: str) -> dict:
     for suffix in (" italy", " france", " spain", " germany", " usa", " us", " uk"):
         if head.lower().endswith(suffix):
             head = head[: -len(suffix)].strip()
-    name = head.title() if head else local_name
+    name = _pretty_place_name(head) if head else local_name
     return {
         "lat": float(r["lat"]),
         "lon": float(r["lon"]),
@@ -105,6 +110,21 @@ def geocode(place: str) -> dict:
         "display": r.get("display_name", place),
         "bbox": r.get("boundingbox"),
     }
+
+
+def _pretty_place_name(head: str) -> str:
+    """Title-case a place while keeping short acronyms (DC, NYC, UK)."""
+    keep = {"dc": "DC", "d.c.": "D.C.", "nyc": "NYC", "uk": "UK", "usa": "USA", "us": "US"}
+    out = []
+    for w in head.replace("_", " ").split():
+        key = w.lower()
+        if key in keep:
+            out.append(keep[key])
+        elif len(w) <= 3 and w.isupper():
+            out.append(w)
+        else:
+            out.append(w[:1].upper() + w[1:] if w.islower() or w.istitle() else w[:1].upper() + w[1:].lower())
+    return " ".join(out) or head
 
 
 def _overpass_query(lat: float, lon: float, radius_m: int) -> str:
@@ -205,11 +225,319 @@ def nearest_neighbor_order(pois: list[dict], start_lat: float, start_lon: float)
     return ordered
 
 
-def wiki_summary(name: str, city: str) -> str | None:
-    for title in (name, f"{name} ({city})", f"{name}, {city}"):
+def _osm_wiki_title(tags: dict) -> str | None:
+    """Prefer the linked English Wikipedia article from OSM tags."""
+    for key in ("wikipedia", "wikipedia:en"):
+        val = (tags.get(key) or "").strip()
+        if not val:
+            continue
+        if ":" in val:
+            lang, title = val.split(":", 1)
+            if lang.lower() == "en" and title.strip():
+                return title.strip().replace("_", " ")
+        else:
+            return val.replace("_", " ")
+    return None
+
+
+def _wikidata_qid(tags: dict, summary: dict | None = None) -> str | None:
+    qid = (tags.get("wikidata") or "").strip()
+    if qid.startswith("Q"):
+        return qid
+    if summary and summary.get("wikibase_item"):
+        return summary["wikibase_item"]
+    return None
+
+
+def _format_wikidata_time(value: dict) -> str | None:
+    """Turn a Wikidata time claim into a spoken year / date."""
+    raw = (value or {}).get("time") or ""
+    # +1922-05-30T00:00:00Z
+    m = re.match(r"([+-])(\d+)-(\d{2})-(\d{2})", raw)
+    if not m:
+        return None
+    sign, year_s, month_s, day_s = m.groups()
+    year = int(year_s) * (1 if sign == "+" else -1)
+    if year <= 0:
+        return f"{abs(year) + 1} BCE" if year < 0 else None
+    precision = int((value or {}).get("precision") or 9)
+    month = int(month_s)
+    day = int(day_s)
+    months = (
+        "",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    )
+    if precision >= 11 and month and day:
+        return f"{months[month]} {day}, {year}"
+    if precision >= 10 and month:
+        return f"{months[month]} {year}"
+    return str(year)
+
+
+def _wikidata_label(qid: str) -> str | None:
+    if not qid or not qid.startswith("Q"):
+        return None
+    if qid in _label_cache:
+        return _label_cache[qid]
+    try:
+        time.sleep(0.05)
+        q = urllib.parse.urlencode(
+            {
+                "action": "wbgetentities",
+                "ids": qid,
+                "props": "labels",
+                "languages": "en",
+                "format": "json",
+            }
+        )
+        data = _http_json(f"{WIKIDATA_LABEL}?{q}", timeout=12)
+        label = (
+            data.get("entities", {})
+            .get(qid, {})
+            .get("labels", {})
+            .get("en", {})
+            .get("value")
+        )
+        if label:
+            _label_cache[qid] = label
+            return label
+    except Exception:
+        return None
+    return None
+
+
+def _claim_values(claims: dict, pid: str) -> list:
+    out = []
+    for c in (claims.get(pid) or [])[:4]:
+        snak = c.get("mainsnak") or {}
+        dv = snak.get("datavalue") or {}
+        if "value" in dv:
+            out.append(dv["value"])
+    return out
+
+
+def fetch_wikidata_facts(qid: str) -> dict:
+    """Structured tourist facts: when built/dedicated, architect, style."""
+    facts: dict = {}
+    if not qid:
+        return facts
+    try:
+        time.sleep(0.1)
+        data = _http_json(WIKIDATA_ENTITY.format(qid=qid), timeout=15)
+        ent = (data.get("entities") or {}).get(qid) or {}
+        claims = ent.get("claims") or {}
+    except Exception:
+        return facts
+
+    # Prefer opening/dedication date, then inception / construction
+    for pid, key in (
+        ("P1619", "opened"),
+        ("P571", "built"),
+        ("P580", "started"),
+        ("P577", "published"),
+    ):
+        for val in _claim_values(claims, pid):
+            if isinstance(val, dict) and "time" in val:
+                formatted = _format_wikidata_time(val)
+                if formatted:
+                    facts[key] = formatted
+                    break
+        if key in facts:
+            break
+
+    architects = []
+    for val in _claim_values(claims, "P84"):
+        if isinstance(val, dict) and val.get("id"):
+            label = _wikidata_label(val["id"])
+            if label:
+                architects.append(label)
+    if architects:
+        facts["architect"] = ", ".join(architects[:2])
+
+    creators = []
+    for val in _claim_values(claims, "P170"):
+        if isinstance(val, dict) and val.get("id"):
+            label = _wikidata_label(val["id"])
+            if label and label not in architects:
+                creators.append(label)
+    if creators:
+        facts["creator"] = ", ".join(creators[:2])
+
+    for val in _claim_values(claims, "P149"):
+        if isinstance(val, dict) and val.get("id"):
+            label = _wikidata_label(val["id"])
+            if label:
+                facts["style"] = label
+                break
+
+    for val in _claim_values(claims, "P2048"):  # height
+        if isinstance(val, dict) and "amount" in val:
+            try:
+                amount = float(val["amount"].lstrip("+"))
+                unit = val.get("unit", "")
+                # metres entity Q11573
+                if amount >= 3:
+                    if unit.endswith("Q11573") or "metre" in unit.lower():
+                        facts["height"] = f"{int(round(amount))} meters"
+                    else:
+                        facts["height"] = f"{int(round(amount))} units tall"
+            except Exception:
+                pass
+            break
+
+    return facts
+
+
+def facts_from_osm(tags: dict) -> dict:
+    facts: dict = {}
+    start = tags.get("start_date") or tags.get("year_of_construction") or tags.get("building:year")
+    if start:
+        # OSM often uses 1922 or 1922-05-30
+        m = re.match(r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?", str(start).strip())
+        if m:
+            y, mo, d = m.group(1), m.group(2), m.group(3)
+            months = (
+                "",
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            )
+            if d and mo:
+                facts["built"] = f"{months[int(mo)]} {int(d)}, {y}"
+            elif mo:
+                facts["built"] = f"{months[int(mo)]} {y}"
+            else:
+                facts["built"] = y
+        else:
+            facts["built"] = str(start).strip()
+    if tags.get("architect"):
+        facts["architect"] = tags["architect"]
+    if tags.get("architect:name"):
+        facts["architect"] = tags["architect:name"]
+    if tags.get("heritage") or tags.get("heritage:operator"):
+        facts["heritage"] = tags.get("heritage:operator") or "protected heritage site"
+    return facts
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split on sentence ends without breaking common abbreviations (U.S., Dr., etc.)."""
+    protected = text
+    repl = {
+        "U.S.": "U\u200bS\u200b",
+        "U.S.A.": "U\u200bS\u200bA\u200b",
+        "D.C.": "D\u200bC\u200b",
+        "Dr.": "Dr\u200b",
+        "Mr.": "Mr\u200b",
+        "Mrs.": "Mrs\u200b",
+        "Ms.": "Ms\u200b",
+        "St.": "St\u200b",
+        "Mt.": "Mt\u200b",
+        "No.": "No\u200b",
+        "Gen.": "Gen\u200b",
+        "Jr.": "Jr\u200b",
+        "Sr.": "Sr\u200b",
+    }
+    for a, b in repl.items():
+        protected = protected.replace(a, b)
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", protected) if p.strip()]
+    return [p.replace("\u200b", ".") for p in parts]
+
+
+def _trim_extract(extract: str, max_sentences: int = 6, max_chars: int = 1100) -> str:
+    parts = _split_sentences(extract)
+    # Drop boilerplate / see-also style tails
+    cleaned = []
+    for p in parts:
+        low = p.lower()
+        if low.startswith("coordinates ") or low.startswith("this article"):
+            continue
+        # Drop orphan fragments without a verb (common in wiki intros)
+        if len(p) < 40 and not re.search(r"\b(is|was|are|were|has|had|built|opened|dedicated)\b", low):
+            continue
+        cleaned.append(p)
+    if not cleaned:
+        return ""
+    # Prefer an opening sentence plus sentences that carry dates / people / design.
+    def _score(s: str) -> int:
+        low = s.lower()
+        score = 0
+        if re.search(r"\b(1[0-9]{3}|20[0-2][0-9])\b", s):
+            score += 5
+        if any(w in low for w in ("built", "dedicat", "complet", "opened", "construct", "design", "architect")):
+            score += 3
+        if any(w in low for w in ("statue", "marble", "museum", "memorial", "cathedral", "commission")):
+            score += 1
+        return score
+
+    keep = [cleaned[0]]
+    ranked = sorted(enumerate(cleaned[1:], start=1), key=lambda iv: (-_score(iv[1]), iv[0]))
+    for _, sentence in ranked:
+        if sentence in keep:
+            continue
+        keep.append(sentence)
+        if len(keep) >= max_sentences:
+            break
+    # Restore original order for a natural read
+    order = {s: i for i, s in enumerate(cleaned)}
+    keep.sort(key=lambda s: order.get(s, 99))
+    text = " ".join(keep).strip()
+    if len(text) > max_chars:
+        text = text[: max_chars - 1].rsplit(" ", 1)[0] + "…"
+    return text
+
+
+def fetch_place_story(name: str, city: str, tags: dict) -> dict:
+    """
+    Gather a longer Wikipedia extract + structured when/who/style facts.
+    Returns {extract, facts, title, qid}.
+    """
+    titles = []
+    osm_title = _osm_wiki_title(tags)
+    if osm_title:
+        titles.append(osm_title)
+    titles.extend(
+        [
+            name,
+            f"{name} ({city})",
+            f"{name}, {city}",
+            f"{name} ({city} {tags.get('historic') or tags.get('tourism') or ''})".strip(),
+        ]
+    )
+    # De-dupe while preserving order
+    seen = set()
+    uniq_titles = []
+    for t in titles:
+        key = t.lower()
+        if t and key not in seen:
+            seen.add(key)
+            uniq_titles.append(t)
+
+    summary = None
+    title_used = None
+    for title in uniq_titles:
         slug = urllib.parse.quote(title.replace(" ", "_"), safe="")
         try:
-            time.sleep(0.15)
+            time.sleep(0.12)
             data = _http_json(WIKI + slug, timeout=12)
         except Exception:
             continue
@@ -217,24 +545,137 @@ def wiki_summary(name: str, city: str) -> str | None:
             continue
         extract = (data.get("extract") or "").strip()
         if extract and len(extract) > 40:
-            # keep first ~2 sentences
-            parts = re.split(r"(?<=[.!?])\s+", extract)
-            return " ".join(parts[:2]).strip()
-    return None
+            summary = data
+            title_used = data.get("title") or title
+            break
+
+    extract_text = ""
+    qid = _wikidata_qid(tags, summary)
+    if summary:
+        extract_text = _trim_extract(summary.get("extract") or "")
+        # Always try the fuller intro extract — REST summaries often omit dedication/build lines.
+        if title_used:
+            try:
+                q = urllib.parse.urlencode(
+                    {
+                        "action": "query",
+                        "prop": "extracts",
+                        "exintro": 1,
+                        "explaintext": 1,
+                        "redirects": 1,
+                        "titles": title_used,
+                        "format": "json",
+                    }
+                )
+                time.sleep(0.12)
+                page_data = _http_json(f"{WIKI_API}?{q}", timeout=15)
+                page = next(iter((page_data.get("query") or {}).get("pages", {}).values()))
+                longer = (page.get("extract") or "").strip()
+                if longer:
+                    trimmed = _trim_extract(longer)
+                    # Prefer the version that keeps calendar years / build verbs.
+                    def _richness(t: str) -> int:
+                        return len(re.findall(r"\b(1[0-9]{3}|20[0-2][0-9])\b", t)) + (
+                            2 if re.search(r"dedicat|built|architect|complet", t, re.I) else 0
+                        )
+
+                    if _richness(trimmed) >= _richness(extract_text) and len(trimmed) >= len(extract_text) * 0.8:
+                        extract_text = trimmed
+            except Exception:
+                pass
+
+    facts = facts_from_osm(tags)
+    wd_facts = fetch_wikidata_facts(qid) if qid else {}
+    # Wikidata wins on structured fields when present
+    for k, v in wd_facts.items():
+        if v:
+            facts[k] = v
+
+    return {
+        "title": title_used,
+        "qid": qid,
+        "extract": extract_text or None,
+        "facts": facts,
+    }
 
 
-def build_script(name: str, city: str, tags: dict, wiki: str | None) -> list[str]:
+def _fact_sentences(facts: dict, *, memorial: bool = False) -> list[str]:
+    """Turn structured facts into spoken lines."""
+    lines = []
+    def _prep(date: str) -> str:
+        """Year-only → 'in 1885'; full dates → 'on May 30, 1922'."""
+        return "in" if re.fullmatch(r"\d{4}", date or "") else "on"
+
+    built = facts.get("built") or facts.get("started")
+    opened = facts.get("opened")
+    # Day-level memorial dates from Wikidata inception are usually dedications.
+    day_level = bool(built and re.search(r"[A-Za-z]+ \d+, \d{4}", built or ""))
+    if built and opened and built != opened:
+        lines.append(f"Construction dates to {built}; it opened {_prep(opened)} {opened}.")
+    elif opened:
+        lines.append(f"It opened {_prep(opened)} {opened}.")
+    elif built and (memorial or day_level):
+        lines.append(f"It was dedicated {_prep(built)} {built}.")
+    elif built:
+        lines.append(f"It was built {_prep(built)} {built}.")
+    if facts.get("architect"):
+        arch = facts["architect"].rstrip(".")
+        lines.append(f"The architect was {arch}.")
+    if facts.get("creator") and facts.get("creator") != facts.get("architect"):
+        lines.append(f"Key artwork here is by {facts['creator']}.")
+    style = facts.get("style")
+    if style:
+        style = re.sub(r"\s+architecture$", "", style, flags=re.I)
+        lines.append(f"The style is {style}.")
+    if facts.get("height"):
+        lines.append(f"It rises about {facts['height']}.")
+    return lines
+
+
+def build_script(name: str, city: str, tags: dict, story: dict) -> list[str]:
     kind = tags.get("historic") or tags.get("tourism") or tags.get("amenity") or "landmark"
     kind = str(kind).replace("_", " ")
-    paras = [
-        f"You are at {name} in {city}.",
-    ]
-    if wiki:
-        paras.append(wiki)
-    else:
+    facts = story.get("facts") or {}
+    extract = story.get("extract") or ""
+    memorial = str(tags.get("historic") or "").lower() in ("memorial", "monument") or "memorial" in name.lower()
+
+    paras = [f"You are at {name} in {city}."]
+
+    # Lead with concrete when/who facts so tourists always hear the specifics.
+    fact_lines = _fact_sentences(facts, memorial=memorial)
+    filtered = []
+    extract_l = extract.lower()
+    for line in fact_lines:
+        low = line.lower()
+        year_m = re.search(r"\b(1[0-9]{3}|20[0-2][0-9])\b", line)
+        if year_m and year_m.group(1) in extract:
+            if any(w in extract_l for w in ("dedicat", "built", "complet", "opened", "dates to", "construction")):
+                continue
+        arch = facts.get("architect")
+        if arch and arch.lower() in extract_l and "architect" in low:
+            continue
+        creator = facts.get("creator")
+        if creator and creator.lower() in extract_l and ("artwork" in low or "associated" in low):
+            continue
+        style = facts.get("style") or ""
+        style_core = re.sub(r"\s+architecture$", "", style, flags=re.I).lower()
+        if style_core and style_core in extract_l and "style" in low:
+            continue
+        if "neoclassical" in extract_l and "greek revival" in low:
+            continue
+        filtered.append(line)
+    if filtered:
+        paras.append(" ".join(filtered))
+
+    if extract:
+        paras.append(extract)
+    elif not filtered:
         paras.append(
-            f"This {kind} is one of the places visitors seek out here. Take a moment to look at the details around you — façades, plaques, and the street life that frames it."
+            f"This {kind} is one of the places visitors seek out here. Look for plaques, dates carved in stone, and the details of how it was made."
         )
+    else:
+        paras.append("Take a moment to look at the materials, inscriptions, and views that make this stop distinctive.")
+
     paras.append("When you are ready, continue walking to the next stop on your Passi tour.")
     return paras
 
@@ -302,8 +743,8 @@ def generate_pack(
 
     stops = []
     for i, poi in enumerate(chosen, start=1):
-        wiki = wiki_summary(poi["name"], city)
-        script = build_script(poi["name"], city, poi["tags"], wiki)
+        story = fetch_place_story(poi["name"], city, poi["tags"])
+        script = build_script(poi["name"], city, poi["tags"], story)
         sid = f"{i:02d}-{slugify(poi['name'])}"
         audio_url = None
         duration = 0
@@ -328,6 +769,7 @@ def generate_pack(
                 "durationSec": duration,
                 "audioUrl": audio_url,
                 "script": script,
+                "facts": story.get("facts") or {},
                 "photos": [],
                 "practical": {},
             }
