@@ -135,12 +135,15 @@ def _overpass_tourism_query(lat: float, lon: float, radius_m: int) -> str:
       node["tourism"="attraction"](around:{radius_m},{lat},{lon});
       node["tourism"="museum"](around:{radius_m},{lat},{lon});
       node["tourism"="gallery"](around:{radius_m},{lat},{lon});
-      node["historic"~"monument|castle|ruins|church|cathedral|memorial|palace|fort"](around:{radius_m},{lat},{lon});
+      node["tourism"="artwork"](around:{radius_m},{lat},{lon});
+      node["historic"~"monument|castle|ruins|church|cathedral|memorial|palace|fort|wayside_shrine"](around:{radius_m},{lat},{lon});
+      node["memorial"](around:{radius_m},{lat},{lon});
       node["amenity"="place_of_worship"]["name"](around:{radius_m},{lat},{lon});
       way["tourism"="attraction"](around:{radius_m},{lat},{lon});
       way["tourism"="museum"](around:{radius_m},{lat},{lon});
       way["tourism"="gallery"](around:{radius_m},{lat},{lon});
-      way["historic"~"monument|castle|church|cathedral|palace|fort"](around:{radius_m},{lat},{lon});
+      way["tourism"="artwork"](around:{radius_m},{lat},{lon});
+      way["historic"~"monument|castle|church|cathedral|palace|fort|memorial"](around:{radius_m},{lat},{lon});
     );
     out center tags;
     """
@@ -161,6 +164,27 @@ def _overpass_landmark_query(lat: float, lon: float, radius_m: int) -> str:
       nwr["historic"="palace"](around:{radius_m},{lat},{lon});
       relation["tourism"="attraction"](around:{radius_m},{lat},{lon});
       relation["tourism"="museum"](around:{radius_m},{lat},{lon});
+    );
+    out center tags;
+    """
+
+
+def _overpass_heritage_query(lat: float, lon: float, radius_m: int) -> str:
+    """
+    Local history pass: statues, civic plazas/parks, and documented historic houses
+    that walking tourists expect (Campus Martius, Whitney House, freedom memorials).
+    """
+    r = min(int(radius_m), 4800)
+    return f"""
+    [out:json][timeout:25];
+    (
+      node["tourism"="artwork"]["wikipedia"](around:{r},{lat},{lon});
+      way["tourism"="artwork"]["wikipedia"](around:{r},{lat},{lon});
+      nwr["leisure"="park"]["wikipedia"](around:{r},{lat},{lon});
+      nwr["place"="square"](around:{min(r,3000)},{lat},{lon});
+      nwr["historic"="building"]["wikipedia"](around:{r},{lat},{lon});
+      nwr["building"]["wikipedia"]["name"~"House|Mansion|Manor|Hall|Homestead",i](around:{r},{lat},{lon});
+      nwr["historic"="wayside_shrine"](around:{min(r,2500)},{lat},{lon});
     );
     out center tags;
     """
@@ -202,6 +226,14 @@ _ICONIC_EXACT = {
     "sacré-cœur",
     "sacre-coeur",
     "basilica of the sacred heart of paris",
+    "campus martius park",
+    "campus martius",
+    "gateway to freedom",
+    "the spirit of detroit",
+    "spirit of detroit",
+    "monument to joe louis",
+    "david whitney house",
+    "whitney mansion",
 }
 
 _ICONIC_CONTAINS_RE = re.compile(
@@ -217,7 +249,28 @@ _ICONIC_CONTAINS_RE = re.compile(
     r"\blouvre\b|\bcolosseum\b|\bpantheon\b|\buffizi\b|"
     r"\bvatican\b|\bsagrada familia\b|\bacropolis\b|"
     r"\bempire state building\b|\bgolden gate bridge\b|"
-    r"\bsacré[- ]cœur\b|\bsacre[- ]coeur\b"
+    r"\bsacré[- ]cœur\b|\bsacre[- ]coeur\b|"
+    r"\bcampus martius\b|"
+    r"\bunderground railroad\b|\bgateway to freedom\b|"
+    r"\bspirit of detroit\b|\bmonument to joe louis\b|"
+    r"\bdavid whitney house\b|\bwhitney mansion\b"
+    r")",
+    re.I,
+)
+
+# Local-history subjects walking tourists often expect beyond museums.
+_HERITAGE_SUBJECT_RE = re.compile(
+    r"("
+    r"underground railroad|gateway to freedom|abolition|emancipation|"
+    r"\bfounders?(?:\s+(?:memorial|monument|statue|plaza))?\b|"
+    r"\bpioneer(?:\s+(?:memorial|monument|statue))?\b|"
+    r"\bfirst settler\b|"
+    r"campus martius|"
+    r"spirit of detroit|joe louis|the fist|"
+    r"whitney (house|mansion)|historic (house|mansion|manor|homestead)|"
+    r"civil rights|freedom statue|liberty statue|"
+    r"soldiers?'? and sailors?'?|"
+    r"\bfather of\b|\bcadillac\b"
     r")",
     re.I,
 )
@@ -231,7 +284,42 @@ _NOISE_NAME_RE = re.compile(
     r"tower tours|treasury of|crypte |pavilion|gustave eiffel's office|"
     r"carrousel de la tour|"
     r"pr[êe]tres du|priests of|hotel de cassini|h[ôo]tel de castries|"
-    r"h[ôo]tel de brienne|tribunal de commerce"
+    r"h[ôo]tel de brienne|tribunal de commerce|"
+    r"\bone campus martius\b|\bcampus martius station\b|"
+    r"\bcooperative\b|\bapartments?\b|\bcondo\b|"
+    r"town square cooperative|dte town square"
+    r")",
+    re.I,
+)
+
+# Transit / non-attraction Nominatim classes we never want as walking stops.
+_NOMINATIM_SKIP_TYPES = {
+    ("railway", "station"),
+    ("railway", "halt"),
+    ("railway", "tram_stop"),
+    ("railway", "subway_entrance"),
+    ("highway", "bus_stop"),
+    ("amenity", "bus_station"),
+    ("public_transport", "station"),
+    ("public_transport", "stop_position"),
+    ("public_transport", "platform"),
+    ("aeroway", "aerodrome"),
+    ("shop", "mall"),
+    ("office", "company"),
+    ("office", "yes"),
+}
+
+# Wikipedia geosearch titles that look like local monuments / statues / founders / houses.
+_WIKI_HERITAGE_TITLE_RE = re.compile(
+    r"("
+    r"\bstatue\b|\bmemorial\b|\bmonument\b|\bfountain\b|"
+    r"\bmansion\b|\bhomestead\b|\bmanor\b|"
+    r"\bfounders?\b|\bpioneer\b|\bsettler\b|"
+    r"\bunderground railroad\b|\bgateway to freedom\b|"
+    r"\bcivil rights\b|\bemancipation\b|\babolition\b|"
+    r"\bplaza\b|\bpublic square\b|\btown square\b|"
+    r"campus martius|spirit of detroit|joe louis|whitney house|"
+    r"\bhistoric district\b|\bfort\b|\bpalace\b|\bcastillo\b"
     r")",
     re.I,
 )
@@ -243,6 +331,20 @@ def _is_iconic_name(name: str) -> bool:
         return False
     if low in _ICONIC_EXACT:
         return True
+    # Avoid office/plaza/station hangers-on of famous names ("Spirit of Detroit Plaza").
+    if re.search(
+        r"\b(plaza|station|tower|centre|center|apartments?|building|hotel|office)\b",
+        low,
+    ) and low not in _ICONIC_EXACT:
+        # Still allow exact landmark phrases that legitimately include those words.
+        if not re.fullmatch(
+            r"(the )?(eiffel tower|washington monument|lincoln memorial)",
+            low,
+        ):
+            # Only reject if this is a contains-match hanger-on, not an exact iconic.
+            m = _ICONIC_CONTAINS_RE.search(low)
+            if m and m.group(0).lower() != low and f"the {m.group(0).lower()}" != low:
+                return False
     if _ICONIC_CONTAINS_RE.search(low):
         return True
     # "White House" alone — not "White House Conference Center"
@@ -266,38 +368,71 @@ def _poi_score(name: str, tags: dict) -> int:
     building = (tags.get("building") or "").lower()
     office = (tags.get("office") or "").lower()
     amenity = (tags.get("amenity") or "").lower()
+    leisure = (tags.get("leisure") or "").lower()
+    place = (tags.get("place") or "").lower()
+    artwork = (tags.get("artwork_type") or "").lower()
+    memorial = (tags.get("memorial") or "").lower()
     iconic = _is_iconic_name(name)
+    heritage_subject = bool(_HERITAGE_SUBJECT_RE.search(low))
+    has_wiki = bool(tags.get("wikipedia") or tags.get("wikidata"))
 
     if tourism == "attraction":
         score += 5
     elif tourism == "museum":
-        score += 8  # museums are primary tourist stops
+        score += 7  # strong, but should not drown out local monuments
     elif tourism == "gallery":
-        score += 7
+        score += 5
+    elif tourism == "artwork":
+        score += 6
     elif tourism == "zoo":
         score += 6
 
     if historic in ("monument", "castle", "palace", "cathedral", "ruins", "fort"):
+        score += 6
+    elif building == "cathedral" or (historic == "church" and building == "cathedral"):
         score += 5
-    elif building == "cathedral" or historic == "church" and building == "cathedral":
-        score += 5
-    elif historic in ("memorial", "church"):
-        score += 2  # many tiny memorials; don't outrank museums
+    elif historic in ("memorial", "wayside_shrine") or memorial:
+        score += 5  # civic memory is a walking-tour staple
+    elif historic == "building":
+        score += 4
+    elif historic == "church":
+        score += 2
     elif historic:
         score += 1
 
-    # Cathedrals / triumphal arches are headline tourist stops even when historic=church.
-    if building in ("cathedral", "triumphal_arch", "tower") and (tags.get("wikipedia") or iconic):
-        score += 14
-    if historic == "monument" and tourism == "attraction" and tags.get("wikipedia"):
+    # Statues / public sculpture
+    if artwork in ("statue", "sculpture", "bust") or memorial in ("statue", "sculpture", "bust"):
         score += 8
+        if has_wiki:
+            score += 6
+
+    # Civic parks & squares (Campus Martius) — avoid corporate "Town Square" hangers-on.
+    if leisure == "park" and has_wiki:
+        score += 10
+    if place == "square" or re.search(
+        r"\b(public square|town square|plaza mayor|campus martius)\b", low
+    ):
+        score += 8
+        if has_wiki:
+            score += 6
+
+    # Documented historic houses / mansions (Whitney House, etc.)
+    if has_wiki and re.search(r"\b(house|mansion|manor|homestead|hall)\b", low):
+        if historic in ("building", "house", "manor", "yes") or building not in ("", "apartments", "garage"):
+            score += 12
+
+    # Cathedrals / triumphal arches are headline tourist stops even when historic=church.
+    if building in ("cathedral", "triumphal_arch", "tower") and (has_wiki or iconic):
+        score += 14
+    if historic == "monument" and has_wiki:
+        score += 10
 
     # Landmark government / civic buildings (White House, Capitol) — not every office=government museum.
     if iconic and (building in ("government", "civic", "public", "palace") or office == "government"):
         score += 18
-    elif building == "government" and (tags.get("wikipedia") or tags.get("wikidata")):
+    elif building == "government" and has_wiki:
         score += 10
-    elif building in ("civic", "public") and tags.get("wikipedia") and tourism not in ("museum", "gallery"):
+    elif building in ("civic", "public") and has_wiki and tourism not in ("museum", "gallery"):
         score += 8
 
     if tags.get("wikipedia"):
@@ -309,11 +444,23 @@ def _poi_score(name: str, tags: dict) -> int:
     if tags.get("heritage") or tags.get("heritage:operator"):
         score += 2
 
+    # Local history subjects: underground railroad, founders, civic icons.
+    if heritage_subject:
+        score += 20
+        if has_wiki or historic in ("monument", "memorial", "building"):
+            score += 6
+
     # Demote street furniture / fountain memorials unless iconic by name.
-    if amenity == "fountain" and not iconic:
+    if amenity == "fountain" and not iconic and not heritage_subject:
         score -= 8
     if amenity in ("community_centre", "kindergarten", "bicycle_rental"):
         score -= 20
+    # Aircraft / odd outdoor exhibits shouldn't beat civic monuments.
+    if re.search(r"\b(hawker|hurricane p\d|aircraft|spitfire)\b", low):
+        score -= 6
+    # Keep walks on the queried city's side when possible (e.g. skip Windsor for Detroit).
+    if re.search(r"\bwindsor\b", low) and "detroit" not in low:
+        score -= 15
 
     if iconic:
         score += 28
@@ -384,6 +531,7 @@ def fetch_pois(
     radius_m: int = 1800,
     *,
     include_landmarks: bool = True,
+    include_heritage: bool = True,
 ) -> list[dict]:
     elements: list = []
     last_err: Exception | None = None
@@ -398,11 +546,237 @@ def fetch_pois(
         except Exception as e:
             last_err = e
             # Landmark pass is additive; tourism-only results are still usable.
+    # Statues, plazas, and historic houses — key for local-history walking tours.
+    if include_heritage:
+        try:
+            elements.extend(_overpass_elements(_overpass_heritage_query(lat, lon, radius_m)))
+        except Exception as e:
+            last_err = e
     if not elements:
         raise RuntimeError(
             f"Attraction lookup timed out. Please try again in a moment. ({last_err})"
         )
     return _parse_poi_elements(elements, lat, lon)
+
+
+def fetch_nominatim_heritage(
+    city: str,
+    lat: float,
+    lon: float,
+    radius_m: int = 5000,
+) -> list[dict]:
+    """
+    Seed statues, civic plazas, freedom memorials, and historic houses via Nominatim.
+    Overpass often omits leisure=park / building=retail mansions even when Wikipedia-linked.
+    """
+    dlat = radius_m / 111_000.0
+    dlon = radius_m / (111_000.0 * max(0.25, abs(math.cos(math.radians(lat)))))
+    west, east = lon - dlon, lon + dlon
+    south, north = lat - dlat, lat + dlat
+    viewbox = f"{west},{north},{east},{south}"  # left,top,right,bottom
+
+    city_clean = (city or "").strip()
+    # Generic exhaustive queries (any city) + a few high-signal local-history phrases.
+    # Prefer "Campus Martius Park" over bare "Campus Martius" (tram stop namesake).
+    queries = [
+        f"Campus Martius Park {city_clean}",
+        f"Gateway to Freedom {city_clean}",
+        f"Underground Railroad memorial {city_clean}",
+        f"David Whitney House {city_clean}",
+        f"Whitney Mansion {city_clean}",
+        f"Spirit of Detroit {city_clean}",
+        f"Monument to Joe Louis {city_clean}",
+        f"founders memorial {city_clean}",
+        f"founders monument {city_clean}",
+        f"pioneer monument {city_clean}",
+        f"historic mansion {city_clean}",
+        f"historic house {city_clean}",
+        f"statue {city_clean}",
+        f"sculpture memorial {city_clean}",
+        f"monument {city_clean}",
+        f"war memorial {city_clean}",
+        f"town square {city_clean}",
+        f"public square {city_clean}",
+    ]
+
+    pois: list[dict] = []
+    seen: set[str] = set()
+    for q in queries:
+        params = urllib.parse.urlencode(
+            {
+                "q": q,
+                "format": "json",
+                "limit": 6,
+                "viewbox": viewbox,
+                "bounded": 1,
+                "extratags": 1,
+                "namedetails": 1,
+                "accept-language": "en",
+            }
+        )
+        try:
+            time.sleep(1.05)
+            results = _http_json(f"{NOMINATIM}?{params}", timeout=25)
+        except Exception:
+            continue
+        for r in results or []:
+            cls, typ = (r.get("class") or ""), (r.get("type") or "")
+            if (cls, typ) in _NOMINATIM_SKIP_TYPES or cls in (
+                "railway",
+                "highway",
+                "public_transport",
+                "aeroway",
+            ):
+                continue
+            name = (
+                (r.get("namedetails") or {}).get("name")
+                or (r.get("display_name") or "").split(",")[0]
+            ).strip()
+            if not name or len(name) < 2:
+                continue
+            if _NOISE_NAME_RE.search(name):
+                continue
+            key = name.lower()
+            if key in seen:
+                continue
+            try:
+                plat, plon = float(r["lat"]), float(r["lon"])
+            except Exception:
+                continue
+            dist = haversine_m(lat, lon, plat, plon)
+            if dist > radius_m * 1.15:
+                continue
+            # Skip far-away namesakes / wrong-city hits.
+            display = (r.get("display_name") or "").lower()
+            if city_clean and city_clean.lower() not in display:
+                # Allow clearly relevant heritage names even if city string differs slightly.
+                if not _HERITAGE_SUBJECT_RE.search(name) and not _is_iconic_name(name):
+                    continue
+            extras = r.get("extratags") or {}
+            tags = {
+                **extras,
+                "name": name,
+                "name:en": name,
+            }
+            # Map Nominatim class/type into OSM-like tags when missing.
+            if cls == "tourism" and not tags.get("tourism"):
+                tags["tourism"] = typ
+            if cls == "historic" and not tags.get("historic"):
+                tags["historic"] = typ
+            if cls == "leisure" and not tags.get("leisure"):
+                tags["leisure"] = typ
+            if cls == "building" and not tags.get("building"):
+                tags["building"] = typ or "yes"
+            if cls == "place" and not tags.get("place"):
+                tags["place"] = typ
+            # Prefer park article over office/station namesakes for scoring.
+            if "park" in typ or tags.get("leisure") == "park":
+                tags.setdefault("leisure", "park")
+            score = _poi_score(name, tags)
+            # Nominatim heritage seeds are intentionally boosted into consideration.
+            if _HERITAGE_SUBJECT_RE.search(name) or _is_iconic_name(name):
+                score += 8
+            if score < 0:
+                continue
+            seen.add(key)
+            pois.append(
+                {
+                    "name": name,
+                    "lat": plat,
+                    "lng": plon,
+                    "tags": tags,
+                    "score": score,
+                    "dist": dist,
+                }
+            )
+    pois.sort(key=lambda p: (-p["score"], p["dist"]))
+    return pois
+
+
+def fetch_wikipedia_nearby_heritage(
+    lat: float,
+    lon: float,
+    radius_m: int = 6000,
+) -> list[dict]:
+    """
+    Exhaustive local-history pass: Wikipedia pages near the city center whose
+    titles look like monuments, statues, memorials, founders, or historic houses.
+    Catches places Overpass/Nominatim miss or mis-tag.
+    """
+    radius = max(1000, min(int(radius_m), 10000))
+    params = urllib.parse.urlencode(
+        {
+            "action": "query",
+            "list": "geosearch",
+            "gscoord": f"{lat}|{lon}",
+            "gsradius": str(radius),
+            "gslimit": "80",
+            "format": "json",
+        }
+    )
+    try:
+        data = _http_json(f"{WIKI_API}?{params}", timeout=25)
+    except Exception as e:
+        print("wikipedia geosearch failed", e)
+        return []
+
+    pois: list[dict] = []
+    seen: set[str] = set()
+    for item in data.get("query", {}).get("geosearch") or []:
+        title = (item.get("title") or "").strip()
+        if not title or title in seen:
+            continue
+        if _NOISE_NAME_RE.search(title):
+            continue
+        # Keep heritage-shaped titles, plus anything already treated as iconic.
+        if not (_WIKI_HERITAGE_TITLE_RE.search(title) or _is_iconic_name(title) or _HERITAGE_SUBJECT_RE.search(title)):
+            continue
+        try:
+            plat, plon = float(item["lat"]), float(item["lon"])
+        except Exception:
+            continue
+        dist = float(item.get("dist") or haversine_m(lat, lon, plat, plon))
+        if dist > radius * 1.05:
+            continue
+        tags = {
+            "name": title,
+            "name:en": title,
+            "wikipedia": f"en:{title}",
+        }
+        # Infer a light historic/artwork tag from the title for scoring.
+        low = title.lower()
+        if re.search(r"\b(statue|sculpture|bust)\b", low):
+            tags["tourism"] = "artwork"
+            tags["artwork_type"] = "statue"
+        elif re.search(r"\b(memorial|monument)\b", low):
+            tags["historic"] = "monument"
+        elif re.search(r"\b(mansion|homestead|manor)\b", low) or re.search(
+            r"\b\w+ house\b", low
+        ):
+            tags["historic"] = "building"
+            tags["building"] = "yes"
+        elif re.search(r"\b(park|plaza|square)\b", low):
+            tags["leisure"] = "park" if "park" in low else tags.get("leisure", "")
+            if "square" in low or "plaza" in low:
+                tags["place"] = "square"
+        score = _poi_score(title, tags)
+        if _HERITAGE_SUBJECT_RE.search(title) or _is_iconic_name(title):
+            score += 6
+        if score < 4:
+            continue
+        seen.add(title)
+        pois.append(
+            {
+                "name": title,
+                "lat": plat,
+                "lng": plon,
+                "tags": tags,
+                "score": score,
+                "dist": dist,
+            }
+        )
+    pois.sort(key=lambda p: (-p["score"], p["dist"]))
+    return pois
 
 
 def haversine_m(a_lat, a_lon, b_lat, b_lon) -> float:
@@ -926,6 +1300,11 @@ def _name_family(name: str) -> str:
         "sacr coeur",
         "sacred heart",
         "invalides",
+        "joe louis",
+        "spirit of detroit",
+        "gateway to freedom",
+        "campus martius",
+        "whitney",
     ):
         # Normalize accents for family matching
         norm = (
@@ -950,8 +1329,19 @@ def _too_close_duplicate(candidate: dict, selected: list[dict], min_m: float = 2
             continue
         if haversine_m(candidate["lat"], candidate["lng"], s["lat"], s["lng"]) < min_m:
             return True
-        # Same family even a bit farther (Louvre cluster spans ~200–400m)
-        if fam in {"louvre", "notre dame", "eiffel", "smithsonian"} and haversine_m(
+        # Same family even a bit farther (Louvre cluster spans ~200–400m;
+        # Detroit civic icons also cluster within a few blocks).
+        if fam in {
+            "louvre",
+            "notre_dame",
+            "eiffel",
+            "smithsonian",
+            "spirit_of_detroit",
+            "joe_louis",
+            "gateway_to_freedom",
+            "campus_martius",
+            "whitney",
+        } and haversine_m(
             candidate["lat"], candidate["lng"], s["lat"], s["lng"]
         ) < 550:
             return True
@@ -960,8 +1350,8 @@ def _too_close_duplicate(candidate: dict, selected: list[dict], min_m: float = 2
 
 def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     """
-    Prefer world-famous landmarks first, then diversify museum/monument/civic,
-    and avoid stuffing the list with three flavors of the same site.
+    Prefer world-famous landmarks and local heritage (statues, plazas, historic
+    houses), then diversify museum/monument/civic — don't let museums fill every slot.
     """
     if len(pois) <= stop_count:
         return list(pois)
@@ -969,11 +1359,30 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     def _category(p: dict) -> str:
         tags = p.get("tags") or {}
         name = p["name"].lower()
-        if tags.get("tourism") in ("museum", "gallery") or "smithsonian" in name or "national museum" in name:
-            return "museum"
+        artwork = (tags.get("artwork_type") or "").lower()
+        memorial = (tags.get("memorial") or "").lower()
         hist = (tags.get("historic") or "").lower()
         building = (tags.get("building") or "").lower()
-        if hist in ("monument", "memorial", "palace", "castle", "cathedral") or building in (
+        leisure = (tags.get("leisure") or "").lower()
+        place = (tags.get("place") or "").lower()
+
+        if _HERITAGE_SUBJECT_RE.search(name) or tags.get("tourism") == "artwork" or artwork in (
+            "statue",
+            "sculpture",
+            "bust",
+        ):
+            return "heritage"
+        if hist in ("memorial", "monument") or memorial:
+            return "heritage"
+        if leisure == "park" and (tags.get("wikipedia") or "campus martius" in name):
+            return "heritage"
+        if place == "square" or re.search(r"\b(public square|town square|plaza mayor)\b", name):
+            return "heritage"
+        if tags.get("wikipedia") and re.search(r"\b(house|mansion|manor|homestead)\b", name):
+            return "heritage"
+        if tags.get("tourism") in ("museum", "gallery") or "smithsonian" in name or "national museum" in name:
+            return "museum"
+        if hist in ("palace", "castle", "cathedral") or building in (
             "cathedral",
             "triumphal_arch",
             "tower",
@@ -999,14 +1408,24 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
 
     # 1) Force world-famous names into the tour whenever mapped nearby.
     iconics = [p for p in pois if _is_iconic_name(p["name"])]
-    # Cap iconics so a 12-stop tour still has room for local flavor, but keep the big ones.
     iconic_slots = min(len(iconics), max(3, stop_count // 2 + 1))
     for p in iconics:
         if len(selected) >= iconic_slots:
             break
         _add(p)
 
-    # 2) Seed category diversity.
+    # 2) Seed local heritage early (statues / plazas / historic houses / freedom memorials).
+    heritage_slots = min(
+        sum(1 for p in pois if _category(p) == "heritage"),
+        max(2, stop_count // 3),
+    )
+    for p in pois:
+        if len([s for s in selected if _category(s) == "heritage"]) >= heritage_slots:
+            break
+        if _category(p) == "heritage":
+            _add(p)
+
+    # 3) Seed remaining category diversity.
     for want in ("civic", "museum", "monument"):
         if len(selected) >= stop_count:
             break
@@ -1014,13 +1433,18 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
             if _category(p) == want and _add(p):
                 break
 
-    # 3) Fill remaining by score.
+    # 4) Fill by score, but cap museums so heritage keeps room on long tours.
+    museum_cap = max(3, stop_count // 2) if stop_count >= 8 else stop_count
     for p in pois:
         if len(selected) >= stop_count:
             break
+        if _category(p) == "museum":
+            museum_count = sum(1 for s in selected if _category(s) == "museum")
+            if museum_count >= museum_cap:
+                continue
         _add(p)
 
-    # If dedupe left us short, relax proximity and fill.
+    # If dedupe/caps left us short, relax and fill.
     if len(selected) < stop_count:
         for p in pois:
             if len(selected) >= stop_count:
@@ -1155,6 +1579,30 @@ def generate_pack(
             )
         except RuntimeError as e:
             last_err = e
+
+    # Nominatim + Wikipedia heritage seeds fill gaps Overpass misses
+    # (parks, mansions, named memorials, statues, founders).
+    try:
+        _absorb(
+            fetch_nominatim_heritage(
+                city,
+                geo["lat"],
+                geo["lon"],
+                radius_m=max(primary, 5000),
+            )
+        )
+    except Exception as e:
+        print("nominatim heritage seed failed", e)
+    try:
+        _absorb(
+            fetch_wikipedia_nearby_heritage(
+                geo["lat"],
+                geo["lon"],
+                radius_m=max(primary, 6000),
+            )
+        )
+    except Exception as e:
+        print("wikipedia heritage seed failed", e)
 
     pois = sorted(merged.values(), key=lambda p: (-p["score"], p["dist"]))
     if len(pois) < 3:
