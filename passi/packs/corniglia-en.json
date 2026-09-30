@@ -1,0 +1,236 @@
+{
+  "id": "corniglia-en",
+  "locale": "en",
+  "city": "Corniglia",
+  "title": "Corniglia day walk",
+  "tagline": "A compact Cinque Terre village walk with viewpoint and church stops.",
+  "durationLabel": "About half a day",
+  "distanceLabel": "Village paths",
+  "unlockRadiusMeters": 60,
+  "mapCenter": [
+    44.1205,
+    9.709
+  ],
+  "mapZoom": 16,
+  "stops": [
+    {
+      "id": "terrazza-santa-maria",
+      "order": 1,
+      "name": "Terrazza Santa Maria",
+      "shortName": "Terrazza Santa Maria",
+      "lat": 44.119554,
+      "lng": 9.706791,
+      "walkFromPrev": "Suggested time 09:00",
+      "durationSec": 5,
+      "audioUrl": "/media/corniglia/audio/01-terrazza-santa-maria.mp3",
+      "script": [
+        "Start.",
+        "West terrace over the vines, view toward Vernazza."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:00"
+      }
+    },
+    {
+      "id": "a-c-neva",
+      "order": 2,
+      "name": "A’ Cáneva",
+      "shortName": "A’ Cáneva",
+      "lat": 44.120803,
+      "lng": 9.709174,
+      "walkFromPrev": "Suggested time 09:15",
+      "durationSec": 11,
+      "audioUrl": "/media/corniglia/audio/02-a-c-neva.mp3",
+      "script": [
+        "Optional coffee or focaccia.",
+        "Via Fieschi 10.",
+        "Wednesday hours listed 08:00–20:00.",
+        "A menu price was not verified."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:15"
+      }
+    },
+    {
+      "id": "chiesa-di-san-pietro",
+      "order": 3,
+      "name": "Chiesa di San Pietro",
+      "shortName": "Chiesa di San Pietro",
+      "lat": 44.120654,
+      "lng": 9.709555,
+      "walkFromPrev": "Suggested time 09:30",
+      "durationSec": 6,
+      "audioUrl": "/media/corniglia/audio/03-chiesa-di-san-pietro.mp3",
+      "script": [
+        "Striped Gothic church at the top of Corniglia.",
+        "Look in if the door is open."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:30"
+      }
+    },
+    {
+      "id": "via-serra-trailhead",
+      "order": 4,
+      "name": "Via Serra trailhead",
+      "shortName": "Via Serra trailhead",
+      "lat": 44.121344,
+      "lng": 9.708354,
+      "walkFromPrev": "Suggested time 09:45",
+      "durationSec": 10,
+      "audioUrl": "/media/corniglia/audio/04-via-serra-trailhead.mp3",
+      "script": [
+        "Ticket check for path 592-3.",
+        "Show the €10 Trekking Card.",
+        "If the gate is closed, do not enter."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:45"
+      }
+    },
+    {
+      "id": "prevo",
+      "order": 5,
+      "name": "Prevo",
+      "shortName": "Prevo",
+      "lat": 44.129407,
+      "lng": 9.698527,
+      "walkFromPrev": "Suggested time ~10:45",
+      "durationSec": 10,
+      "audioUrl": "/media/corniglia/audio/05-prevo.mp3",
+      "script": [
+        "Hamlet on 592-3, about an hour out.",
+        "Stone track, olive terraces, a view back to Corniglia and down to Guvano."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "~10:45"
+      }
+    },
+    {
+      "id": "vernazza-harbour",
+      "order": 6,
+      "name": "Vernazza harbour",
+      "shortName": "Vernazza harbour",
+      "lat": 44.13508,
+      "lng": 9.682696,
+      "walkFromPrev": "Suggested time 11:50",
+      "durationSec": 8,
+      "audioUrl": "/media/corniglia/audio/06-vernazza-harbour.mp3",
+      "script": [
+        "Piazza Marconi and Santa Margherita.",
+        "Sit, walk the waterfront.",
+        "No second hike from here."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "11:50"
+      }
+    },
+    {
+      "id": "vernazza-station",
+      "order": 7,
+      "name": "Vernazza station",
+      "shortName": "Vernazza station",
+      "lat": 44.13503,
+      "lng": 9.684545,
+      "walkFromPrev": "Suggested time 13:10",
+      "durationSec": 11,
+      "audioUrl": "/media/corniglia/audio/07-vernazza-station.mp3",
+      "script": [
+        "Train south.",
+        "The sheet shows 13:18, 13:26 and 13:48, Corniglia about 5 minutes later.",
+        "Read the screen."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "13:10"
+      }
+    },
+    {
+      "id": "corniglia-station",
+      "order": 8,
+      "name": "Corniglia station",
+      "shortName": "Corniglia station",
+      "lat": 44.11854,
+      "lng": 9.716306,
+      "walkFromPrev": "Suggested time 13:25",
+      "durationSec": 8,
+      "audioUrl": "/media/corniglia/audio/08-corniglia-station.mp3",
+      "script": [
+        "Then the Lardarina, 377 steps, or the shuttle.",
+        "The Trekking Card covers the ATC shuttle."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "13:25"
+      }
+    },
+    {
+      "id": "la-posada",
+      "order": 9,
+      "name": "La Posada",
+      "shortName": "La Posada",
+      "lat": 44.120393,
+      "lng": 9.710778,
+      "walkFromPrev": "Suggested time 13:45",
+      "durationSec": 10,
+      "audioUrl": "/media/corniglia/audio/09-la-posada.mp3",
+      "script": [
+        "Lunch.",
+        "Via alla Stazione 11.",
+        "Diners report about €20–40 a person.",
+        "Wednesday lunch service is listed."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "13:45"
+      }
+    },
+    {
+      "id": "alberto-gelateria",
+      "order": 10,
+      "name": "Alberto Gelateria",
+      "shortName": "Alberto Gelateria",
+      "lat": 44.120053,
+      "lng": 9.708867,
+      "walkFromPrev": "Suggested time 14:45",
+      "durationSec": 11,
+      "audioUrl": "/media/corniglia/audio/10-alberto-gelateria.mp3",
+      "script": [
+        "Optional granita or gelato.",
+        "Via Fieschi 74.",
+        "Listed about €1–10.",
+        "One review paid €3 for a granita."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "14:45"
+      }
+    },
+    {
+      "id": "largo-taragio",
+      "order": 11,
+      "name": "Largo Taragio",
+      "shortName": "Largo Taragio",
+      "lat": 44.11991,
+      "lng": 9.707998,
+      "walkFromPrev": "Suggested time 15:00",
+      "durationSec": 7,
+      "audioUrl": "/media/corniglia/audio/11-largo-taragio.mp3",
+      "script": [
+        "Back in Corniglia.",
+        "End of the walk.",
+        "At 15:10 start down for the 17:00 boat."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "15:00"
+      }
+    }
+  ]
+}

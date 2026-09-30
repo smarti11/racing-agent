@@ -1,0 +1,34 @@
+{
+  "locale": "en",
+  "brand": "Passi",
+  "tagline": "A walking guide that appears when you do.",
+  "tours": [
+    {
+      "id": "florence-classic-en",
+      "city": "Florence",
+      "title": "Passi di Firenze",
+      "tagline": "Historic-center loop from the Duomo to Piazzale Michelangelo and Santa Croce.",
+      "durationLabel": "About 2.5 hours · 9 stops",
+      "distanceLabel": "~4 km loop",
+      "pack": "florence-classic-en.json"
+    },
+    {
+      "id": "rome-lateran-en",
+      "city": "Rome",
+      "title": "Rome — Lateran to Farnese",
+      "tagline": "Timed walking day from San Giovanni through the Colosseum into the center.",
+      "durationLabel": "Full day · 21 stops",
+      "distanceLabel": "Central Rome on foot",
+      "pack": "rome-lateran-en.json"
+    },
+    {
+      "id": "corniglia-en",
+      "city": "Corniglia",
+      "title": "Corniglia day walk",
+      "tagline": "Compact Cinque Terre village walk with viewpoints and a gelato stop.",
+      "durationLabel": "Half day · 11 stops",
+      "distanceLabel": "Village paths",
+      "pack": "corniglia-en.json"
+    }
+  ]
+}

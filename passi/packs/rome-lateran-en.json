@@ -1,0 +1,439 @@
+{
+  "id": "rome-lateran-en",
+  "locale": "en",
+  "city": "Rome",
+  "title": "Rome — Lateran to Farnese",
+  "tagline": "A timed walking day from San Giovanni through the Colosseum to the historic center.",
+  "durationLabel": "About a full day · timed stops",
+  "distanceLabel": "On foot across central Rome",
+  "unlockRadiusMeters": 90,
+  "mapCenter": [
+    41.895,
+    12.492
+  ],
+  "mapZoom": 13,
+  "stops": [
+    {
+      "id": "piazza-di-san-giovanni-in-laterano-44",
+      "order": 1,
+      "name": "Piazza di San Giovanni in Laterano 44",
+      "shortName": "Piazza di San Giovanni in Latera",
+      "lat": 41.887424,
+      "lng": 12.505327,
+      "walkFromPrev": "Suggested time 09:00",
+      "durationSec": 9,
+      "audioUrl": "/media/rome/audio/01-piazza-di-san-giovanni-in-laterano-44.mp3",
+      "script": [
+        "Start.",
+        "The apartment door, north side of the square.",
+        "No history clip: nothing sourced names a ruler for this building."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:00"
+      }
+    },
+    {
+      "id": "scala-santa",
+      "order": 2,
+      "name": "Scala Santa",
+      "shortName": "Scala Santa",
+      "lat": 41.887115,
+      "lng": 12.506879,
+      "walkFromPrev": "Suggested time 09:05",
+      "durationSec": 17,
+      "audioUrl": "/media/rome/audio/02-scala-santa.mp3",
+      "script": [
+        "Piazza di San Giovanni in Laterano 14.",
+        "Friday morning, sanctuary 06:00–14:00.",
+        "Climb 06:00–13:30, on your knees or by the side stairs.",
+        "Cover shoulders and knees.",
+        "No photos inside."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:05"
+      }
+    },
+    {
+      "id": "lateran-obelisk",
+      "order": 3,
+      "name": "Lateran Obelisk",
+      "shortName": "Lateran Obelisk",
+      "lat": 41.886845,
+      "lng": 12.504805,
+      "walkFromPrev": "Suggested time 09:30",
+      "durationSec": 4,
+      "audioUrl": "/media/rome/audio/03-lateran-obelisk.mp3",
+      "script": [
+        "In the middle of the square, between the door and the basilica."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:30"
+      }
+    },
+    {
+      "id": "saint-john-lateran",
+      "order": 4,
+      "name": "Saint John Lateran",
+      "shortName": "Saint John Lateran",
+      "lat": 41.885849,
+      "lng": 12.505587,
+      "walkFromPrev": "Suggested time 09:45",
+      "durationSec": 11,
+      "audioUrl": "/media/rome/audio/04-saint-john-lateran.mp3",
+      "script": [
+        "The cathedral.",
+        "Free.",
+        "Open every day 07:00–18:30.",
+        "The main door faces this square.",
+        "The Lateran Palace is the building beside it."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "09:45"
+      }
+    },
+    {
+      "id": "lateran-baptistery",
+      "order": 5,
+      "name": "Lateran Baptistery",
+      "shortName": "Lateran Baptistery",
+      "lat": 41.886152,
+      "lng": 12.504306,
+      "walkFromPrev": "Suggested time 10:25",
+      "durationSec": 10,
+      "audioUrl": "/media/rome/audio/05-lateran-baptistery.mp3",
+      "script": [
+        "Just west of the basilica.",
+        "Open daily 09:00–19:00.",
+        "No booking.",
+        "The hours page does not list a separate ticket price."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "10:25"
+      }
+    },
+    {
+      "id": "san-clemente",
+      "order": 6,
+      "name": "San Clemente",
+      "shortName": "San Clemente",
+      "lat": 41.889195,
+      "lng": 12.497538,
+      "walkFromPrev": "Suggested time 10:50",
+      "durationSec": 23,
+      "audioUrl": "/media/rome/audio/06-san-clemente.mp3",
+      "script": [
+        "Entrance on Piazza di San Clemente.",
+        "Morning hours 09:00–12:30, last entrance 12:00.",
+        "Adult €10.",
+        "Book the excavations or see the outside.",
+        "The source names Pope Clement I as the dedicatee.",
+        "It does not name the pope reigning when the present church was built just before 1100."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "10:50"
+      }
+    },
+    {
+      "id": "arch-of-constantine",
+      "order": 7,
+      "name": "Arch of Constantine",
+      "shortName": "Arch of Constantine",
+      "lat": 41.889762,
+      "lng": 12.490667,
+      "walkFromPrev": "Suggested time 11:45",
+      "durationSec": 7,
+      "audioUrl": "/media/rome/audio/07-arch-of-constantine.mp3",
+      "script": [
+        "Between the Colosseum and the Palatine, on your way past.",
+        "This stop is the view from the street."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "11:45"
+      }
+    },
+    {
+      "id": "colosseum",
+      "order": 8,
+      "name": "Colosseum",
+      "shortName": "Colosseum",
+      "lat": 41.890942,
+      "lng": 12.491903,
+      "walkFromPrev": "Suggested time 12:00",
+      "durationSec": 6,
+      "audioUrl": "/media/rome/audio/08-colosseum.mp3",
+      "script": [
+        "Outside only.",
+        "Do not count on going in unless you already have an entry time."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "12:00"
+      }
+    },
+    {
+      "id": "dar-bruttone",
+      "order": 9,
+      "name": "Dar Bruttone",
+      "shortName": "Dar Bruttone",
+      "lat": 41.89663,
+      "lng": 12.490163,
+      "walkFromPrev": "Suggested time 12:25",
+      "durationSec": 16,
+      "audioUrl": "/media/rome/audio/09-dar-bruttone.mp3",
+      "script": [
+        "Lunch.",
+        "Via dei Serpenti 113.",
+        "Open every day 12:00–23:00.",
+        "Pasta on the menu is €10–€15.",
+        "No history clip: no source names an emperor, pope, or king for this restaurant."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "12:25"
+      }
+    },
+    {
+      "id": "trajan-s-column",
+      "order": 10,
+      "name": "Trajan’s Column",
+      "shortName": "Trajan’s Column",
+      "lat": 41.895809,
+      "lng": 12.484273,
+      "walkFromPrev": "Suggested time 13:45",
+      "durationSec": 6,
+      "audioUrl": "/media/rome/audio/10-trajan-s-column.mp3",
+      "script": [
+        "In Trajan’s Forum.",
+        "You come down Via Panisperna and Via Magnanapoli."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "13:45"
+      }
+    },
+    {
+      "id": "piazza-venezia",
+      "order": 11,
+      "name": "Piazza Venezia",
+      "shortName": "Piazza Venezia",
+      "lat": 41.896245,
+      "lng": 12.48237,
+      "walkFromPrev": "Suggested time 14:05",
+      "durationSec": 8,
+      "audioUrl": "/media/rome/audio/11-piazza-venezia.mp3",
+      "script": [
+        "Through-stop.",
+        "The palace on the square is the one in the clip.",
+        "You come back here after Palazzo Farnese for the bus."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "14:05"
+      }
+    },
+    {
+      "id": "vittoriano",
+      "order": 12,
+      "name": "Vittoriano",
+      "shortName": "Vittoriano",
+      "lat": 41.894687,
+      "lng": 12.483066,
+      "walkFromPrev": "Suggested time 14:20",
+      "durationSec": 12,
+      "audioUrl": "/media/rome/audio/12-vittoriano.mp3",
+      "script": [
+        "The monument between this square and the Capitoline.",
+        "The article honours King Victor Emmanuel II.",
+        "It does not name which king was reigning when work began in 1885."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "14:20"
+      }
+    },
+    {
+      "id": "piazza-del-campidoglio",
+      "order": 13,
+      "name": "Piazza del Campidoglio",
+      "shortName": "Piazza del Campidoglio",
+      "lat": 41.893248,
+      "lng": 12.482985,
+      "walkFromPrev": "Suggested time 14:40",
+      "durationSec": 8,
+      "audioUrl": "/media/rome/audio/13-piazza-del-campidoglio.mp3",
+      "script": [
+        "Up the hill.",
+        "The square is the stop.",
+        "The Capitoline Museums are a separate visit and are not in this timing."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "14:40"
+      }
+    },
+    {
+      "id": "church-of-the-ges",
+      "order": 14,
+      "name": "Church of the Gesù",
+      "shortName": "Church of the Gesù",
+      "lat": 41.895884,
+      "lng": 12.479821,
+      "walkFromPrev": "Suggested time 15:05",
+      "durationSec": 8,
+      "audioUrl": "/media/rome/audio/14-church-of-the-ges.mp3",
+      "script": [
+        "Piazza del Gesù, on the way west.",
+        "Step in if the door is open.",
+        "A closing time was not checked."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "15:05"
+      }
+    },
+    {
+      "id": "largo-di-torre-argentina",
+      "order": 15,
+      "name": "Largo di Torre Argentina",
+      "shortName": "Largo di Torre Argentina",
+      "lat": 41.895325,
+      "lng": 12.47688,
+      "walkFromPrev": "Suggested time 15:25",
+      "durationSec": 12,
+      "audioUrl": "/media/rome/audio/15-largo-di-torre-argentina.mp3",
+      "script": [
+        "Look down into the fenced ruins.",
+        "The article says Julius Caesar was assassinated in the Curia of Pompey, in this square.",
+        "It does not call him emperor, pope, or king."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "15:25"
+      }
+    },
+    {
+      "id": "pantheon",
+      "order": 16,
+      "name": "Pantheon",
+      "shortName": "Pantheon",
+      "lat": 41.898616,
+      "lng": 12.476833,
+      "walkFromPrev": "Suggested time 15:45",
+      "durationSec": 8,
+      "audioUrl": "/media/rome/audio/16-pantheon.mp3",
+      "script": [
+        "Piazza della Rotonda.",
+        "This stop is the porch and the square.",
+        "An entry charge was not verified."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "15:45"
+      }
+    },
+    {
+      "id": "santa-maria-sopra-minerva",
+      "order": 17,
+      "name": "Santa Maria sopra Minerva",
+      "shortName": "Santa Maria sopra Minerva",
+      "lat": 41.897984,
+      "lng": 12.478362,
+      "walkFromPrev": "Suggested time 16:05",
+      "durationSec": 7,
+      "audioUrl": "/media/rome/audio/17-santa-maria-sopra-minerva.mp3",
+      "script": [
+        "One block east of the Pantheon.",
+        "Step in if the door is open.",
+        "A closing time was not checked."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "16:05"
+      }
+    },
+    {
+      "id": "elephant-and-obelisk",
+      "order": 18,
+      "name": "Elephant and Obelisk",
+      "shortName": "Elephant and Obelisk",
+      "lat": 41.897974,
+      "lng": 12.47756,
+      "walkFromPrev": "Suggested time 16:25",
+      "durationSec": 7,
+      "audioUrl": "/media/rome/audio/18-elephant-and-obelisk.mp3",
+      "script": [
+        "Piazza della Minerva, beside the church.",
+        "The obelisk is on the elephant in the square."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "16:25"
+      }
+    },
+    {
+      "id": "four-rivers-fountain",
+      "order": 19,
+      "name": "Four Rivers Fountain",
+      "shortName": "Four Rivers Fountain",
+      "lat": 41.898953,
+      "lng": 12.473085,
+      "walkFromPrev": "Suggested time 16:45",
+      "durationSec": 3,
+      "audioUrl": "/media/rome/audio/19-four-rivers-fountain.mp3",
+      "script": [
+        "The fountain in the middle of Piazza Navona."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "16:45"
+      }
+    },
+    {
+      "id": "campo-de-fiori",
+      "order": 20,
+      "name": "Campo de' Fiori",
+      "shortName": "Campo de' Fiori",
+      "lat": 41.895577,
+      "lng": 12.472159,
+      "walkFromPrev": "Suggested time 17:10",
+      "durationSec": 6,
+      "audioUrl": "/media/rome/audio/20-campo-de-fiori.mp3",
+      "script": [
+        "The square south of Piazza Navona.",
+        "One block northeast of the next stop."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "17:10"
+      }
+    },
+    {
+      "id": "palazzo-farnese",
+      "order": 21,
+      "name": "Palazzo Farnese",
+      "shortName": "Palazzo Farnese",
+      "lat": 41.894682,
+      "lng": 12.471044,
+      "walkFromPrev": "Suggested time 17:25",
+      "durationSec": 10,
+      "audioUrl": "/media/rome/audio/21-palazzo-farnese.mp3",
+      "script": [
+        "End of the walking stops.",
+        "The French embassy.",
+        "See it from the square.",
+        "Then walk about 17 minutes back to Piazza Venezia for the bus."
+      ],
+      "photos": [],
+      "practical": {
+        "scheduleHint": "17:25"
+      }
+    }
+  ]
+}
