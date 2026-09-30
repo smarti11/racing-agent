@@ -300,7 +300,14 @@
     renderStopList();
     refreshMarkers();
     if (opts.pan !== false && map) map.panTo([stop.lat, stop.lng], { animate: true });
-    if (opts.autoplay && unlocked) playCurrent();
+    if (opts.autoplay && unlocked) {
+      // Ensure late-arriving background TTS is merged before attempting play.
+      if (!stop.audioUrl) {
+        refreshPackAudio().then(() => playCurrent());
+      } else {
+        playCurrent();
+      }
+    }
   }
 
   function activateStop(id) {
@@ -310,6 +317,29 @@
       setGeoStatus(`Unlocked: ${stopById(id).shortName} (tapped)`);
     }
     selectStop(id, { autoplay: true });
+  }
+
+  async function advanceToNextStop({ autoplay = false } = {}) {
+    const stop = activeStop();
+    if (!stop || !state.unlocked.has(stop.id)) return;
+    state.done.add(stop.id);
+    const next = PACK.stops.find((s) => s.order === stop.order + 1);
+    saveProgress();
+    if (!next) {
+      els.playerSub.textContent = "Tour complete — thanks for walking with Passi";
+      renderStopList();
+      refreshMarkers();
+      return;
+    }
+    state.unlocked.add(next.id);
+    saveProgress();
+    if (!next.audioUrl) await refreshPackAudio();
+    selectStop(next.id, { autoplay });
+    if (!autoplay) {
+      els.playerSub.textContent = next.audioUrl
+        ? `Next: ${next.shortName} — tap ▶ to play`
+        : `Next: ${next.shortName} — preparing audio…`;
+    }
   }
 
   async function playCurrent() {
@@ -323,7 +353,13 @@
         els.playerSub.textContent = "Audio still preparing — try ▶ again in a few seconds";
         return;
       }
-      selectStop(stop.id, { pan: false, autoplay: false });
+      // Bind the newly arrived URL without recursing autoplay.
+      if (els.audio.dataset.stopId !== stop.id) {
+        els.audio.src = stop.audioUrl;
+        els.audio.dataset.stopId = stop.id;
+        els.audio.load();
+        els.timeDur.textContent = formatTime(stop.durationSec || 0);
+      }
     }
     const tokenN = ++playToken;
     if (els.audio.dataset.stopId !== stop.id || !els.audio.getAttribute("src") || els.audio.error) {
@@ -451,21 +487,7 @@
       els.scriptToggle.textContent = state.scriptOpen ? "Hide script" : "Show script";
     });
     els.markDoneBtn.addEventListener("click", () => {
-      const stop = activeStop();
-      if (!stop || !state.unlocked.has(stop.id)) return;
-      state.done.add(stop.id);
-      const next = PACK.stops.find((s) => s.order === stop.order + 1);
-      saveProgress();
-      if (next) {
-        state.unlocked.add(next.id);
-        saveProgress();
-        selectStop(next.id, { autoplay: false });
-        els.playerSub.textContent = `Next: ${next.shortName} — tap ▶ to play`;
-      } else {
-        els.playerSub.textContent = "Tour complete — grazie for walking with Passi";
-        renderStopList();
-        refreshMarkers();
-      }
+      advanceToNextStop({ autoplay: false });
     });
     els.scrub.addEventListener("input", () => {
       if (!els.audio.duration) return;
@@ -482,7 +504,8 @@
     els.audio.addEventListener("pause", updatePlayButton);
     els.audio.addEventListener("ended", () => {
       updatePlayButton();
-      els.markDoneBtn.click();
+      // Keep the guided tour moving — unlock + autoplay the next stop.
+      advanceToNextStop({ autoplay: true });
     });
     els.lightboxClose.addEventListener("click", () => {
       els.lightbox.hidden = true;

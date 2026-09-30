@@ -113,7 +113,8 @@ def generate_ondemand_session(
     audio_status = "skipped"
     if with_audio:
         try:
-            prime_pack_audio(pack["id"], count=1)
+            # Prime the first two stops so back-to-back play works immediately.
+            prime_pack_audio(pack["id"], count=2)
         except Exception as e:
             print("prime_pack_audio failed", e)
         # Reload pack after prime so the first stop includes audioUrl for the player.
