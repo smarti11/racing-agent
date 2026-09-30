@@ -14,10 +14,17 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent
 PACKS = ROOT / "packs"
+GEN_PACKS = PACKS / "generated"
 DATA = ROOT / "data"
 DB_PATH = DATA / "sessions.db"
 DEFAULT_TTL_HOURS = 48
 PORT = int(os.environ.get("PASSI_PORT", "8100"))
+
+# Ensure generate helpers importable
+import sys
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def utcnow() -> datetime:
@@ -54,10 +61,12 @@ def load_pack(tour_id: str) -> dict | None:
             path = PACKS / t["pack"]
             if path.exists():
                 return json.loads(path.read_text(encoding="utf-8"))
-    # allow direct pack id == filename stem
-    path = PACKS / f"{tour_id}.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
+    for path in (
+        PACKS / f"{tour_id}.json",
+        GEN_PACKS / f"{tour_id}.json",
+    ):
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
     return None
 
 
@@ -84,7 +93,29 @@ def create_session(tour_id: str, ttl_hours: int = DEFAULT_TTL_HOURS, locale: str
         "playerUrl": f"/static/player.html?token={token}",
         "expiresAt": exp.isoformat(),
         "ttlHours": ttl_hours,
+        "packTitle": pack.get("title"),
+        "stopCount": len(pack.get("stops") or []),
     }
+
+
+def generate_ondemand_session(
+    place: str,
+    stop_count: int,
+    ttl_hours: int = DEFAULT_TTL_HOURS,
+    with_audio: bool = True,
+) -> dict:
+    from generate import generate_pack
+
+    pack = generate_pack(place, stop_count, with_audio=with_audio)
+    session = create_session(pack["id"], ttl_hours=ttl_hours, locale="en")
+    session["pack"] = {
+        "id": pack["id"],
+        "title": pack["title"],
+        "city": pack["city"],
+        "stopCount": len(pack["stops"]),
+        "stopsPreview": [{"order": s["order"], "name": s["name"]} for s in pack["stops"]],
+    }
+    return session
 
 
 def get_session(token: str) -> dict | None:
@@ -136,6 +167,28 @@ class PassiHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/generate":
+            try:
+                data = self._read_json()
+                place = (data.get("place") or data.get("city") or data.get("region") or "").strip()
+                if not place:
+                    return self._json(400, {"error": "place (city or region) is required"})
+                stop_count = int(data.get("stopCount") or data.get("stops") or 6)
+                stop_count = max(3, min(stop_count, 12))
+                ttl = int(data.get("ttlHours") or DEFAULT_TTL_HOURS)
+                ttl = max(1, min(ttl, 168))
+                with_audio = data.get("withAudio", True)
+                if isinstance(with_audio, str):
+                    with_audio = with_audio.lower() not in ("0", "false", "no")
+                session = generate_ondemand_session(
+                    place, stop_count, ttl_hours=ttl, with_audio=bool(with_audio)
+                )
+                return self._json(201, session)
+            except ValueError as e:
+                return self._json(400, {"error": str(e)})
+            except Exception as e:
+                return self._json(500, {"error": str(e)})
+
         if path == "/api/sessions":
             try:
                 data = self._read_json()
@@ -207,8 +260,9 @@ def main():
     os.chdir(ROOT)
     httpd = ThreadingHTTPServer(("0.0.0.0", PORT), PassiHandler)
     print(f"Passi MVP on http://0.0.0.0:{PORT}")
-    print(f"  Catalog:  http://127.0.0.1:{PORT}/")
-    print(f"  API:      POST /api/sessions  {{\"tourId\":\"florence-classic-en\"}}")
+    print(f"  Landing:  http://127.0.0.1:{PORT}/")
+    print(f"  Generate: POST /api/generate  {{\"place\":\"Siena\",\"stopCount\":6}}")
+    print(f"  Catalog:  POST /api/sessions  {{\"tourId\":\"florence-classic-en\"}}")
     httpd.serve_forever()
 
 

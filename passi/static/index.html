@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Passi — Walking tours</title>
+    <title>Passi — On-demand walking tour</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,22 +11,144 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/css/player.css" />
+    <style>
+      .form-card {
+        background: rgba(243, 248, 249, 0.08);
+        border: 1px solid rgba(200, 230, 234, 0.22);
+        padding: 1.15rem 1.2rem 1.25rem;
+        border-radius: 2px;
+        margin-bottom: 1.5rem;
+      }
+      .form-card label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--foam);
+        margin: 0.75rem 0 0.35rem;
+      }
+      .form-card label:first-child { margin-top: 0; }
+      .form-card input[type="text"],
+      .form-card select {
+        width: 100%;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid rgba(200, 230, 234, 0.28);
+        border-radius: 2px;
+        background: rgba(14, 28, 34, 0.45);
+        color: var(--paper);
+        font: inherit;
+      }
+      .form-card input::placeholder { color: var(--stone); }
+      .stop-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 0.35rem;
+      }
+      .stop-row input[type="range"] { flex: 1; accent-color: var(--lantern); }
+      .stop-count {
+        font-family: var(--font-display);
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--lantern);
+        min-width: 2.5rem;
+        text-align: right;
+      }
+      .status {
+        margin: 0.85rem 0 0;
+        font-size: 0.88rem;
+        color: var(--lantern-soft);
+        min-height: 1.25em;
+      }
+      .status.is-error { color: #f0a090; }
+      .catalog-block { margin-top: 0.5rem; }
+      .catalog-block h2 {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 500;
+        margin: 0 0 0.65rem;
+      }
+    </style>
   </head>
   <body>
     <main class="landing">
       <div class="landing__bg" aria-hidden="true"></div>
       <div class="landing__content">
         <p class="brand">Passi</p>
-        <h1>A walking guide that appears when you do.</h1>
+        <h1>Where do you want to walk?</h1>
         <p class="landing__lede">
-          Pick a city tour. We create a temporary link that works on your phone for 48 hours — map, GPS unlock, and English audio.
+          Name a city or region, choose how many places you want to see, and get a temporary English audio tour link for your phone.
         </p>
-        <ul class="tour-list" id="tour-list"></ul>
-        <p class="lang-note">Audio and scripts are English in this MVP. More languages later.</p>
+
+        <form class="form-card" id="ondemand-form">
+          <label for="place">City or region</label>
+          <input
+            id="place"
+            name="place"
+            type="text"
+            required
+            autocomplete="off"
+            placeholder="e.g. Florence, Rome, Siena, Cinque Terre"
+          />
+
+          <label for="stopCount">How many locations of interest?</label>
+          <div class="stop-row">
+            <input id="stopCount" name="stopCount" type="range" min="3" max="12" value="6" />
+            <span class="stop-count" id="stopCountLabel">6</span>
+          </div>
+
+          <p style="margin: 0.85rem 0 0; font-size: 0.8rem; color: var(--stone)">
+            We’ll map real attractions nearby, build a walking order, narrate in English, and give you a link that lasts 48 hours.
+          </p>
+
+          <div style="margin-top: 1.1rem">
+            <button type="submit" class="btn btn--primary" id="generate-btn">Create my tour link</button>
+          </div>
+          <p class="status" id="status" aria-live="polite"></p>
+        </form>
+
+        <div class="catalog-block">
+          <h2>Or start a ready-made tour</h2>
+          <ul class="tour-list" id="tour-list"></ul>
+        </div>
+        <p class="lang-note">English audio only in this MVP.</p>
       </div>
     </main>
     <script>
-      async function startTour(tourId) {
+      const range = document.getElementById("stopCount");
+      const label = document.getElementById("stopCountLabel");
+      const status = document.getElementById("status");
+      const btn = document.getElementById("generate-btn");
+      range.addEventListener("input", () => {
+        label.textContent = range.value;
+      });
+
+      document.getElementById("ondemand-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const place = document.getElementById("place").value.trim();
+        const stopCount = Number(range.value);
+        if (!place) return;
+        btn.disabled = true;
+        status.classList.remove("is-error");
+        status.textContent = "Finding places and building your English tour… this can take about a minute.";
+        try {
+          const res = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ place, stopCount, locale: "en", ttlHours: 48, withAudio: true }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not generate tour");
+          const names = (data.pack?.stopsPreview || []).map((s) => s.name).join(" · ");
+          status.textContent = `Ready: ${data.pack?.stopCount || stopCount} stops` + (names ? ` — ${names}` : "");
+          window.location.href = data.url;
+        } catch (err) {
+          status.classList.add("is-error");
+          status.textContent = err.message || String(err);
+          btn.disabled = false;
+        }
+      });
+
+      async function startCatalog(tourId) {
         const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -40,7 +162,7 @@
         window.location.href = data.url;
       }
 
-      async function init() {
+      async function loadCatalog() {
         const res = await fetch("/api/catalog");
         const catalog = await res.json();
         const list = document.getElementById("tour-list");
@@ -51,16 +173,16 @@
               <strong>${t.title}</strong>
               <small>${t.city}</small>
               <p class="meta">${t.tagline}</p>
-              <small>${t.durationLabel} · ${t.distanceLabel}</small>
+              <small>${t.durationLabel}</small>
               <div style="margin-top:0.85rem">
-                <button type="button" class="btn btn--primary" data-id="${t.id}">Start 48h link</button>
+                <button type="button" class="btn btn--ghost btn--small" data-id="${t.id}">Use this tour</button>
               </div>
             </div>`;
-          li.querySelector("button").addEventListener("click", () => startTour(t.id));
+          li.querySelector("button").addEventListener("click", () => startCatalog(t.id));
           list.appendChild(li);
         });
       }
-      init();
+      loadCatalog();
     </script>
   </body>
 </html>
