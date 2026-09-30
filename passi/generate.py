@@ -1033,7 +1033,23 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     return selected[:stop_count]
 
 
-def fill_pack_audio(tour_id: str) -> None:
+def _write_stop_audio(pack: dict, stop: dict, media_rel: str, media_dir: Path) -> bool:
+    """Synthesize one stop's MP3 and mutate stop fields. Returns True on success."""
+    if stop.get("audioUrl"):
+        return False
+    narration = " ... ".join(stop.get("script") or [])
+    if not narration.strip():
+        return False
+    dest = media_dir / f"{stop['id']}.mp3"
+    duration = synthesize_audio(narration, dest)
+    if not duration:
+        return False
+    stop["durationSec"] = duration
+    stop["audioUrl"] = f"/media/{media_rel}/audio/{stop['id']}.mp3"
+    return True
+
+
+def fill_pack_audio(tour_id: str, *, skip_existing: bool = True) -> None:
     """Synthesize TTS for an already-saved pack (used in a background thread)."""
     path = GEN_DIR / f"{tour_id}.json"
     if not path.exists():
@@ -1048,17 +1064,10 @@ def fill_pack_audio(tour_id: str) -> None:
     media_dir.mkdir(parents=True, exist_ok=True)
     changed = False
     for stop in pack.get("stops") or []:
-        if stop.get("audioUrl"):
+        if skip_existing and stop.get("audioUrl"):
             continue
-        narration = " ... ".join(stop.get("script") or [])
-        if not narration.strip():
-            continue
-        dest = media_dir / f"{stop['id']}.mp3"
         try:
-            duration = synthesize_audio(narration, dest)
-            if duration:
-                stop["durationSec"] = duration
-                stop["audioUrl"] = f"/media/{media_rel}/audio/{stop['id']}.mp3"
+            if _write_stop_audio(pack, stop, media_rel, media_dir):
                 changed = True
                 path.write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
         except Exception as e:
@@ -1066,6 +1075,27 @@ def fill_pack_audio(tour_id: str) -> None:
     if changed:
         path.write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
     print("fill_pack_audio done", tour_id)
+
+
+def prime_pack_audio(tour_id: str, count: int = 1) -> int:
+    """Synchronously synthesize the first N stops so play works immediately."""
+    path = GEN_DIR / f"{tour_id}.json"
+    if not path.exists():
+        return 0
+    pack = json.loads(path.read_text(encoding="utf-8"))
+    media_rel = f"generated/{tour_id}"
+    media_dir = MEDIA_GEN / tour_id / "audio"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    done = 0
+    for stop in (pack.get("stops") or [])[: max(0, count)]:
+        try:
+            if _write_stop_audio(pack, stop, media_rel, media_dir):
+                done += 1
+        except Exception as e:
+            print("TTS prime failed for", stop.get("name"), e)
+    if done:
+        path.write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
+    return done
 
 
 def generate_pack(

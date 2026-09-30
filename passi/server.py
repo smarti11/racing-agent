@@ -105,14 +105,25 @@ def generate_ondemand_session(
     ttl_hours: int = DEFAULT_TTL_HOURS,
     with_audio: bool = True,
 ) -> dict:
-    from generate import fill_pack_audio, generate_pack
+    from generate import fill_pack_audio, generate_pack, prime_pack_audio
 
     # Build map + scripts first so the client gets a tour before Cloudflare times out.
-    # TTS is filled in the background; the player already works with scripts alone.
+    # Prime stop-1 audio so ▶ works immediately; remaining TTS runs in the background.
     pack = generate_pack(place, stop_count, with_audio=False)
-    session = create_session(pack["id"], ttl_hours=ttl_hours, locale="en")
     audio_status = "skipped"
     if with_audio:
+        try:
+            prime_pack_audio(pack["id"], count=1)
+        except Exception as e:
+            print("prime_pack_audio failed", e)
+        # Reload pack after prime so the first stop includes audioUrl for the player.
+        try:
+            from generate import GEN_DIR
+
+            primed_pack = json.loads((GEN_DIR / f"{pack['id']}.json").read_text(encoding="utf-8"))
+            pack = primed_pack
+        except Exception:
+            pass
         audio_status = "generating"
         threading.Thread(
             target=fill_pack_audio,
@@ -120,12 +131,14 @@ def generate_ondemand_session(
             name=f"tts-{pack['id'][:24]}",
             daemon=True,
         ).start()
+    session = create_session(pack["id"], ttl_hours=ttl_hours, locale="en")
     session["pack"] = {
         "id": pack["id"],
         "title": pack["title"],
         "city": pack["city"],
         "stopCount": len(pack["stops"]),
         "stopsPreview": [{"order": s["order"], "name": s["name"]} for s in pack["stops"]],
+        "firstStopHasAudio": bool((pack.get("stops") or [{}])[0].get("audioUrl")),
     }
     session["audioStatus"] = audio_status
     return session

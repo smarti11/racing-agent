@@ -208,6 +208,56 @@
     paras.forEach((p, i) => p.classList.toggle("is-current", i === idx));
   }
 
+  function needsAudioRefresh() {
+    return !!(PACK && PACK.stops && PACK.stops.some((s) => !s.audioUrl));
+  }
+
+  async function refreshPackAudio() {
+    try {
+      const res = await fetch(`/api/sessions/${token}`, { cache: "no-store" });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const fresh = data.pack;
+      if (!fresh || !fresh.stops || !PACK) return false;
+      let gained = 0;
+      fresh.stops.forEach((fs) => {
+        const local = stopById(fs.id);
+        if (!local) return;
+        if (fs.audioUrl && local.audioUrl !== fs.audioUrl) {
+          local.audioUrl = fs.audioUrl;
+          local.durationSec = fs.durationSec || local.durationSec || 0;
+          gained += 1;
+        }
+      });
+      if (gained && state.activeId) {
+        const active = activeStop();
+        if (active && active.audioUrl && els.audio.dataset.stopId !== active.id) {
+          selectStop(active.id, { pan: false, autoplay: false });
+        }
+      }
+      return gained > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function startAudioPolling() {
+    if (!needsAudioRefresh()) return;
+    let tries = 0;
+    const maxTries = 36; // ~3 minutes at 5s
+    const timer = setInterval(async () => {
+      tries += 1;
+      const gained = await refreshPackAudio();
+      if (gained && state.activeId) {
+        const stop = activeStop();
+        if (stop && state.unlocked.has(stop.id) && stop.audioUrl) {
+          els.playerSub.textContent = "Tap ▶ or the stop number to hear the guide";
+        }
+      }
+      if (!needsAudioRefresh() || tries >= maxTries) clearInterval(timer);
+    }, 5000);
+  }
+
   function selectStop(id, opts = {}) {
     const stop = stopById(id);
     if (!stop) return;
@@ -216,7 +266,9 @@
     saveProgress();
     els.playerTitle.textContent = `${stop.order}. ${stop.name}`;
     els.playerSub.textContent = unlocked
-      ? "Tap ▶ or the stop number to hear the guide"
+      ? stop.audioUrl
+        ? "Tap ▶ or the stop number to hear the guide"
+        : "Preparing audio… tap ▶ in a moment (script is ready now)"
       : "Locked — tap the stop to unlock & play";
     els.walkCue.textContent = stop.walkFromPrev || "";
     renderScript(stop);
@@ -243,6 +295,7 @@
       els.audio.removeAttribute("src");
       els.audio.dataset.stopId = "";
       els.timeDur.textContent = formatTime(stop.durationSec || 0);
+      if (unlocked && !stop.audioUrl) refreshPackAudio();
     }
     renderStopList();
     refreshMarkers();
@@ -259,9 +312,19 @@
     selectStop(id, { autoplay: true });
   }
 
-  function playCurrent() {
-    const stop = activeStop();
-    if (!stop || !state.unlocked.has(stop.id) || !stop.audioUrl) return;
+  async function playCurrent() {
+    let stop = activeStop();
+    if (!stop || !state.unlocked.has(stop.id)) return;
+    if (!stop.audioUrl) {
+      els.playerSub.textContent = "Preparing audio…";
+      await refreshPackAudio();
+      stop = activeStop();
+      if (!stop || !stop.audioUrl) {
+        els.playerSub.textContent = "Audio still preparing — try ▶ again in a few seconds";
+        return;
+      }
+      selectStop(stop.id, { pan: false, autoplay: false });
+    }
     const tokenN = ++playToken;
     if (els.audio.dataset.stopId !== stop.id || !els.audio.getAttribute("src") || els.audio.error) {
       els.audio.src = stop.audioUrl;
@@ -455,6 +518,7 @@
     initMap();
     bindEvents();
     selectStop(state.activeId);
+    startAudioPolling();
     setGeoStatus("Tap Locate me for GPS, or tap a stop number.");
   }
 
