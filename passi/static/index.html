@@ -129,7 +129,17 @@
         if (!place) return;
         btn.disabled = true;
         status.classList.remove("is-error");
-        status.textContent = "Finding places and building your English tour… this can take about a minute.";
+        const started = Date.now();
+        const tick = setInterval(() => {
+          const sec = Math.round((Date.now() - started) / 1000);
+          status.textContent =
+            sec < 20
+              ? "Finding places and writing English stop notes…"
+              : sec < 45
+                ? `Still mapping ${place} (${sec}s) — large cities can take a bit…`
+                : `Almost there (${sec}s) — building your ${stopCount}-stop route…`;
+        }, 1000);
+        status.textContent = "Finding places and writing English stop notes…";
         try {
           const res = await fetch("/api/generate", {
             method: "POST",
@@ -139,12 +149,21 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Could not generate tour");
           const names = (data.pack?.stopsPreview || []).map((s) => s.name).join(" · ");
-          status.textContent = `Ready: ${data.pack?.stopCount || stopCount} stops` + (names ? ` — ${names}` : "");
+          status.textContent =
+            `Ready: ${data.pack?.stopCount || stopCount} stops` +
+            (names ? ` — ${names}` : "") +
+            (data.audioStatus === "generating" ? " (audio finishing in background)" : "");
           window.location.href = data.url;
         } catch (err) {
           status.classList.add("is-error");
-          status.textContent = err.message || String(err);
+          const msg = err.message || String(err);
+          status.textContent =
+            /failed to fetch|networkerror|aborted/i.test(msg)
+              ? "The connection timed out while building the tour. Please try again — large cities sometimes need a second attempt."
+              : msg;
           btn.disabled = false;
+        } finally {
+          clearInterval(tick);
         }
       });
 

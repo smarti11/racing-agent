@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -104,10 +105,21 @@ def generate_ondemand_session(
     ttl_hours: int = DEFAULT_TTL_HOURS,
     with_audio: bool = True,
 ) -> dict:
-    from generate import generate_pack
+    from generate import fill_pack_audio, generate_pack
 
-    pack = generate_pack(place, stop_count, with_audio=with_audio)
+    # Build map + scripts first so the client gets a tour before Cloudflare times out.
+    # TTS is filled in the background; the player already works with scripts alone.
+    pack = generate_pack(place, stop_count, with_audio=False)
     session = create_session(pack["id"], ttl_hours=ttl_hours, locale="en")
+    audio_status = "skipped"
+    if with_audio:
+        audio_status = "generating"
+        threading.Thread(
+            target=fill_pack_audio,
+            args=(pack["id"],),
+            name=f"tts-{pack['id'][:24]}",
+            daemon=True,
+        ).start()
     session["pack"] = {
         "id": pack["id"],
         "title": pack["title"],
@@ -115,6 +127,7 @@ def generate_ondemand_session(
         "stopCount": len(pack["stops"]),
         "stopsPreview": [{"order": s["order"], "name": s["name"]} for s in pack["stops"]],
     }
+    session["audioStatus"] = audio_status
     return session
 
 
@@ -143,13 +156,17 @@ class PassiHandler(SimpleHTTPRequestHandler):
 
     def _json(self, code: int, payload: dict):
         body = json.dumps(payload).encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            # Client/tunnel gave up while we were still generating — pack may still be saved.
+            print("client disconnected before response fully sent")
 
     def _read_json(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
@@ -180,14 +197,27 @@ class PassiHandler(SimpleHTTPRequestHandler):
                 with_audio = data.get("withAudio", True)
                 if isinstance(with_audio, str):
                     with_audio = with_audio.lower() not in ("0", "false", "no")
+                print(f"generate start place={place!r} stops={stop_count} audio={with_audio}")
                 session = generate_ondemand_session(
                     place, stop_count, ttl_hours=ttl, with_audio=bool(with_audio)
+                )
+                print(
+                    f"generate done {session.get('tourId')} "
+                    f"stops={session.get('pack', {}).get('stopCount')} "
+                    f"audio={session.get('audioStatus')}"
                 )
                 return self._json(201, session)
             except ValueError as e:
                 return self._json(400, {"error": str(e)})
+            except (BrokenPipeError, ConnectionResetError):
+                print("generate aborted: client disconnected")
+                return
             except Exception as e:
-                return self._json(500, {"error": str(e)})
+                print("generate error:", e)
+                try:
+                    return self._json(500, {"error": str(e)})
+                except (BrokenPipeError, ConnectionResetError):
+                    return
 
         if path == "/api/sessions":
             try:

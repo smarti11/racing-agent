@@ -378,18 +378,26 @@ def _overpass_elements(query: str) -> list:
     return []
 
 
-def fetch_pois(lat: float, lon: float, radius_m: int = 1800) -> list[dict]:
+def fetch_pois(
+    lat: float,
+    lon: float,
+    radius_m: int = 1800,
+    *,
+    include_landmarks: bool = True,
+) -> list[dict]:
     elements: list = []
     last_err: Exception | None = None
     try:
         elements.extend(_overpass_elements(_overpass_tourism_query(lat, lon, radius_m)))
     except Exception as e:
         last_err = e
-    try:
-        elements.extend(_overpass_elements(_overpass_landmark_query(lat, lon, radius_m)))
-    except Exception as e:
-        last_err = e
-        # Landmark pass is additive; tourism-only results are still usable.
+    # Landmark/government pass is expensive at large radii; keep it for the city core only.
+    if include_landmarks and radius_m <= 3600:
+        try:
+            elements.extend(_overpass_elements(_overpass_landmark_query(lat, lon, radius_m)))
+        except Exception as e:
+            last_err = e
+            # Landmark pass is additive; tourism-only results are still usable.
     if not elements:
         raise RuntimeError(
             f"Attraction lookup timed out. Please try again in a moment. ({last_err})"
@@ -1025,6 +1033,41 @@ def _pick_tour_stops(pois: list[dict], stop_count: int) -> list[dict]:
     return selected[:stop_count]
 
 
+def fill_pack_audio(tour_id: str) -> None:
+    """Synthesize TTS for an already-saved pack (used in a background thread)."""
+    path = GEN_DIR / f"{tour_id}.json"
+    if not path.exists():
+        return
+    try:
+        pack = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print("fill_pack_audio load failed", tour_id, e)
+        return
+    media_rel = f"generated/{tour_id}"
+    media_dir = MEDIA_GEN / tour_id / "audio"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    changed = False
+    for stop in pack.get("stops") or []:
+        if stop.get("audioUrl"):
+            continue
+        narration = " ... ".join(stop.get("script") or [])
+        if not narration.strip():
+            continue
+        dest = media_dir / f"{stop['id']}.mp3"
+        try:
+            duration = synthesize_audio(narration, dest)
+            if duration:
+                stop["durationSec"] = duration
+                stop["audioUrl"] = f"/media/{media_rel}/audio/{stop['id']}.mp3"
+                changed = True
+                path.write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
+        except Exception as e:
+            print("TTS bg failed for", stop.get("name"), e)
+    if changed:
+        path.write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
+    print("fill_pack_audio done", tour_id)
+
+
 def generate_pack(
     place_query: str,
     stop_count: int,
@@ -1035,31 +1078,54 @@ def generate_pack(
     stop_count = max(3, min(int(stop_count), 12))
     geo = geocode(place_query)
     city = geo["name"]
-    # Wider rings for bigger stop counts — Eiffel/Arc sit ~4–4.5km from Paris center.
+    # One primary wide ring (fast). Widen once only if famous landmarks are missing.
+    # Eiffel/Arc sit ~4–4.5km from Paris center — need ≥5km for big stop counts.
     if stop_count >= 10:
-        radii = (max(radius_m, 3500), 5000, 6500)
+        primary = max(radius_m, 5200)
+        widen_to = 7000
     elif stop_count >= 6:
-        radii = (max(radius_m, 2800), 4500, 6000)
+        primary = max(radius_m, 4200)
+        widen_to = 6000
     else:
-        radii = (radius_m, 3500, 5000)
+        primary = max(radius_m, 2800)
+        widen_to = 4800
 
     merged: dict[str, dict] = {}
     last_err: Exception | None = None
-    for r in radii:
-        try:
-            batch = fetch_pois(geo["lat"], geo["lon"], radius_m=r)
-        except RuntimeError as e:
-            last_err = e
-            if merged:
-                continue
-            continue
+
+    def _absorb(batch: list[dict]) -> None:
         for p in batch:
             key = p["name"].strip().lower()
             prev = merged.get(key)
             if prev is None or p["score"] > prev["score"]:
                 merged[key] = p
-        # Keep widening so far-flung icons (Eiffel, Arc) enter the pool even when
-        # the inner ring already has "enough" minor POIs.
+
+    try:
+        _absorb(
+            fetch_pois(
+                geo["lat"],
+                geo["lon"],
+                radius_m=primary,
+                include_landmarks=primary <= 3600,
+            )
+        )
+    except RuntimeError as e:
+        last_err = e
+
+    iconic_hits = sum(1 for p in merged.values() if _is_iconic_name(p["name"]))
+    if iconic_hits < 3 or len(merged) < max(stop_count, 8):
+        try:
+            _absorb(
+                fetch_pois(
+                    geo["lat"],
+                    geo["lon"],
+                    radius_m=widen_to,
+                    include_landmarks=False,
+                )
+            )
+        except RuntimeError as e:
+            last_err = e
+
     pois = sorted(merged.values(), key=lambda p: (-p["score"], p["dist"]))
     if len(pois) < 3:
         raise ValueError(
@@ -1120,7 +1186,7 @@ def generate_pack(
         "distanceLabel": "Custom loop from mapped attractions",
         "unlockRadiusMeters": 90,
         "mapCenter": [geo["lat"], geo["lon"]],
-        "mapZoom": 14,
+        "mapZoom": 14 if stop_count < 10 else 13,
         "generated": True,
         "query": place_query,
         "stops": stops,
