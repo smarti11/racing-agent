@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Passi — Walking tours</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/player.css" />
+  </head>
+  <body>
+    <main class="landing">
+      <div class="landing__bg" aria-hidden="true"></div>
+      <div class="landing__content">
+        <p class="brand">Passi</p>
+        <h1>A walking guide that appears when you do.</h1>
+        <p class="landing__lede">
+          Pick a city tour. We create a temporary link that works on your phone for 48 hours — map, GPS unlock, and English audio.
+        </p>
+        <ul class="tour-list" id="tour-list"></ul>
+        <p class="lang-note">Audio and scripts are English in this MVP. More languages later.</p>
+      </div>
+    </main>
+    <script>
+      async function startTour(tourId) {
+        const res = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tourId, locale: "en", ttlHours: 48 }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Could not start tour");
+          return;
+        }
+        window.location.href = data.url;
+      }
+
+      async function init() {
+        const res = await fetch("/api/catalog");
+        const catalog = await res.json();
+        const list = document.getElementById("tour-list");
+        catalog.tours.forEach((t) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div class="tour-card">
+              <strong>${t.title}</strong>
+              <small>${t.city}</small>
+              <p class="meta">${t.tagline}</p>
+              <small>${t.durationLabel} · ${t.distanceLabel}</small>
+              <div style="margin-top:0.85rem">
+                <button type="button" class="btn btn--primary" data-id="${t.id}">Start 48h link</button>
+              </div>
+            </div>`;
+          li.querySelector("button").addEventListener("click", () => startTour(t.id));
+          list.appendChild(li);
+        });
+      }
+      init();
+    </script>
+  </body>
+</html>
