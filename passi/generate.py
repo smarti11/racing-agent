@@ -270,7 +270,9 @@ _HERITAGE_SUBJECT_RE = re.compile(
     r"whitney (house|mansion)|historic (house|mansion|manor|homestead)|"
     r"civil rights|freedom statue|liberty statue|"
     r"soldiers?'? and sailors?'?|"
-    r"\bfather of\b|\bcadillac\b"
+    r"\bfather of\b|"
+    # Founder statue only — not every "Cadillac Tower/Hotel/Centre" namesake.
+    r"antoine (de )?(lamothe )?cadillac|cadillac statue|statue of .*cadillac"
     r")",
     re.I,
 )
@@ -287,7 +289,10 @@ _NOISE_NAME_RE = re.compile(
     r"h[ôo]tel de brienne|tribunal de commerce|"
     r"\bone campus martius\b|\bcampus martius station\b|"
     r"\bcooperative\b|\bapartments?\b|\bcondo\b|"
-    r"town square cooperative|dte town square"
+    r"town square cooperative|dte town square|"
+    # Detroit: keep founder statue, drop hotel/office namesakes.
+    r"westin book cadillac|cadillac (tower|centre|center|square building)|"
+    r"book cadillac hotel|cadillac place"
     r")",
     re.I,
 )
