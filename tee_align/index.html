@@ -10,12 +10,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=Libre+Franklin:wght@600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <div id="app">
-    <video id="camera" playsinline autoplay muted></video>
-    <canvas id="freeze" hidden></canvas>
+    <div id="view-stage" class="view-stage">
+      <video id="camera" playsinline autoplay muted></video>
+      <canvas id="freeze" hidden></canvas>
+    </div>
     <canvas id="overlay"></canvas>
 
     <div id="markers" class="markers-layer">
@@ -60,6 +62,12 @@
         <button type="button" id="btn-rot-cw" class="secondary" aria-label="Rotate clockwise">Rotate ↻</button>
       </div>
 
+      <div id="zoom-controls" class="control-row zoom-row hidden">
+        <button type="button" id="btn-zoom-out" class="secondary" aria-label="Zoom out">Zoom −</button>
+        <button type="button" id="btn-zoom-reset" class="secondary">1×</button>
+        <button type="button" id="btn-zoom-in" class="secondary" aria-label="Zoom in">Zoom +</button>
+      </div>
+
       <div id="action-controls" class="control-row hidden">
         <button type="button" id="btn-freeze" class="secondary" aria-pressed="false">Freeze</button>
         <button type="button" id="btn-photo" class="secondary">Save photo</button>
@@ -84,12 +92,13 @@
           <li>Put <strong>AIM</strong> on the fairway target. Use <strong>Snap level</strong> to square the tee-face to gravity, or Rotate / two-finger twist.</li>
           <li><strong>Drag L/R</strong> for spacing (Equal lock mirrors). Check the spacing badge.</li>
           <li>Tap <strong>Freeze</strong> before walking out to place markers. <strong>Save photo</strong> keeps a record. <strong>Sun mode</strong> boosts outdoor contrast.</li>
+          <li>Use <strong>Zoom − / +</strong> or pinch to zoom. On supported iPhones, Zoom − can go wider than 1× (ultra-wide).</li>
         </ol>
         <p class="help-note">Works best in Safari on iPhone over HTTPS. Use the rear camera outdoors.</p>
         <button type="button" id="btn-close-help" class="primary">Got it</button>
       </div>
     </aside>
   </div>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

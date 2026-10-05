@@ -7,6 +7,7 @@ iPhone camera overlay for greenskeepers: square tee markers to a fairway target.
 - AIM line + rotatable tee-face line (buttons or two-finger twist)
 - Draggable L/R markers with equal-lock
 - Phone **level bubble** + **Snap level** (gravity)
+- Interactive **zoom** (buttons + pinch; hardware zoom / ultra-wide when the phone supports it)
 - **Freeze** frame while you walk out to place markers
 - **Sun mode** for outdoor contrast
 - Spacing badge (EQUAL / UNEVEN)
@@ -18,7 +19,8 @@ iPhone camera overlay for greenskeepers: square tee markers to a fairway target.
 2. Tap **Enable camera** and allow access (and motion, if asked).
 3. Stand behind the tee, looking down the hole. Keep the level bubble near center.
 4. Put **AIM** on the fairway target. Tap **Snap level** or rotate the tee-face line.
-5. Drag **L/R** for spacing. Tap **Freeze**, place physical markers, then **Save photo** if you want a record.
+5. Use **Zoom − / +** or pinch for a wider or tighter view.
+6. Drag **L/R** for spacing. Tap **Freeze**, place physical markers, then **Save photo** if you want a record.
 
 ## Deploy / update Cloudflare
 

@@ -18,6 +18,10 @@
   const btnSnapLevel = document.getElementById("btn-snap-level");
   const btnFreeze = document.getElementById("btn-freeze");
   const btnPhoto = document.getElementById("btn-photo");
+  const zoomControls = document.getElementById("zoom-controls");
+  const btnZoomOut = document.getElementById("btn-zoom-out");
+  const btnZoomIn = document.getElementById("btn-zoom-in");
+  const btnZoomReset = document.getElementById("btn-zoom-reset");
   const help = document.getElementById("help");
   const btnHelp = document.getElementById("btn-help");
   const btnCloseHelp = document.getElementById("btn-close-help");
@@ -42,12 +46,14 @@
   const MIN_GAP_FRAC = 0.1;
   const ROT_STEP = (5 * Math.PI) / 180;
   const LEVEL_OK_DEG = 2.5;
+  const ZOOM_STEP = 0.15;
 
   let colorIndex = 0;
   let equalLock = true;
   let sunMode = false;
   let frozen = false;
   let stream = null;
+  let videoTrack = null;
   let raf = 0;
   let angle = 0;
   let leftFrac = 0.42;
@@ -55,6 +61,10 @@
   let phoneRollDeg = 0;
   let phonePitchDeg = 0;
   let orientationReady = false;
+  let zoomLevel = 1;
+  let zoomMin = 1;
+  let zoomMax = 3;
+  let useHwZoom = false;
 
   function setStatus(msg, isError) {
     statusEl.textContent = msg || "";
@@ -133,8 +143,87 @@
         const ok = Math.abs(phoneRollDeg) <= LEVEL_OK_DEG && Math.abs(phonePitchDeg) <= 6;
         levelBit = ok ? " · phone level" : " · phone tilt " + Math.round(phoneRollDeg) + "°";
       }
-      setStatus("Aim " + angleLabel() + " · " + s.text + freezeBit + levelBit, false);
+      setStatus(
+        "Aim " + angleLabel() + " · " + zoomLabel() + " · " + s.text + freezeBit + levelBit,
+        false
+      );
     }
+  }
+
+  function zoomLabel() {
+    const z = Math.round(zoomLevel * 100) / 100;
+    return z.toFixed(2).replace(/\.?0+$/, "") + "×";
+  }
+
+  function updateZoomButton() {
+    btnZoomReset.textContent = zoomLabel();
+    btnZoomOut.disabled = zoomLevel <= zoomMin + 0.001;
+    btnZoomIn.disabled = zoomLevel >= zoomMax - 0.001;
+  }
+
+  function detectZoomCapabilities() {
+    useHwZoom = false;
+    zoomMin = 1;
+    zoomMax = 3;
+    zoomLevel = 1;
+    videoTrack = stream && stream.getVideoTracks()[0] ? stream.getVideoTracks()[0] : null;
+    if (!videoTrack || typeof videoTrack.getCapabilities !== "function") {
+      updateZoomButton();
+      applyZoom();
+      return;
+    }
+    try {
+      const caps = videoTrack.getCapabilities() || {};
+      if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number") {
+        useHwZoom = true;
+        zoomMin = caps.zoom.min;
+        zoomMax = Math.max(caps.zoom.max, caps.zoom.min);
+        const settings = videoTrack.getSettings ? videoTrack.getSettings() : {};
+        zoomLevel = typeof settings.zoom === "number" ? settings.zoom : Math.min(1, zoomMax);
+        zoomLevel = Math.min(zoomMax, Math.max(zoomMin, zoomLevel));
+      }
+    } catch (e) {
+      useHwZoom = false;
+    }
+    updateZoomButton();
+    applyZoom();
+  }
+
+  function applyZoom() {
+    zoomLevel = Math.min(zoomMax, Math.max(zoomMin, zoomLevel));
+    if (useHwZoom && videoTrack) {
+      video.style.transform = "";
+      freezeCanvas.style.transform = "";
+      videoTrack.applyConstraints({ advanced: [{ zoom: zoomLevel }] }).catch(function () {
+        videoTrack.applyConstraints({ zoom: zoomLevel }).catch(function () {});
+      });
+    } else {
+      const t = "scale(" + zoomLevel + ")";
+      video.style.transform = t;
+      freezeCanvas.style.transform = t;
+    }
+    updateZoomButton();
+  }
+
+  function nudgeZoom(delta) {
+    if (frozen) return;
+    const next = zoomLevel + delta;
+    if (!useHwZoom && next < 1 && zoomLevel <= 1) {
+      setStatus("Already at widest digital zoom. Hardware zoom not available on this camera.", false);
+      zoomLevel = 1;
+      applyZoom();
+      return;
+    }
+    zoomLevel = next;
+    applyZoom();
+    refreshHud();
+  }
+
+  function resetZoom() {
+    if (frozen) return;
+    zoomLevel = useHwZoom ? Math.min(Math.max(1, zoomMin), zoomMax) : 1;
+    applyZoom();
+    refreshHud();
   }
 
   function positionHandles() {
@@ -385,10 +474,18 @@
 
   const activePointers = new Map();
   let pinchAngle0 = null;
+  let pinchDist0 = null;
   let angleAtPinchStart = 0;
+  let zoomAtPinchStart = 1;
 
   function pairAngle(a, b) {
     return Math.atan2(b.y - a.y, b.x - a.x);
+  }
+
+  function pairDist(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    return Math.hypot(dx, dy) || 1;
   }
 
   function onPinchDown(e) {
@@ -398,16 +495,22 @@
     if (activePointers.size === 2) {
       const pts = Array.from(activePointers.values());
       pinchAngle0 = pairAngle(pts[0], pts[1]);
+      pinchDist0 = pairDist(pts[0], pts[1]);
       angleAtPinchStart = angle;
+      zoomAtPinchStart = zoomLevel;
     }
   }
 
   function onPinchMove(e) {
     if (!activePointers.has(e.pointerId) || frozen) return;
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (activePointers.size === 2 && pinchAngle0 != null) {
+    if (activePointers.size === 2 && pinchAngle0 != null && pinchDist0 != null) {
       const pts = Array.from(activePointers.values());
       angle = angleAtPinchStart + (pairAngle(pts[0], pts[1]) - pinchAngle0);
+      const scale = pairDist(pts[0], pts[1]) / pinchDist0;
+      zoomLevel = zoomAtPinchStart * scale;
+      if (!useHwZoom && zoomLevel < 1) zoomLevel = 1;
+      applyZoom();
       positionHandles();
       refreshHud();
     }
@@ -415,7 +518,10 @@
 
   function onPinchEnd(e) {
     activePointers.delete(e.pointerId);
-    if (activePointers.size < 2) pinchAngle0 = null;
+    if (activePointers.size < 2) {
+      pinchAngle0 = null;
+      pinchDist0 = null;
+    }
   }
 
   markersLayer.addEventListener("pointerdown", onPinchDown);
@@ -532,6 +638,8 @@
       btnStart.classList.add("hidden");
       liveControls.classList.remove("hidden");
       actionControls.classList.remove("hidden");
+      zoomControls.classList.remove("hidden");
+      detectZoomCapabilities();
       setFrozen(false);
       refreshHud();
       cancelAnimationFrame(raf);
@@ -596,11 +704,18 @@
 
     try {
       if (frozen) {
+        octx.save();
+        if (!useHwZoom && zoomLevel !== 1) {
+          octx.translate(w / 2, h / 2);
+          octx.scale(zoomLevel, zoomLevel);
+          octx.translate(-w / 2, -h / 2);
+        }
         octx.drawImage(freezeCanvas, 0, 0, freezeCanvas.width, freezeCanvas.height, 0, 0, w, h);
+        octx.restore();
       } else {
         const vw = video.videoWidth || w;
         const vh = video.videoHeight || h;
-        const scale = Math.max(w / vw, h / vh);
+        const scale = Math.max(w / vw, h / vh) * (useHwZoom ? 1 : zoomLevel);
         const dw = vw * scale;
         const dh = vh * scale;
         octx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
@@ -616,7 +731,11 @@
     octx.fillRect(12, h - 64, w - 24, 48);
     octx.fillStyle = "#f7f4ea";
     octx.font = "600 16px 'Libre Franklin', sans-serif";
-    octx.fillText("Tee Align · " + s.text + " · aim " + angleLabel(), 24, h - 34);
+    octx.fillText(
+      "Tee Align · " + s.text + " · " + zoomLabel() + " · aim " + angleLabel(),
+      24,
+      h - 34
+    );
 
     out.toBlob(function (blob) {
       if (!blob) {
@@ -679,6 +798,9 @@
   });
   btnFreeze.addEventListener("click", function () { setFrozen(!frozen); });
   btnPhoto.addEventListener("click", savePhoto);
+  btnZoomOut.addEventListener("click", function () { nudgeZoom(-ZOOM_STEP); });
+  btnZoomIn.addEventListener("click", function () { nudgeZoom(ZOOM_STEP); });
+  btnZoomReset.addEventListener("click", resetZoom);
   btnHelp.addEventListener("click", openHelp);
   btnCloseHelp.addEventListener("click", closeHelp);
 

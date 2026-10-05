@@ -45,6 +45,15 @@ body {
   overflow: hidden;
 }
 
+.view-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: #000;
+  pointer-events: none;
+}
+
 #camera,
 #freeze,
 #overlay {
@@ -59,12 +68,17 @@ body {
 #freeze {
   background: #000;
   pointer-events: none;
-  z-index: 1;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 #overlay {
   pointer-events: none;
   z-index: 2;
+}
+
+.control-row.zoom-row {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .markers-layer {
