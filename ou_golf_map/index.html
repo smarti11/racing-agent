@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0e1f14" />
+  <title>OU Golf Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Libre+Franklin:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div>
+        <div class="brand">OU Golf Map</div>
+        <div class="sub">Katke-Cousins · R&amp;S Sharf</div>
+      </div>
+      <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
+    </header>
+
+    <div class="map-wrap">
+      <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
+      <div id="yardage-hud" class="yardage-hud" hidden>
+        <div class="yh-hole" id="yh-hole">Select a hole</div>
+        <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+        <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="toggles">
+        <label class="chip"><input type="checkbox" id="tog-katke" checked /> Katke-Cousins</label>
+        <label class="chip"><input type="checkbox" id="tog-sharf" checked /> R&amp;S Sharf</label>
+        <label class="chip"><input type="checkbox" id="tog-paths" checked /> Maintenance / cart paths</label>
+        <label class="chip"><input type="checkbox" id="tog-fairways" checked /> Fairways &amp; greens</label>
+      </div>
+
+      <div class="status" id="gps-status">GPS: waiting…</div>
+
+      <div class="hole-lists">
+        <section>
+          <h2>Katke-Cousins</h2>
+          <div id="list-katke" class="hole-grid"></div>
+        </section>
+        <section>
+          <h2>R&amp;S Sharf</h2>
+          <div id="list-sharf" class="hole-grid"></div>
+        </section>
+      </div>
+
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

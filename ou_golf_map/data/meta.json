@@ -1,0 +1,30 @@
+{
+  "clubhouse": {
+    "lat": 42.6708,
+    "lon": -83.1965,
+    "name": "Steve Sharf Clubhouse",
+    "address": "492 Golf View Lane, Rochester, MI 48309"
+  },
+  "center": {
+    "lat": 42.6665,
+    "lon": -83.203
+  },
+  "courses": {
+    "katke": {
+      "name": "Katke-Cousins",
+      "par": 72,
+      "yards": 7170,
+      "holes": 18,
+      "color": "#1f6b3a"
+    },
+    "sharf": {
+      "name": "R&S Sharf",
+      "par": 72,
+      "yards": 7103,
+      "holes": 18,
+      "color": "#0b4f8a"
+    }
+  },
+  "source": "OpenStreetMap contributors; yardages from oakland.edu/golf scorecards",
+  "attribution": "\u00a9 OpenStreetMap contributors"
+}
