@@ -22,7 +22,14 @@
       <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
     </header>
 
-    <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
+    <div class="map-wrap">
+      <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
+      <div id="yardage-hud" class="yardage-hud" hidden>
+        <div class="yh-hole" id="yh-hole">Select a hole</div>
+        <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+        <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
+      </div>
+    </div>
 
     <aside class="panel">
       <div class="toggles">

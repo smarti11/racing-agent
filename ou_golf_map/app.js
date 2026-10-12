@@ -8,10 +8,15 @@
   const togSharf = document.getElementById("tog-sharf");
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
+  const yardageHud = document.getElementById("yardage-hud");
+  const yhHole = document.getElementById("yh-hole");
+  const yhYards = document.getElementById("yh-yards");
+  const yhMeta = document.getElementById("yh-meta");
 
   const KATKE = "#3ecf7a";
   const SHARF = "#4ea1ff";
   const PATH = "#f0c14b";
+  const M_TO_YD = 1.0936132983377078;
 
   const map = L.map(mapEl, {
     zoomControl: false,
@@ -51,10 +56,16 @@
   };
 
   let holeIndex = { katke: {}, sharf: {} };
+  /** @type {Record<string, Record<number, {lat:number, lon:number, props:object}>>} */
+  let greenTargets = { katke: {}, sharf: {} };
   let userMarker = null;
   let userWatch = null;
   let accuracyCircle = null;
   let activeHoleBtn = null;
+  let selectedHole = null; // { course, hole }
+  let lastUser = null; // { lat, lon, accuracy }
+  let aimLine = null;
+  let greenMarker = null;
 
   function holeIcon(course, num) {
     return L.divIcon({
@@ -71,8 +82,122 @@
     return res.json();
   }
 
-  function popupHole(p) {
-    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
+  function metersBetween(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+
+  function yardsBetween(lat1, lon1, lat2, lon2) {
+    return metersBetween(lat1, lon1, lat2, lon2) * M_TO_YD;
+  }
+
+  function popupHole(p, liveYards) {
+    const live =
+      liveYards != null
+        ? `<br/><strong>${liveYards} yd</strong> to green (GPS)`
+        : "";
+    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>Par ${
+      p.par || "—"
+    } · ${p.yards || "—"} yd (Black)${live}`;
+  }
+
+  function liveYardsFor(props) {
+    if (!lastUser || !props) return null;
+    const t = greenTargets[props.course] && greenTargets[props.course][props.hole];
+    if (!t) return null;
+    return Math.round(yardsBetween(lastUser.lat, lastUser.lon, t.lat, t.lon));
+  }
+
+  function refreshHolePopup(course, hole) {
+    const layer = holeIndex[course] && holeIndex[course][hole];
+    const t = greenTargets[course] && greenTargets[course][hole];
+    if (!layer || !t) return;
+    const yds = liveYardsFor(t.props);
+    layer.setPopupContent(popupHole(t.props, yds));
+  }
+
+  function updateYardageHud() {
+    if (!selectedHole) {
+      yardageHud.hidden = true;
+      if (aimLine) {
+        map.removeLayer(aimLine);
+        aimLine = null;
+      }
+      if (greenMarker) {
+        map.removeLayer(greenMarker);
+        greenMarker = null;
+      }
+      return;
+    }
+
+    const { course, hole } = selectedHole;
+    const t = greenTargets[course] && greenTargets[course][hole];
+    if (!t) {
+      yardageHud.hidden = true;
+      return;
+    }
+
+    yardageHud.hidden = false;
+    yhHole.textContent = `${t.props.courseName} · Hole ${hole}`;
+
+    const scorecard = `Par ${t.props.par || "—"} · ${
+      t.props.yards || "—"
+    } yd Black (scorecard)`;
+
+    if (!lastUser) {
+      yhYards.textContent = "—";
+      yhMeta.textContent = "Waiting for GPS… · " + scorecard;
+      return;
+    }
+
+    const yds = Math.round(
+      yardsBetween(lastUser.lat, lastUser.lon, t.lat, t.lon)
+    );
+    const accYd =
+      lastUser.accuracy != null
+        ? Math.round(lastUser.accuracy * M_TO_YD)
+        : null;
+    yhYards.textContent = String(yds);
+    yhMeta.textContent =
+      "to green from your GPS" +
+      (accYd != null ? ` (±${accYd} yd)` : "") +
+      " · " +
+      scorecard;
+
+    const from = [lastUser.lat, lastUser.lon];
+    const to = [t.lat, t.lon];
+    if (!aimLine) {
+      aimLine = L.polyline([from, to], {
+        color: "#ffffff",
+        weight: 2,
+        opacity: 0.85,
+        dashArray: "6 8",
+      }).addTo(map);
+    } else {
+      aimLine.setLatLngs([from, to]);
+      if (!map.hasLayer(aimLine)) aimLine.addTo(map);
+    }
+
+    if (!greenMarker) {
+      greenMarker = L.circleMarker(to, {
+        radius: 7,
+        color: "#fff",
+        weight: 2,
+        fillColor: "#111",
+        fillOpacity: 0.95,
+      }).addTo(map);
+    } else {
+      greenMarker.setLatLng(to);
+      if (!map.hasLayer(greenMarker)) greenMarker.addTo(map);
+    }
+
+    refreshHolePopup(course, hole);
   }
 
   function addPolygonLayer(fc, group, style) {
@@ -104,9 +229,19 @@
     if (btn) {
       btn.classList.add("active");
       activeHoleBtn = btn;
+    } else {
+      const list = course === "katke" ? listKatke : listSharf;
+      const match = list.querySelector(`.hole-btn:nth-child(${n})`);
+      if (match) {
+        match.classList.add("active");
+        activeHoleBtn = match;
+      }
     }
+    selectedHole = { course, hole: n };
+    refreshHolePopup(course, n);
     map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
     layer.openPopup();
+    updateYardageHud();
   }
 
   function applyToggles() {
@@ -141,6 +276,7 @@
 
   function upsertUser(lat, lon, accuracy) {
     const ll = [lat, lon];
+    lastUser = { lat, lon, accuracy };
     if (!userMarker) {
       userMarker = L.marker(ll, {
         icon: L.divIcon({
@@ -163,6 +299,7 @@
       accuracyCircle.setLatLng(ll);
       accuracyCircle.setRadius(accuracy || 20);
     }
+    updateYardageHud();
   }
 
   function startGps(centerOnFix) {
@@ -178,8 +315,13 @@
         const { latitude, longitude, accuracy } = pos.coords;
         upsertUser(latitude, longitude, accuracy);
         setGpsStatus(
-          "GPS: " + latitude.toFixed(5) + ", " + longitude.toFixed(5) +
-            " (±" + Math.round(accuracy) + " m)",
+          "GPS: " +
+            latitude.toFixed(5) +
+            ", " +
+            longitude.toFixed(5) +
+            " (±" +
+            Math.round(accuracy) +
+            " m)",
           "ok"
         );
         if (centerOnFix) {
@@ -278,6 +420,14 @@
       },
       onEachFeature(feature, layer) {
         const p = feature.properties;
+        const coords = feature.geometry.coordinates;
+        // OSM hole lines end at the green / pin end.
+        const end = coords[coords.length - 1];
+        greenTargets[p.course][p.hole] = {
+          lon: end[0],
+          lat: end[1],
+          props: p,
+        };
         layer.bindPopup(popupHole(p));
         holeIndex[p.course][p.hole] = layer;
         if (p.course === "katke") layer.addTo(layers.holesKatke);
