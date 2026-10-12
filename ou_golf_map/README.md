@@ -11,6 +11,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 - Toggle Katke / Sharf / fairways & greens / **maintenance & cart paths**
 - Live **GPS presence** (watch position + accuracy ring)
 - Tap a hole number to zoom to that hole (par + black-tee yardage)
+- **Live yards to green** from your GPS when a hole is selected (updates as you walk; dashed aim line to the green)
 
 ## Data sources
 
