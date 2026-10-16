@@ -1317,6 +1317,8 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
                    "LOW":{"wagered":0,"returned":0,"races":0}}
         exacta_hits = exacta_returned = 0.0
         trifecta_hits = trifecta_returned = 0.0
+        # Exotic pools are cancelled in short fields (NULL payout) — no bet, no cost
+        exacta_races = trifecta_races = 0
         recent_races = []
 
         for race_row in races:
@@ -1397,11 +1399,15 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
                 by_conf[conf]["races"]    += 1
 
             # Exacta box
+            if rs["exacta_payout"]:
+                exacta_races += 1
             if rs["exacta_payout"] and w in pick_nums and p in pick_nums and w != p:
                 exacta_hits += 1
                 exacta_returned += (rs["exacta_payout"] / 2.0) * bet_amount
 
             # Trifecta box
+            if rs["trifecta_payout"]:
+                trifecta_races += 1
             if rs["trifecta_payout"] and w in pick_nums and p in pick_nums and t in pick_nums:
                 if len({w,p,t}) == 3:
                     trifecta_hits += 1
@@ -1443,9 +1449,9 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
         net_profit = total_returned - total_wagered
         roi_pct    = round(net_profit/total_wagered*100, 1) if total_wagered else 0
 
-        ex_wagered  = total_races * bet_amount * 6
+        ex_wagered  = exacta_races * bet_amount * 6
         ex_net      = exacta_returned - ex_wagered
-        tri_wagered = total_races * bet_amount * 6
+        tri_wagered = trifecta_races * bet_amount * 6
         tri_net     = trifecta_returned - tri_wagered
 
         recent_races.sort(key=lambda x: (x["date"], x["race_num"]), reverse=True)
@@ -1532,6 +1538,7 @@ def get_optimized_roi_stats(bet_high: float = 2.00, bet_med_pl: float = 0.50,
         total_returned = 0.0
         exacta_hits    = 0
         exacta_returned = 0.0
+        exacta_races   = 0  # races with an exacta pool (NULL payout = not offered)
 
         by_conf = {
             "HIGH":   {"races":0,"wagered":0,"returned":0,"win_hits":0},
@@ -1626,8 +1633,10 @@ def get_optimized_roi_stats(bet_high: float = 2.00, bet_med_pl: float = 0.50,
                 GROUP BY rank HAVING id=MIN(id)
             """, (rid,)).fetchall()
             pick_nums = {str(pk["program_num"]) for pk in picks_query}
-            ex_race_wagered = exacta_bet * 6
+            ex_race_wagered = exacta_bet * 6 if rs["exacta_payout"] else 0.0
             ex_race_returned = 0.0
+            if rs["exacta_payout"]:
+                exacta_races += 1
 
             if rs["exacta_payout"] and w in pick_nums and p in pick_nums and w != p:
                 exacta_hits += 1
@@ -1666,7 +1675,7 @@ def get_optimized_roi_stats(bet_high: float = 2.00, bet_med_pl: float = 0.50,
 
         net_profit = total_returned - total_wagered
         roi_pct    = round(net_profit/total_wagered*100, 1) if total_wagered else 0
-        ex_wagered = total_races * exacta_bet * 6
+        ex_wagered = exacta_races * exacta_bet * 6
         ex_net     = exacta_returned - ex_wagered
 
         recent_races.sort(key=lambda x:(x["date"],x["race_num"]), reverse=True)
@@ -1965,6 +1974,8 @@ def get_exacta_track_stats(min_races=10):
                 if len(picks) < 2:
                     continue
                 pick_nums = [str(p["program_num"]) for p in picks]
+                if not race["exacta_payout"]:
+                    continue  # no exacta pool (short field)
                 total += 1
                 wagered += 6.0
                 if (str(race["winner_num"]) in pick_nums and

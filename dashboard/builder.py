@@ -1367,10 +1367,13 @@ def build_dashboard():
                         ex_pay = result_data.get("exacta_payout") or 0
                         # $0.50 box: payout is per $2 straight, box splits evenly
                         ex_returned = (ex_pay / 2.0) * 0.50 if ex_hit else 0
-                        ex_cost = 3.00  # 6 combos x $0.50
+                        ex_cost = 3.00 if ex_pay else 0.0  # 6 combos x $0.50; no pool in short fields
                         ex_net = ex_returned - ex_cost
-                        ex_color = "#00c896" if ex_hit else "#4a6080"
-                        ex_str = f"EX BOX HIT! ${ex_returned:.2f} ({ex_net:+.2f})" if ex_hit else "EX miss"
+                        ex_color = "#00c896" if ex_hit and ex_pay else "#4a6080"
+                        if not ex_pay:
+                            ex_str = "EX not offered"
+                        else:
+                            ex_str = f"EX BOX HIT! ${ex_returned:.2f} ({ex_net:+.2f})" if ex_hit else "EX miss"
 
                         # Trifecta box hit check
                         ex_third = str(result_data.get("third_num","") or "")
@@ -1378,10 +1381,13 @@ def build_dashboard():
                                    ex_third in pick_nums and len({ex_winner, ex_second, ex_third}) == 3)
                         tri_pay = result_data.get("trifecta_payout") or 0
                         tri_returned = (tri_pay / 6.0) * 0.50 if tri_hit else 0
-                        tri_cost = 3.00  # 6 combos x $0.50
+                        tri_cost = 3.00 if tri_pay else 0.0  # 6 combos x $0.50; no pool in short fields
                         tri_net = tri_returned - tri_cost
-                        tri_color = "#00c896" if tri_hit else "#4a6080"
-                        tri_str = f"TRI BOX HIT! ${tri_returned:.2f} ({tri_net:+.2f})" if tri_hit else "TRI miss"
+                        tri_color = "#00c896" if tri_hit and tri_pay else "#4a6080"
+                        if not tri_pay:
+                            tri_str = "TRI not offered"
+                        else:
+                            tri_str = f"TRI BOX HIT! ${tri_returned:.2f} ({tri_net:+.2f})" if tri_hit else "TRI miss"
 
                         race_pnl_html = (
                             f'<div style="display:flex;align-items:center;gap:8px;margin-top:6px;'
