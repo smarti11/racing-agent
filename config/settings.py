@@ -95,8 +95,9 @@ SCRATCH_CHECK_HOUR_ET = 10      # Skip scratch detection before this hour (ET)
 REQUEST_TIMEOUT      = 15       # HTTP request timeout (seconds)
 REQUEST_DELAY        = 0.5      # Delay between requests (seconds) — be polite
 
-# Canadian tracks use mobile scratch feed instead of desktop
-CANADIAN_TRACKS = {"WO", "WOT", "WOD", "HST", "GLD"}
+# Canadian tracks use mobile scratch feed instead of desktop, and Equibase's
+# "CAN" country suffix for late-changes pages and chart PDFs
+CANADIAN_TRACKS = {"WO", "WOT", "WOD", "HST", "GLD", "CTD", "FE", "GPR"}
 
 # --- Dashboard URL (override via RACING_DASHBOARD_URL env var) ---
 DASHBOARD_PUBLIC_URL = os.environ.get(
