@@ -76,7 +76,7 @@ The agent runs as a single long-lived Python process with no external task queue
 ### Data Flow
 
 1. **Entries** — `data/equibase.py` scrapes Equibase mobile → `db/database.save_race()` / `save_entry()`
-2. **Handicapping** — `core/handicapper.handicap_race()` scores each horse → `core/probabilities.scores_to_probabilities()` → softmax win probs → `core/calibrator` applies isotonic calibration if `models/calibrator_pick1.json` exists
+2. **Handicapping** — `core/handicapper.handicap_race()` scores each horse → `core/probabilities.scores_to_probabilities()` → softmax win probs (`win_prob`, raw) → `core/anchored_model` computes morning-line-anchored probabilities (`calibrated_prob` = `final_prob`) and picks are ranked by them; falls back to raw-score ranking if `models/anchored_weights.json` is missing
 3. **Picks saved** — `save_agent_picks()` writes ranked picks with score, win_prob, morning_line, calibrated_prob, and data_quality flag; `save_agent_entry_scores()` writes full per-horse handicap output for all active runners; `save_agent_race_analysis()` writes race-level pace scenario — all three in the same freeze-gated block
 4. **Results** — `data/results.py` → `db.save_result()` → `db.grade_agent_picks()` retroactively scores pick accuracy
 5. **Dashboard** — `dashboard/builder.py` reads all today's data from DB (picks from `agent_picks`, rich display data from `agent_entry_scores` + `agent_race_analysis`) and renders `dashboard/racing.html`. No computation or writes occur at render time.
@@ -100,7 +100,7 @@ The agent runs as a single long-lived Python process with no external task queue
 **Handicapping weights** (configurable in `config/settings.py`):
 - Speed figures: 35%, Jockey win %: 20%, Trainer win %: 20%, Class: 15%, Pace: 10%
 
-**Probability calibration** — the `IsotonicCalibrator` in `core/calibrator.py` uses PAV algorithm. It only activates if `models/calibrator_pick1.json` exists (built by separate training scripts in `tools/`). Without it, raw softmax probabilities are used.
+**Probability model (2026-10-16)** — `core/anchored_model.py` is a conditional logit with the morning-line implied probability as the prior and the handicapper's features (speed fig, J%/T%, last finish, class change, trainer form, pace role; continuous ones z-scored within race) as adjustments. Picks 1-3 are the top 3 by this probability; rank-1 confidence comes from its probability using cutoffs stored with the weights; the WEAK_SIGNAL_TRACKS HIGH-only rule still applies. Weights live in `models/anchored_weights.json` (gitignored, per-machine) — fit with `python tools/fit_anchored_model.py --write` (pure Python, ~2 min) and re-run monthly. Out-of-sample on 2026-09-01..10-15 (3,183 races): rank-1 win 32.2% vs 24.1% for the old score ranking, log loss 1.719 vs 1.732 for the morning line alone. It replaced the isotonic calibrator (`core/calibrator.py`, no longer called): that was fit on rank-1 picks only and, applied to whole fields, mapped longshots to 0%, everything mid-range to a ≥12.5% floor and the top to 100%.
 
 **Pick 3/4 strategy** — `core/pick4_picker.py` uses top-2 horses per leg (2^N combos × $0.50), filters out LOW confidence legs, and applies Bolton-Chapman EV check using track-average historical payouts from the `pick_payouts` table.
 

@@ -177,6 +177,32 @@ def _archive_tainted_picks(race_id: int):
             )
 
 
+def _anchored_ranked_picks(active_scored: list, race: dict, model: dict) -> dict:
+    """Top 3 by anchored win probability as WIN/PLACE/SHOW.
+
+    Confidence comes from the top pick's probability (cutoffs fit alongside
+    the weights to keep roughly the old HIGH/MEDIUM/LOW mix), and the
+    weak-signal-track rule from role_ranked_picks still applies.
+    """
+    from config.meet_leaders import WEAK_SIGNAL_TRACKS
+    from core.anchored_model import confidence_for
+
+    ranked = sorted(active_scored, key=lambda h: h.get("anchored_prob") or 0.0, reverse=True)
+    if not ranked:
+        return {"all": []}
+    confidence = confidence_for(ranked[0]["anchored_prob"], model["confidence_thresholds"])
+    if race.get("track_code") in WEAK_SIGNAL_TRACKS and confidence != "HIGH":
+        logger.info(
+            "[WEAK TRACK SKIP] track=%s horse=%r confidence=%s — skipping",
+            race.get("track_code"), ranked[0].get("horse_name"), confidence,
+        )
+        return {"all": []}
+    picks = []
+    for role, h in zip(("WIN", "PLACE", "SHOW"), ranked[:3]):
+        picks.append({**h, "role": role, "confidence": confidence if role == "WIN" else ""})
+    return {"all": picks}
+
+
 def _handicap_and_save(
     race: dict,
     force_regen: bool,
@@ -189,6 +215,8 @@ def _handicap_and_save(
     from core.handicapper import handicap_race, get_top_pick, role_ranked_picks
     from core.probabilities import scores_to_probabilities
     from core.market import enrich_race_with_market, scan_value_bets
+    from core.anchored_model import apply_anchored_probs, load_weights
+    from config.market import MARKET_BLEND_ALPHA
 
     entries = db_get_race_entries(race["id"])
     entry_dicts = [dict(e) for e in entries]
@@ -219,21 +247,21 @@ def _handicap_and_save(
     scores_to_probabilities(active_scored, temperature=8.0)
     prob_map = {s["program_num"]: s.get("win_prob", 0.0) for s in active_scored}
 
-    calibrated_map = {}
-    try:
-        from core.calibrator import IsotonicCalibrator
-        cal = IsotonicCalibrator.load("models/calibrator_pick1.json")
-        calibrated_map = {pgm: cal.transform(p) for pgm, p in prob_map.items()}
-    except Exception as e:
-        logger.warning(f"Calibrator unavailable: {e}")
-
-    for h in active_scored:
-        pgm = h["program_num"]
-        h["calibrated_prob"] = calibrated_map.get(pgm, h.get("win_prob"))
-
     ml_map = {str(e.get("program_num")): e.get("morning_line") for e in entry_dicts}
+
+    # Morning-line-anchored probabilities replace the isotonic calibrator,
+    # which was fit on rank-1 picks only and mapped other runners to 0% / 12.5%
+    # floors / 100%. The anchored prob already includes the market, so it is
+    # used as final_prob directly (alpha=1) rather than blended with ML again.
+    anchored = apply_anchored_probs(active_scored, ml_map)
+    for h in active_scored:
+        h["calibrated_prob"] = h["anchored_prob"] if anchored else h.get("win_prob")
+
     live_odds = get_latest_odds_map(race["id"])
-    enrich_race_with_market(active_scored, live_odds=live_odds, ml_map=ml_map)
+    enrich_race_with_market(
+        active_scored, live_odds=live_odds, ml_map=ml_map,
+        alpha=1.0 if anchored else MARKET_BLEND_ALPHA,
+    )
 
     value_bets = scan_value_bets(active_scored)
     save_agent_value_bets(race["id"], value_bets)
@@ -243,7 +271,11 @@ def _handicap_and_save(
     if scored:
         scored[0]["confidence"] = confidence
 
-    roles = role_ranked_picks(scored)
+    if anchored:
+        roles = _anchored_ranked_picks(active_scored, race, load_weights())
+        confidence = roles["all"][0]["confidence"] if roles["all"] else confidence
+    else:
+        roles = role_ranked_picks(scored)
     prob_by_pgm = {h["program_num"]: h for h in active_scored}
     picks = []
     for i, horse in enumerate(roles["all"]):
