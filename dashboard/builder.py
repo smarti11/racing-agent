@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 import logging
 from pathlib import Path
-from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_actionable_paper_stats, get_track_high_win_rate_14d
+from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_actionable_paper_stats, get_track_top3_rate_30d
 from config.settings import DASHBOARD_OUTPUT
 
 
@@ -730,9 +730,9 @@ def build_dashboard():
     entry_scores  = get_todays_entry_scores()   # {race_id: {program_num: score_dict}}
     race_analyses = get_todays_race_analyses()  # {race_id: analysis_dict}
     try:
-        track_high_14d = get_track_high_win_rate_14d()
+        track_top3_30d = get_track_top3_rate_30d()
     except Exception:
-        track_high_14d = {}
+        track_top3_30d = {}
 
     tracks = {}
     for race in races:
@@ -1134,13 +1134,15 @@ def build_dashboard():
     else:
         for track_name, track_races in tracks.items():
             track_id = track_name.replace(" ", "_").replace("'","")
-            _high_14 = track_high_14d.get(track_name)
-            _high_badge = ""
-            if _high_14 is not None:
-                _hc = "#00c896" if _high_14 >= 25 else "#ffd60a" if _high_14 >= 18 else "#ff8c42"
-                _high_badge = (
-                    f'<span style="font-size:10px;font-weight:600;color:{_hc}">'
-                    f'HIGH 14d: {_high_14}%</span>'
+            _top3 = track_top3_30d.get(track_name)
+            _track_badge = ""
+            if _top3 is not None:
+                _pct, _n = _top3
+                _hc = "#00c896" if _pct >= 70 else "#ffd60a" if _pct >= 60 else "#ff8c42"
+                _track_badge = (
+                    f'<span style="font-size:10px;font-weight:600;color:{_hc}" '
+                    f'title="Winner was one of the top-3 picks in {_pct}% of {_n} races, last 30 days">'
+                    f'Top-3 30d: {_pct}% ({_n})</span>'
                 )
             race_html += (
                 '<div style="margin-bottom:28px">'
@@ -1151,7 +1153,7 @@ def build_dashboard():
                 'align-items:center;cursor:pointer;user-select:none">'
                 f'<span>{track_name}</span>'
                 '<div style="display:flex;align-items:center;gap:10px">'
-                + _high_badge +
+                + _track_badge +
                 f'<span style="font-size:10px;font-weight:400;color:#4a6080">{len(track_races)} races</span>'
                 f'<span id="arrow_{track_id}" style="color:#4a6080;font-size:12px;transition:transform .2s">&#9654;</span>'
                 '</div></div>'

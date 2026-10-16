@@ -1028,26 +1028,34 @@ def get_actionable_paper_stats(days: int = None) -> dict:
     }
 
 
-def get_track_high_win_rate_14d() -> dict:
-    """Return {track_name: win_pct} for HIGH confidence rank-1 picks, last 14 days."""
+def get_track_top3_rate_30d(min_races: int = 10) -> dict:
+    """Return {track_name: (pct, n)}: share of graded races in the last 30
+    days where the winner was one of the agent's top-3 picks.
+
+    Replaced the per-track HIGH-confidence 14d win rate (2026-10-16): with
+    ~15 HIGH picks per track per fortnight that rate had no persistence
+    (14d-to-next-14d correlation -0.09). Top-3 uses every race and was the
+    most persistent per-track measure (+0.31).
+    """
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT r.track_name,
                    COUNT(*) AS n,
-                   SUM(CASE WHEN ap.result = 'WIN'
-                            AND ap.program_num = res.winner_num THEN 1 ELSE 0 END) AS wins
-            FROM agent_picks ap
-            JOIN races r ON r.id = ap.race_id
-            LEFT JOIN results res ON res.race_id = ap.race_id
-            WHERE ap.rank = 1
-              AND ap.confidence = 'HIGH'
-              AND ap.result IS NOT NULL AND ap.result != ''
-              AND r.race_date >= date('now', '-14 days')
+                   SUM(CASE WHEN EXISTS (
+                         SELECT 1 FROM agent_picks ap
+                         WHERE ap.race_id = r.id AND ap.rank <= 3
+                           AND ap.program_num = res.winner_num
+                       ) THEN 1 ELSE 0 END) AS hits
+            FROM races r
+            JOIN results res ON res.race_id = r.id
+            WHERE r.race_date >= date('now', 'localtime', '-30 days')
+              AND EXISTS (SELECT 1 FROM agent_picks ap
+                          WHERE ap.race_id = r.id AND ap.rank = 1)
             GROUP BY r.track_name
-            HAVING n >= 3
-        """).fetchall()
+            HAVING n >= ?
+        """, (min_races,)).fetchall()
     return {
-        r["track_name"]: round(100.0 * r["wins"] / r["n"], 1)
+        r["track_name"]: (round(100.0 * r["hits"] / r["n"]), r["n"])
         for r in rows
     }
 
