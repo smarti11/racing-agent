@@ -3,6 +3,8 @@ import pytz
 from pathlib import Path
 from datetime import datetime
 
+from config.settings import CANADIAN_TRACKS
+
 logger = logging.getLogger("racing_agent")
 BASE_URL = "https://www.equibase.com/static/chart/PDF"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
@@ -15,7 +17,8 @@ def fetch_chart_pdf(track_code, date_str, force=False):
     except ValueError:
         return None
     mmddyy = dt.strftime("%m%d%y")
-    url = f"{BASE_URL}/{track_code}{mmddyy}USA.pdf"
+    country = "CAN" if track_code in CANADIAN_TRACKS else "USA"
+    url = f"{BASE_URL}/{track_code}{mmddyy}{country}.pdf"
     cache_path = CACHE_DIR / f"{track_code}_{date_str}.pdf"
     if cache_path.exists() and not force:
         return cache_path
