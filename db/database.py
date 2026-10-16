@@ -411,7 +411,7 @@ def mark_scratched(race_id, program_num, source="mobile_diff"):
 STRONG_SCRATCH_SOURCES = {"late_changes", "desktop"}
 
 
-def mark_unscratched(race_id, program_num, source="mobile_diff"):
+def mark_unscratched(race_id, program_num, source="mobile_diff", only_if_source=None):
     """Clear a false scratch when horse reappears on live entries.
 
     Refuses to override a scratch confirmed via a strong source
@@ -432,6 +432,8 @@ def mark_unscratched(race_id, program_num, source="mobile_diff"):
         ).fetchone()
         if not row or not row["scratched"]:
             return False
+        if only_if_source and row["scratch_source"] != only_if_source:
+            return False
         if row["scratch_source"] in STRONG_SCRATCH_SOURCES and source not in STRONG_SCRATCH_SOURCES:
             logger.info(
                 f"Refusing to un-scratch #{program_num} in race {race_id}: "
@@ -442,7 +444,7 @@ def mark_unscratched(race_id, program_num, source="mobile_diff"):
             UPDATE entries SET scratched=0, scratch_time=NULL, scratch_source=NULL
             WHERE race_id=? AND program_num=?
         """, (race_id, program_num))
-        logger.info(f"Un-scratched #{program_num} in race {race_id} (reappeared on live card)")
+        logger.info(f"Un-scratched #{program_num} in race {race_id} (source={source})")
         return True
 
 
@@ -652,6 +654,87 @@ def get_todays_results():
         """, (today,)).fetchall()
 
 
+def _card_post_minutes(post_times: list) -> list:
+    """Local minutes-after-midnight for a card's post times, in race order.
+
+    Equibase stores bare local times ("1:30", "10:02"). AM/PM is inferred
+    from the card: the first race is PM for 1-9 and AM for 10-11; each later
+    race takes the earliest reading not before the previous race, so an
+    evening card's "9:49" -> "10:02" stays PM. Explicit AM/PM is honored.
+    """
+    import re as _re
+    out, prev = [], None
+    for pt in post_times:
+        m = _re.match(r"(\d{1,2}):(\d{2})\s*(AM|PM)?", (pt or "").strip(), _re.IGNORECASE)
+        if not m:
+            out.append(None)
+            continue
+        h, mi = int(m.group(1)), int(m.group(2))
+        ampm = (m.group(3) or "").upper()
+        if ampm:
+            h = (h % 12) + (12 if ampm == "PM" else 0)
+            mins = h * 60 + mi
+        else:
+            base = (h % 12) * 60 + mi          # AM reading (12:xx -> 0:xx)
+            if h == 12:
+                cands = [12 * 60 + mi]
+            else:
+                cands = [base, base + 720]
+            if prev is None:
+                mins = 12 * 60 + mi if h == 12 else (base if h >= 10 else base + 720)
+            else:
+                later = [c for c in cands if c >= prev]
+                mins = min(later) if later else max(cands)
+        out.append(mins)
+        prev = mins
+    return out
+
+
+def race_post_time_et(race_id: int, conn=None):
+    """Scheduled post time of a race as an aware US/Eastern datetime, or None.
+
+    Converts the track-local Equibase time using TRACK_TIMEZONES."""
+    import pytz
+    from datetime import timedelta as _td
+    from config.settings import TRACK_TIMEZONES, DEFAULT_TRACK_TIMEZONE
+
+    def _q(c):
+        race = c.execute(
+            "SELECT track_code, race_date, race_num FROM races WHERE id=?", (race_id,)
+        ).fetchone()
+        if not race:
+            return None, []
+        card = c.execute(
+            "SELECT race_num, post_time FROM races WHERE track_code=? AND race_date=? "
+            "ORDER BY race_num", (race["track_code"], race["race_date"])
+        ).fetchall()
+        return race, card
+
+    if conn is not None:
+        race, card = _q(conn)
+    else:
+        with get_conn() as c:
+            race, card = _q(c)
+    if not race or not race["race_date"]:
+        return None
+    mins = dict(zip([r["race_num"] for r in card],
+                    _card_post_minutes([r["post_time"] for r in card])))
+    m = mins.get(race["race_num"])
+    if m is None:
+        return None
+    tz = pytz.timezone(TRACK_TIMEZONES.get(race["track_code"], DEFAULT_TRACK_TIMEZONE))
+    local = tz.localize(datetime.strptime(race["race_date"], "%Y-%m-%d") + _td(minutes=m))
+    return local.astimezone(pytz.timezone("America/New_York"))
+
+
+def race_is_past_post(race_id: int, conn=None) -> bool:
+    """True once scheduled post time has passed. Picks are locked from then
+    on — no scratch, regen, or manual refresh may rewrite the graded set."""
+    import pytz
+    post = race_post_time_et(race_id, conn)
+    return post is not None and datetime.now(pytz.timezone("America/New_York")) >= post
+
+
 def save_agent_picks(race_id: int, picks: list, *, force: bool = False):
     """
     Save agent's top 3 picks for a race. FREEZE_GUARD_APPLIED.
@@ -660,6 +743,8 @@ def save_agent_picks(race_id: int, picks: list, *, force: bool = False):
     - If race has results in `results` table, the live agent_picks row is
       FROZEN: this function will NOT modify agent_picks. It still logs to
       agent_picks_history for forensic record.
+    - Post time passed: picks are LOCKED, even with force=True — the graded
+      set is what stood at post.
     - POST_TIME_FREEZE (within 30 min of post): also freezes live picks,
       unless force=True. force is used for (a) overnight TAINTED_PARSE /
       thin stub supersession once the full field arrives, and (b) late
@@ -676,43 +761,18 @@ def save_agent_picks(race_id: int, picks: list, *, force: bool = False):
         ).fetchone() is not None
 
         post_time_frozen = False
-        if not results_posted and not force:
+        if not results_posted:
             try:
                 import pytz
-                _et = pytz.timezone("America/New_York")
-                _now_et = datetime.now(_et)
-                _race_row = conn.execute(
-                    "SELECT post_time, race_date FROM races WHERE id=?",
-                    (race_id,)
-                ).fetchone()
-                if _race_row and _race_row["post_time"] and _race_row["race_date"]:
-                    _pt = _race_row["post_time"].strip()  # e.g. "2:14 PM" or "14:14"
-                    _rd = _race_row["race_date"]  # YYYY-MM-DD
-                    # Parse post_time — handle both 12h and 24h formats
-                    import re as _re
-                    _m = _re.match(
-                        r"(\d{1,2}):(\d{2})\s*(AM|PM)?", _pt, _re.IGNORECASE
-                    )
-                    if _m:
-                        _hr, _min = int(_m.group(1)), int(_m.group(2))
-                        _ampm = (_m.group(3) or "").upper()
-                        if _ampm == "PM" and _hr != 12:
-                            _hr += 12
-                        elif _ampm == "AM" and _hr == 12:
-                            _hr = 0
-                        elif not _ampm and _hr < 8:
-                            _hr += 12  # no AM/PM stored; times < 8 are PM (no US racing at 1-7 AM)
-                        from datetime import datetime as _dt
-                        _post_dt = _et.localize(
-                            _dt.strptime(_rd, "%Y-%m-%d").replace(
-                                hour=_hr, minute=_min
-                            )
-                        )
-                        from datetime import timedelta as _td
-                        _freeze_dt = _post_dt - _td(minutes=30)
-                        if _now_et >= _freeze_dt:
-                            post_time_frozen = True
-            except Exception as _pte:
+                from datetime import timedelta as _td
+                _post_dt = race_post_time_et(race_id, conn)
+                if _post_dt is not None:
+                    _now_et = datetime.now(pytz.timezone("America/New_York"))
+                    if _now_et >= _post_dt:
+                        post_time_frozen = True   # hard lock: force can't bypass
+                    elif not force and _now_et >= _post_dt - _td(minutes=30):
+                        post_time_frozen = True
+            except Exception:
                 pass  # if post time parse fails, don't freeze
 
         frozen = results_posted or post_time_frozen
