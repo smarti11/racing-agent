@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 EASTERN = pytz.timezone("US/Eastern")
 from pathlib import Path
-from config.settings import DB_PATH
+from config.settings import DB_PATH, exacta_base
 
 logger = logging.getLogger("racing_agent")
 
@@ -1329,8 +1329,9 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
                 SELECT winner_num, second_num, third_num,
                        winner_win_payout, winner_place_payout, winner_show_payout,
                        second_place_payout, second_show_payout, third_show_payout,
-                       exacta_payout, trifecta_payout
-                FROM results WHERE race_id=?
+                       exacta_payout, trifecta_payout, r.track_code
+                FROM results JOIN races r ON r.id = results.race_id
+                WHERE race_id=?
             """, (rid,)).fetchone()
             if not rs:
                 continue
@@ -1403,7 +1404,7 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
                 exacta_races += 1
             if rs["exacta_payout"] and w in pick_nums and p in pick_nums and w != p:
                 exacta_hits += 1
-                exacta_returned += (rs["exacta_payout"] / 2.0) * bet_amount
+                exacta_returned += (rs["exacta_payout"] / exacta_base(rs["track_code"])) * bet_amount
 
             # Trifecta box
             if rs["trifecta_payout"]:
@@ -1554,8 +1555,9 @@ def get_optimized_roi_stats(bet_high: float = 2.00, bet_med_pl: float = 0.50,
                 SELECT winner_num, second_num, third_num,
                        winner_win_payout, winner_place_payout, winner_show_payout,
                        second_place_payout, second_show_payout, third_show_payout,
-                       exacta_payout
-                FROM results WHERE race_id=?
+                       exacta_payout, r.track_code
+                FROM results JOIN races r ON r.id = results.race_id
+                WHERE race_id=?
             """, (rid,)).fetchone()
             if not rs:
                 continue
@@ -1640,7 +1642,7 @@ def get_optimized_roi_stats(bet_high: float = 2.00, bet_med_pl: float = 0.50,
 
             if rs["exacta_payout"] and w in pick_nums and p in pick_nums and w != p:
                 exacta_hits += 1
-                ex_race_returned = (rs["exacta_payout"] / 2.0) * exacta_bet
+                ex_race_returned = (rs["exacta_payout"] / exacta_base(rs["track_code"])) * exacta_bet
                 exacta_returned += ex_race_returned
 
             total_wagered  += race_wagered + ex_race_wagered
@@ -1955,7 +1957,7 @@ def get_exacta_track_stats(min_races=10):
             if track_name in EXCLUDED_TRACKS:
                 continue
             races = conn.execute(
-                "SELECT r.id, res.winner_num, res.second_num, res.exacta_payout "
+                "SELECT r.id, r.track_code, res.winner_num, res.second_num, res.exacta_payout "
                 "FROM races r JOIN results res ON res.race_id = r.id "
                 "WHERE r.track_name = ? AND res.winner_num IS NOT NULL "
                 "AND res.second_num IS NOT NULL",
@@ -1982,7 +1984,8 @@ def get_exacta_track_stats(min_races=10):
                         str(race["second_num"]) in pick_nums):
                     hits += 1
                     if race["exacta_payout"]:
-                        returned += race["exacta_payout"] / 2.0
+                        # $1 per combo: scale payout from the track's base
+                        returned += race["exacta_payout"] / exacta_base(race["track_code"])
             if total >= min_races:
                 net = returned - wagered
                 roi = net / wagered * 100 if wagered else 0
