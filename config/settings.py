@@ -38,6 +38,7 @@ EXCLUDED_TRACKS = [
     "Legacy Downs",          # LEG - Not on NYRA Bets
     "Bes Preakness Double",  # EQM - Exotic wager, not a real track
     "Remington Park",       # RP  - Short races, not worth tracking
+    "Harrah's Columbus Nebraska",  # Not on NYRA Bets
 ]
 
 # Set to True to only fetch priority tracks (faster)
