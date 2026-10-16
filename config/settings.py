@@ -151,3 +151,23 @@ def exacta_base(track_code: str) -> float:
     if track_code in EXACTA_BASE_2:
         return 2.0
     return EXACTA_BASE_DEFAULT
+
+# Trifecta base wager per track (payouts are quoted at it). Same source as
+# above; unlisted tracks fall back to $2 (conservative).
+TRIFECTA_BASE = {
+    "ALB": 0.5, "AQU": 0.5, "ARP": 2, "ATO": 0.5, "BAQ": 0.5, "BEL": 0.5, "BKF": 2,
+    "BTP": 0.5, "CAS": 2, "CBY": 0.5, "CD": 0.5, "CNL": 0.5, "CPW": 2, "CT": 1,
+    "DED": 0.5, "DEL": 0.5, "DMR": 0.5, "EDR": 1, "ELK": 2, "ELP": 0.5, "EMD": 0.5,
+    "EVD": 0.5, "FAI": 1, "FAR": 0.5, "FL": 0.5, "FMT": 0.5, "FON": 0.5, "FP": 1,
+    "GIL": 2, "GP": 0.5, "GRP": 1, "HAW": 0.5, "HOU": 0.5, "IND": 0.5, "JRM": 2,
+    "KD": 0.5, "KEE": 0.5, "LA": 1, "LAD": 0.5, "LEG": 0.5, "LRC": 1, "LRL": 1,
+    "LS": 0.5, "MC": 2, "MED": 0.5, "MNR": 1, "MTH": 0.5, "ONE": 2, "OP": 0.5,
+    "PEN": 0.5, "PID": 2, "POD": 2, "PRM": 0.5, "PRV": 2, "PRX": 0.5, "RET": 0.5,
+    "RP": 0.5, "SA": 1, "SAR": 0.5, "SRP": 0.5, "SRR": 0.5, "SWF": 0.5, "TAM": 0.5,
+    "TDN": 0.5, "TIL": 2, "TIM": 1, "TUP": 0.5, "UN": 2, "WRD": 0.5, "WYO": 0.5,
+}
+TRIFECTA_BASE_DEFAULT = 2.0
+
+
+def trifecta_base(track_code: str) -> float:
+    return TRIFECTA_BASE.get(track_code, TRIFECTA_BASE_DEFAULT)

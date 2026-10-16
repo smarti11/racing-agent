@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_actionable_paper_stats, get_track_top3_rate_30d
-from config.settings import DASHBOARD_OUTPUT, exacta_base
+from config.settings import DASHBOARD_OUTPUT, exacta_base, trifecta_base
 
 
 def cc(conf):
@@ -1380,7 +1380,8 @@ def build_dashboard():
                         tri_hit = (ex_winner in pick_nums and ex_second in pick_nums and
                                    ex_third in pick_nums and len({ex_winner, ex_second, ex_third}) == 3)
                         tri_pay = result_data.get("trifecta_payout") or 0
-                        tri_returned = (tri_pay / 6.0) * 0.50 if tri_hit else 0
+                        # $0.50 box: payout is quoted at the track's trifecta base
+                        tri_returned = (tri_pay / trifecta_base(track_code)) * 0.50 if tri_hit else 0
                         tri_cost = 3.00 if tri_pay else 0.0  # 6 combos x $0.50; no pool in short fields
                         tri_net = tri_returned - tri_cost
                         tri_color = "#00c896" if tri_hit and tri_pay else "#4a6080"
@@ -1405,7 +1406,7 @@ def build_dashboard():
                     pick_banner = f'<div style="background:#0f1729;border:0.5px solid #00c89633;border-radius:6px;padding:8px 10px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:9px;color:#00c896;font-weight:700;letter-spacing:.1em">TOP 3 PICKS</span>{conf_str}'
                     if picks_all_scratched:
                         pick_banner += '<span style="font-size:9px;color:#ff8c42;font-weight:600">frozen picks scratched — showing top scored active</span>'
-                    pick_banner += f'</div><div style="display:flex;gap:6px;flex-wrap:wrap">{picks_html}</div>{pace_info}</div>'
+                    pick_banner += f'</div><div style="display:flex;gap:6px;flex-wrap:wrap">{picks_html}</div>{pace_info}{race_pnl_html}</div>'
 
                 scr_badge = ('<span style="color:#ff4d6d;font-size:10px">' + str(len(scratched)) + ' SCR</span>') if scratched else ""
                 race_html += (

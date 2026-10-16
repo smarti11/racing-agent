@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 EASTERN = pytz.timezone("US/Eastern")
 from pathlib import Path
-from config.settings import DB_PATH, exacta_base
+from config.settings import DB_PATH, exacta_base, trifecta_base
 
 logger = logging.getLogger("racing_agent")
 
@@ -1412,7 +1412,7 @@ def get_roi_stats(bet_amount: float = 0.50) -> dict:
             if rs["trifecta_payout"] and w in pick_nums and p in pick_nums and t in pick_nums:
                 if len({w,p,t}) == 3:
                     trifecta_hits += 1
-                    trifecta_returned += (rs["trifecta_payout"] / 6.0) * bet_amount
+                    trifecta_returned += (rs["trifecta_payout"] / trifecta_base(rs["track_code"])) * bet_amount
 
             # Recent races
             rinfo = conn.execute(
