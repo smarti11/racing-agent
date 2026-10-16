@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from db.database import get_todays_races, get_race_entries, get_pick_record, get_todays_results, get_agent_pick_stats, get_todays_agent_picks, get_roi_stats, get_optimized_roi_stats, get_stats_by_track, get_stats_by_field_size, get_track_roi_by_confidence, get_todays_entry_scores, get_todays_race_analyses, get_todays_value_bets, get_todays_actionable_bets, get_actionable_paper_stats, get_track_top3_rate_30d
-from config.settings import DASHBOARD_OUTPUT
+from config.settings import DASHBOARD_OUTPUT, exacta_base
 
 
 def cc(conf):
@@ -1365,8 +1365,8 @@ def build_dashboard():
                         ex_second = str(result_data.get("second_num","") or "")
                         ex_hit = (ex_winner in pick_nums and ex_second in pick_nums and ex_winner != ex_second) if ex_second else False
                         ex_pay = result_data.get("exacta_payout") or 0
-                        # $0.50 box: payout is per $2 straight, box splits evenly
-                        ex_returned = (ex_pay / 2.0) * 0.50 if ex_hit else 0
+                        # $0.50 box: payout is quoted at the track's exacta base
+                        ex_returned = (ex_pay / exacta_base(track_code)) * 0.50 if ex_hit else 0
                         ex_cost = 3.00 if ex_pay else 0.0  # 6 combos x $0.50; no pool in short fields
                         ex_net = ex_returned - ex_cost
                         ex_color = "#00c896" if ex_hit and ex_pay else "#4a6080"

@@ -126,3 +126,28 @@ DASHBOARD_OUTPUT     = "dashboard/racing.html"
 
 # --- Dashboard server ---
 DASHBOARD_PORT       = 8081     # Different port from trading agent (8080)
+
+# Exacta base wager each track's payouts are quoted at (results store payouts
+# as Equibase posts them). Derived from data/charts PDFs, 2026-10-16. Tracks
+# not listed fall back to EXACTA_BASE_DEFAULT ($2 = conservative: never
+# overstates returns).
+EXACTA_BASE_1 = {
+    "ALB", "AQU", "BAQ", "BEL", "BTP", "CBY", "CNL", "CT", "DED", "DEL", "DMR", "EMD",
+    "EVD", "FAI", "FAR", "FP", "GP", "GRP", "HAW", "HOU", "KD", "KEE", "LA", "LAD",
+    "LRC", "LRL", "MED", "MTH", "OP", "PEN", "SA", "SAR", "SRP", "SWF", "TAM", "TDN",
+    "TIM", "TUP", "WYO",
+}
+EXACTA_BASE_2 = {
+    "ARP", "ATO", "BKF", "CAS", "CD", "CPW", "EDR", "ELK", "ELP", "FL", "FMT", "FON",
+    "GIL", "HPO", "IND", "JRM", "LEG", "LS", "MC", "ONE", "PID", "POD", "PRM", "PRX",
+    "RET", "RP", "SRR", "WRD",
+}
+EXACTA_BASE_DEFAULT = 2.0
+
+
+def exacta_base(track_code: str) -> float:
+    if track_code in EXACTA_BASE_1:
+        return 1.0
+    if track_code in EXACTA_BASE_2:
+        return 2.0
+    return EXACTA_BASE_DEFAULT
