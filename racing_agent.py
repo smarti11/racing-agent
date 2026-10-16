@@ -37,7 +37,7 @@ from config.settings import (
 from data.equibase import get_todays_tracks, get_all_entries_today, get_scratches, get_scratches_desktop
 from data.results import get_todays_results_all_tracks
 from data.chart_fetcher import fetch_all_todays_charts
-from core.scratch_fetcher import fetch_track_scratches
+from core.scratch_fetcher import fetch_track_late_changes
 from core.pick_manager import save_todays_picks, refresh_race_picks
 from db.database import (
     init_db, save_race, save_entry, mark_scratched, mark_unscratched,
@@ -168,11 +168,21 @@ def check_scratches() -> int:
                 if mark_unscratched(matched_race_id, prog_num, source=weak_source):
                     unscratch_count += 1
 
-        for race_num, prog_num, horse_name, _reason in fetch_track_scratches(track_code):
+        lc_scratches, lc_reinstated = fetch_track_late_changes(track_code)
+        for race_num, prog_num, horse_name, _reason in lc_scratches:
             matched_race_id = race_lookup.get((track_code, race_num))
             if matched_race_id and prog_num:
                 mark_scratched(matched_race_id, prog_num, source="late_changes")
                 scratch_count += 1
+        # "Will Run (Previously Reported as scratched)" reverses only a scratch
+        # this same feed reported — never a desktop SCR-confirmed one.
+        for race_num, prog_num, horse_name in lc_reinstated:
+            matched_race_id = race_lookup.get((track_code, race_num))
+            if matched_race_id and prog_num and mark_unscratched(
+                matched_race_id, prog_num, source="late_changes", only_if_source="late_changes"
+            ):
+                unscratch_count += 1
+                logger.info(f"[SCRATCH REVERSED] {track_code} R{race_num} #{prog_num} {horse_name} — will run")
 
     logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")
     return scratch_count + unscratch_count

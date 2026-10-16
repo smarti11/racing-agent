@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import pytz
 
 from db.database import (
+    race_is_past_post,
+    race_post_time_et,
     get_conn,
     get_todays_races,
     get_race_entries as db_get_race_entries,
@@ -89,29 +91,10 @@ def _race_is_frozen(race: dict, force_regen: bool) -> bool:
     if _results_posted(race["id"]):
         return True
 
-    post_time = (race.get("post_time") or "").strip()
-    race_date = race.get("race_date") or ""
-    if not post_time or not race_date:
+    post_dt = race_post_time_et(race["id"])
+    if post_dt is None:
         return False
-
-    match = re.match(r"(\d{1,2}):(\d{2})\s*(AM|PM)?", post_time, re.IGNORECASE)
-    if not match:
-        return False
-
-    hour, minute = int(match.group(1)), int(match.group(2))
-    ampm = (match.group(3) or "").upper()
-    if ampm == "PM" and hour != 12:
-        hour += 12
-    elif ampm == "AM" and hour == 12:
-        hour = 0
-    elif not ampm and hour < 8:
-        hour += 12
-
-    now_et = datetime.now(EASTERN)
-    post_dt = EASTERN.localize(
-        datetime.strptime(race_date, "%Y-%m-%d").replace(hour=hour, minute=minute)
-    )
-    return now_et >= post_dt - timedelta(minutes=30)
+    return datetime.now(EASTERN) >= post_dt - timedelta(minutes=30)
 
 
 def _entries_changed_since_picks(race_id: int, conn) -> bool:
@@ -356,6 +339,12 @@ def save_todays_picks() -> int:
             entries_dirty = _entries_changed_since_picks(race["id"], conn)
             odds_dirty = _odds_changed_since_picks(race["id"], conn)
 
+        # Picks are locked once post time passes: a scratch reported (or
+        # retracted) mid-race must not rewrite the graded set.
+        if race_is_past_post(race["id"]):
+            skipped_frozen += 1
+            continue
+
         # Late scratches must refresh picks even inside the post-time window.
         scratch_force = entries_dirty and not _results_posted(race["id"])
         bypass_freeze = force_regen or scratch_force
@@ -434,6 +423,12 @@ def refresh_race_picks(track_code: str, race_num: int, scratch_program=None) -> 
     if _results_posted(race["id"]):
         logger.warning(
             f"Cannot refresh {track_code} R{race_num}: results already posted"
+        )
+        return False
+
+    if race_is_past_post(race["id"]):
+        logger.warning(
+            f"Cannot refresh {track_code} R{race_num}: past post time, picks locked"
         )
         return False
 
