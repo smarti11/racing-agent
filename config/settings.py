@@ -172,3 +172,32 @@ TRIFECTA_BASE_DEFAULT = 2.0
 
 def trifecta_base(track_code: str) -> float:
     return TRIFECTA_BASE.get(track_code, TRIFECTA_BASE_DEFAULT)
+
+# Equibase post times are track-local with no AM/PM. Tracks not listed are
+# US Eastern. Used to convert post times to ET for the pick freeze/lock.
+TRACK_TIMEZONES = {
+    # Central
+    "CBY": "America/Chicago", "DED": "America/Chicago", "ELP": "America/Chicago",
+    "EVD": "America/Chicago", "FAR": "America/Chicago", "FMT": "America/Chicago",
+    "FON": "America/Chicago", "FP": "America/Chicago", "FTP": "America/Chicago",
+    "GIL": "America/Chicago", "HAW": "America/Chicago", "HOU": "America/Chicago",
+    "HPO": "America/Chicago", "ATO": "America/Chicago", "CPW": "America/Chicago",
+    "KD": "America/Chicago", "LAD": "America/Chicago", "LS": "America/Chicago",
+    "OP": "America/Chicago", "PRM": "America/Chicago", "RET": "America/Chicago",
+    "RP": "America/Chicago", "WRD": "America/Chicago",
+    # Mountain
+    "ALB": "America/Denver", "ARP": "America/Denver", "BKF": "America/Boise",
+    "CAS": "America/Boise", "CTD": "America/Edmonton", "EDR": "America/Denver",
+    "GPR": "America/Edmonton", "JRM": "America/Boise", "MC": "America/Denver",
+    "MIL": "America/Edmonton", "ONE": "America/Boise", "POD": "America/Boise",
+    "SRP": "America/Denver", "SWF": "America/Denver", "WYO": "America/Denver",
+    "TUP": "America/Phoenix",
+    # Pacific
+    "DMR": "America/Los_Angeles", "ELK": "America/Los_Angeles",
+    "ELY": "America/Los_Angeles", "EMD": "America/Los_Angeles",
+    "GRP": "America/Los_Angeles", "LA": "America/Los_Angeles",
+    "LRC": "America/Los_Angeles", "PRV": "America/Los_Angeles",
+    "SA": "America/Los_Angeles", "TIL": "America/Los_Angeles",
+    "UN": "America/Los_Angeles",
+}
+DEFAULT_TRACK_TIMEZONE = "America/New_York"
