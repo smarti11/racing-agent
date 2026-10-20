@@ -1,0 +1,253 @@
+:root {
+  --bg: #0e1f14;
+  --panel: rgba(10, 22, 14, 0.92);
+  --ink: #f3f6ef;
+  --muted: #c5d2c0;
+  --katke: #3ecf7a;
+  --sharf: #4ea1ff;
+  --path: #f0c14b;
+  --pad: max(10px, env(safe-area-inset-left));
+  --pad-r: max(10px, env(safe-area-inset-right));
+  --pad-b: max(12px, env(safe-area-inset-bottom));
+  --pad-t: max(10px, env(safe-area-inset-top));
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  color: var(--ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+  background: var(--bg);
+}
+
+#app {
+  height: 100%;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.top {
+  z-index: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
+  background: linear-gradient(to bottom, rgba(8,18,12,0.92), rgba(8,18,12,0.55));
+}
+
+.brand {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.icon-btn {
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(20,40,28,0.75);
+  color: var(--ink);
+  border-radius: 12px;
+  min-height: 42px;
+  padding: 0 14px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 700;
+}
+
+.map-wrap {
+  position: relative;
+  min-height: 280px;
+  height: 100%;
+  overflow: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  background: #14261a;
+}
+
+.yardage-hud {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  z-index: 450;
+  pointer-events: none;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(12, 28, 18, 0.92), rgba(18, 42, 28, 0.88));
+  border: 1px solid rgba(243, 246, 239, 0.18);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.yardage-hud[hidden] { display: none; }
+
+.yh-hole {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+.yh-dist {
+  margin-top: 2px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 2.35rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #f7f3e8;
+}
+
+.yh-unit {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.yh-meta {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.panel {
+  z-index: 500;
+  max-height: 42dvh;
+  overflow: auto;
+  padding: 12px var(--pad-r) calc(var(--pad-b) + 10px) var(--pad);
+  background: var(--panel);
+  border-top: 1px solid rgba(243,246,239,0.12);
+  backdrop-filter: blur(10px);
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(243,246,239,0.08);
+  border: 1px solid rgba(243,246,239,0.14);
+  font-size: 0.82rem;
+}
+
+.status {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.status.ok { color: var(--katke); }
+.status.err { color: #ff7a5c; }
+
+.hole-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hole-lists h2 {
+  margin: 0 0 8px;
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 0.92rem;
+}
+
+.hole-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hole-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  min-height: 36px;
+  background: rgba(243,246,239,0.1);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hole-btn.katke { box-shadow: inset 0 0 0 1px rgba(62,207,122,0.45); }
+.hole-btn.sharf { box-shadow: inset 0 0 0 1px rgba(78,161,255,0.45); }
+.hole-btn.active { background: rgba(243,246,239,0.22); }
+
+.attrib {
+  margin: 12px 0 0;
+  font-size: 0.72rem;
+  color: rgba(197,210,192,0.75);
+}
+
+.leaflet-container { font: inherit; background: #14261a; }
+
+.hole-label {
+  background: rgba(8,18,12,0.78);
+  border: 2px solid var(--katke);
+  color: #fff;
+  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+.hole-label.sharf { border-color: var(--sharf); }
+
+.user-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff5a3c;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgba(255,90,60,0.28);
+}
+
+@media (min-width: 900px) {
+  #app {
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+  }
+  .top { grid-column: 1 / -1; }
+  .map-wrap { grid-column: 1; grid-row: 2; }
+  .panel {
+    grid-column: 2;
+    grid-row: 2;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid rgba(243,246,239,0.12);
+  }
+  .yardage-hud {
+    left: 16px;
+    right: auto;
+    min-width: 220px;
+    max-width: 280px;
+  }
+  .hole-lists { grid-template-columns: 1fr; }
+}
