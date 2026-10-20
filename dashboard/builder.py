@@ -637,6 +637,75 @@ def render_high_picks_html(rows):
     return html
 
 
+RDD_STATUS = {
+    "upcoming": ("UPCOMING", "#4a6080"),
+    "alive":    ("ALIVE",    "#ffd60a"),
+    "dead":     ("DEAD",     "#ff4d6d"),
+    "hit":      ("HIT",      "#00c896"),
+    "miss":     ("MISS",     "#ff4d6d"),
+    "no_pool":  ("NO DD",    "#4a6080"),
+}
+
+
+def render_rolling_doubles_html(tickets, record):
+    """Today's rolling-double tickets (top 3 x top 3) at ROLLING_DOUBLE_TRACKS,
+    plus the settled 30-day record for those tracks."""
+    if not tickets and not record:
+        return ""
+    td = 'style="padding:6px 8px;color:#c8d8f0"'
+    settled = [t for t in tickets if t["status"] in ("hit", "miss")]
+    wag = sum(t["cost"] for t in settled)
+    ret = sum(t["payout"] or 0 for t in settled)
+
+    html = '<div style="padding:14px 16px;background:#0f1828;border:0.5px solid #1e2d4a;border-top:none;border-radius:0 0 6px 6px">'
+    sub = f'{len(tickets)} tickets today · 9 combos each at the track base'
+    if settled:
+        net = ret - wag
+        sub += (f' · settled {sum(t["status"] == "hit" for t in settled)}/{len(settled)} hit, '
+                f'{"+" if net >= 0 else "−"}${abs(net):.2f}')
+    html += f'<div style="font-size:11px;color:#4a6080;margin-bottom:10px">{sub}</div>'
+
+    if tickets:
+        html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+        html += '<tr style="color:#4a6080;text-align:left;border-bottom:0.5px solid #1e2d4a">'
+        for h in ("TRACK", "LEGS", "POST", "LEG 1", "LEG 2", "COST", "STATUS", "PAYS"):
+            html += f'<th style="padding:6px 8px;font-weight:600">{h}</th>'
+        html += '</tr>'
+        order = {"alive": 0, "upcoming": 1, "hit": 2, "miss": 3, "dead": 3, "no_pool": 4}
+        for t in sorted(tickets, key=lambda t: (order[t["status"]], t["track_code"], t["leg1"])):
+            label, color = RDD_STATUS[t["status"]]
+            legs = []
+            for picks, won in ((t["top1"], t["winner1"]), (t["top2"], t["winner2"])):
+                legs.append("-".join(
+                    f'<b style="color:#00c896">{p}</b>' if p == won else p for p in picks)
+                    + (f' <span style="color:#4a6080">(won: {won})</span>' if won and won not in picks else ""))
+            pays = f'${t["payout"]:.2f}' if t["payout"] else "—"
+            dim = "1" if t["status"] in ("upcoming", "alive") else "0.75"
+            html += f'<tr style="border-bottom:0.5px solid #1e2d4a22;opacity:{dim}">'
+            html += f'<td {td}>{t["track_code"]}</td><td {td}>R{t["leg1"]}–R{t["leg2"]}</td>'
+            html += f'<td {td}>{t.get("post_time") or "—"}</td><td {td}>{legs[0]}</td><td {td}>{legs[1]}</td>'
+            html += f'<td {td}>${t["cost"]:.0f}</td>'
+            html += f'<td style="padding:6px 8px;color:{color};font-weight:700">{label}</td>'
+            html += f'<td {td}>{pays}</td></tr>'
+        html += '</table></div>'
+
+    if record:
+        html += '<div style="font-size:11px;color:#4a6080;margin:12px 0 4px">LAST 30 DAYS (settled tickets)</div>'
+        html += '<table style="border-collapse:collapse;font-size:12px">'
+        for key in ["ALL"] + sorted(k for k in record if k != "ALL"):
+            s = record[key]
+            rc = "#00c896" if s["roi"] >= 0 else "#ff4d6d"
+            html += (f'<tr><td style="padding:3px 10px 3px 0;color:#c8d8f0;font-weight:{700 if key == "ALL" else 400}">{key}</td>'
+                     f'<td style="padding:3px 10px;color:#c8d8f0">{s["hits"]}/{s["doubles"]} hit ({s["hits"] / s["doubles"] * 100:.0f}%)</td>'
+                     f'<td style="padding:3px 10px;color:#888">${s["wagered"]:.0f} in, ${s["returned"]:.2f} back</td>'
+                     f'<td style="padding:3px 10px;color:{rc};font-weight:700">{s["roi"]:+.1f}%</td></tr>')
+        html += '</table>'
+    html += ('<div style="font-size:9px;color:#4a6080;margin-top:8px">Bet before leg 1. A late scratch in leg 2 '
+             'can change its top 3 after your ticket is in. Winners in green.</div>')
+    html += '</div>'
+    return html
+
+
 def get_data_quality_stats(today):
     """Data quality breakdown for today rank-1 picks. DATA_QUALITY_TILE"""
     try:
@@ -702,6 +771,13 @@ def build_dashboard():
         import logging
         logging.getLogger(__name__).warning("Pick 3/4 section failed: %s" % _e)
         pick34_html = ""
+    try:
+        from db.database import get_rolling_doubles, get_rolling_double_record
+        rolling_dd_html = render_rolling_doubles_html(get_rolling_doubles(), get_rolling_double_record())
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("Rolling doubles render failed: %s" % _e)
+        rolling_dd_html = ""
     # DATA_QUALITY_TILE
     try:
         from datetime import date as _dqdate
@@ -1517,6 +1593,18 @@ def build_dashboard():
             "<span style='font-size:9px;font-weight:400;color:#4a6080'>(click to expand/collapse)</span>"
             "</summary>" + pick34_html + "</details>"
         )
+    if rolling_dd_html:
+        from config.settings import ROLLING_DOUBLE_TRACKS
+        rolling_dd_html = (
+            "<details style='margin:8px 0'>"
+            "<summary style='cursor:pointer;background:#0d1525;border:0.5px solid #1e2d4a;"
+            "border-radius:6px;padding:10px 14px;font-size:11px;font-weight:700;"
+            "color:#00c896;letter-spacing:.05em;list-style:none;"
+            "user-select:none'>"
+            "🔁 ROLLING DOUBLES — TOP 3 × TOP 3 (" + ", ".join(ROLLING_DOUBLE_TRACKS) + ") "
+            "<span style='font-size:9px;font-weight:400;color:#4a6080'>(click to expand/collapse)</span>"
+            "</summary>" + rolling_dd_html + "</details>"
+        )
     if high_picks_html:
         high_picks_html = (
             "<details style='margin:8px 0'>"
@@ -1613,6 +1701,7 @@ body{{background:#0a0f1e;color:#c8d8f0;font-family:-apple-system,BlinkMacSystemF
 {actionable_html}
 {value_bets_html}
 {pick34_html}
+{rolling_dd_html}
 {high_picks_html}
 <div class="legend">
   <span>Pace: <span style="color:#ff4d6d">E-SPD</span>=early · <span style="color:#ff8c42">PRESS</span>=presser · <span style="color:#ffd60a">STALK</span>=stalker · <span style="color:#00c896">CLOSE</span>=closer</span>
