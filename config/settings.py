@@ -176,6 +176,29 @@ TRIFECTA_BASE_DEFAULT = 2.0
 def trifecta_base(track_code: str) -> float:
     return TRIFECTA_BASE.get(track_code, TRIFECTA_BASE_DEFAULT)
 
+
+# Daily double base wager per track, read from chart PDFs (2026-10). Payouts in
+# results.daily_double_payout are stored at this base.
+DAILY_DOUBLE_BASE = {
+    "ALB": 1, "ATO": 2, "BEL": 1, "BKF": 2, "BTP": 1, "CBY": 2, "CD": 1, "CNL": 1,
+    "CT": 2, "CTD": 2, "DEL": 1, "DMR": 2, "ELK": 2, "EMD": 1, "EVD": 1, "FE": 1,
+    "FH": 1, "FL": 2, "FP": 1, "GP": 1, "GRP": 2, "IND": 2, "KD": 1, "KEE": 1,
+    "LAD": 1, "LRC": 2, "LRL": 1, "MED": 1, "MNR": 2, "MTH": 1, "MVR": 2, "PEN": 1,
+    "PID": 2, "PRM": 2, "PRX": 2, "SA": 2, "SAR": 1, "SRR": 2, "SWF": 2, "TDN": 1,
+    "TIM": 1, "WO": 1, "WRD": 2,
+}
+DAILY_DOUBLE_BASE_DEFAULT = 2.0
+
+
+def daily_double_base(track_code: str) -> float:
+    return float(DAILY_DOUBLE_BASE.get(track_code, DAILY_DOUBLE_BASE_DEFAULT))
+
+
+# Rolling double (top 3 x top 3 picks, 9 combos) play list. Chosen from
+# 9/1-10/19 backtest: GP +42%, LRL +27%, WO +6% over 96-162 doubles each; SA
+# -15% but 45% hits and the new model hits 67% there. Revisit monthly.
+ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "WO", "SA"]
+
 # Equibase post times are track-local with no AM/PM. Tracks not listed are
 # US Eastern. Used to convert post times to ET for the pick freeze/lock.
 TRACK_TIMEZONES = {

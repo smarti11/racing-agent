@@ -2363,6 +2363,89 @@ def get_dd_spot_checks(limit=20):
         return results
 
 
+def get_rolling_doubles(race_date=None, tracks=None):
+    """Rolling-double tickets (top 3 x top 3 picks, 9 combos) for each pair of
+    consecutive races at the given tracks. status is one of:
+      upcoming - leg 1 not run;  alive / dead - leg 1 run, winner in / not in top 3;
+      hit / miss - both legs run;  no_pool - both run but no DD payout posted.
+    payout is per base wager (daily_double_base), as stored in results."""
+    from config.settings import ROLLING_DOUBLE_TRACKS, daily_double_base
+    race_date = race_date or datetime.now(EASTERN).date().isoformat()
+    tracks = tracks or ROLLING_DOUBLE_TRACKS
+    marks = ",".join("?" * len(tracks))
+    with get_conn() as conn:
+        rows = conn.execute(f"""
+            SELECT r.id, r.track_code, r.track_name, r.race_num, r.post_time,
+                   res.winner_num, res.daily_double_payout,
+                   (SELECT group_concat(program_num) FROM
+                       (SELECT program_num FROM agent_picks p
+                        WHERE p.race_id = r.id ORDER BY rank LIMIT 3)) AS top3
+            FROM races r LEFT JOIN results res ON res.race_id = r.id
+            WHERE r.race_date = ? AND r.track_code IN ({marks})
+            ORDER BY r.track_code, r.race_num
+        """, (race_date, *tracks)).fetchall()
+
+    by_key = {(r["track_code"], r["race_num"]): r for r in rows}
+    tickets = []
+    for (tc, n), leg2 in by_key.items():
+        leg1 = by_key.get((tc, n - 1))
+        if not leg1 or not leg1["top3"] or not leg2["top3"]:
+            continue
+        t1, t2 = leg1["top3"].split(","), leg2["top3"].split(",")
+        if len(t1) < 3 or len(t2) < 3:
+            continue
+        base = daily_double_base(tc)
+        w1, w2 = leg1["winner_num"], leg2["winner_num"]
+        payout = None
+        if w1 is None:
+            status = "upcoming"
+        elif w2 is None:
+            status = "alive" if w1 in t1 else "dead"
+        elif leg2["daily_double_payout"] is None:
+            status = "no_pool"
+        elif w1 in t1 and w2 in t2:
+            status, payout = "hit", leg2["daily_double_payout"]
+        else:
+            status = "miss"
+        tickets.append({
+            "track_code": tc, "track_name": leg1["track_name"],
+            "leg1": n - 1, "leg2": n, "post_time": leg1["post_time"],
+            "top1": t1, "top2": t2, "winner1": w1, "winner2": w2,
+            "base": base, "cost": 9 * base, "status": status, "payout": payout,
+        })
+    return tickets
+
+
+def get_rolling_double_record(days=30, tracks=None):
+    """Settled rolling-double results over the last `days` days, per track and
+    overall: {track_code or 'ALL': {doubles, hits, wagered, returned, roi}}.
+    Costs and returns are at each track's base wager."""
+    from config.settings import ROLLING_DOUBLE_TRACKS
+    from datetime import timedelta
+    tracks = tracks or ROLLING_DOUBLE_TRACKS
+    today = datetime.now(EASTERN).date()
+    marks = ",".join("?" * len(tracks))
+    with get_conn() as conn:
+        dates = [r[0] for r in conn.execute(f"""
+            SELECT DISTINCT race_date FROM races
+            WHERE race_date >= ? AND race_date <= ? AND track_code IN ({marks})
+        """, ((today - timedelta(days=days)).isoformat(), today.isoformat(), *tracks))]
+    rec = {}
+    for d in dates:
+        for t in get_rolling_doubles(d, tracks):
+            if t["status"] not in ("hit", "miss"):
+                continue
+            for key in ("ALL", t["track_code"]):
+                s = rec.setdefault(key, {"doubles": 0, "hits": 0, "wagered": 0.0, "returned": 0.0})
+                s["doubles"] += 1
+                s["hits"] += t["status"] == "hit"
+                s["wagered"] += t["cost"]
+                s["returned"] += t["payout"] or 0.0
+    for s in rec.values():
+        s["roi"] = (s["returned"] - s["wagered"]) / s["wagered"] * 100 if s["wagered"] else 0.0
+    return rec
+
+
 
 def get_todays_bet_slate():
     """Return today's actionable bets: HIGH/MEDIUM CONF Pick #1 at profitable tracks.
