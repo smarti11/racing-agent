@@ -39,6 +39,7 @@ EXCLUDED_TRACKS = [
     "Bes Preakness Double",  # EQM - Exotic wager, not a real track
     "Remington Park",       # RP  - Short races, not worth tracking
     "Harrah's Columbus Nebraska",  # Not on NYRA Bets
+    "Eureka",                # EUR - mixed Paint/QH/TB card; Equibase posts entries but no results or charts
 ]
 
 # Set to True to only fetch priority tracks (faster)
@@ -136,12 +137,12 @@ EXACTA_BASE_1 = {
     "ALB", "AQU", "BAQ", "BEL", "BTP", "CBY", "CNL", "CT", "DED", "DEL", "DMR", "EMD",
     "EVD", "FAI", "FAR", "FP", "GP", "GRP", "HAW", "HOU", "KD", "KEE", "LA", "LAD",
     "LRC", "LRL", "MED", "MTH", "OP", "PEN", "SA", "SAR", "SRP", "SWF", "TAM", "TDN",
-    "TIM", "TUP", "WYO",
+    "TIM", "TUP", "WO", "FE", "WYO",
 }
 EXACTA_BASE_2 = {
     "ARP", "ATO", "BKF", "CAS", "CD", "CPW", "EDR", "ELK", "ELP", "FL", "FMT", "FON",
     "GIL", "HPO", "IND", "JRM", "LEG", "LS", "MC", "ONE", "PID", "POD", "PRM", "PRX",
-    "RET", "RP", "SRR", "WRD",
+    "RET", "RP", "SRR", "WRD", "CTD",
 }
 EXACTA_BASE_DEFAULT = 2.0
 
@@ -166,6 +167,8 @@ TRIFECTA_BASE = {
     "PEN": 0.5, "PID": 2, "POD": 2, "PRM": 0.5, "PRV": 2, "PRX": 0.5, "RET": 0.5,
     "RP": 0.5, "SA": 1, "SAR": 0.5, "SRP": 0.5, "SRR": 0.5, "SWF": 0.5, "TAM": 0.5,
     "TDN": 0.5, "TIL": 2, "TIM": 1, "TUP": 0.5, "UN": 2, "WRD": 0.5, "WYO": 0.5,
+    # Canadian charts (2026-10): WO/FE $0.20 Trifecta/Triactor, CTD $0.50
+    "WO": 0.2, "FE": 0.2, "CTD": 0.5,
 }
 TRIFECTA_BASE_DEFAULT = 2.0
 
