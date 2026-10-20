@@ -11,6 +11,7 @@ Results page format:
   Exacta 5-1 $3.23
   Trifecta 5-1-4 $2.49
   Superfecta 5-1-4-6 $0.92
+Canadian tracks (e.g. Fort Erie) label these "Exactor" and "Triactor".
   Also Ran: 6 Klimt Master, 3 Juniors Pal
   Scratches: Stevie Wonderful
 """
@@ -126,12 +127,12 @@ def parse_result_page(html: str, track_code: str, date_str: str, race_num: int) 
                     finish_pos += 1
 
         # Exotics
-        if line.startswith("Exacta") or line.startswith("Perfecta"):
+        if line.startswith(("Exacta", "Exactor", "Perfecta")):
             m2 = re.search(r'\$(\d+\.\d+)', line)
             if m2:
                 result["exacta"] = {"combo": line.split("$")[0].strip(), "payout": float(m2.group(1))}
 
-        if line.startswith("Trifecta"):
+        if line.startswith(("Trifecta", "Triactor")):
             m2 = re.search(r'\$(\d+\.\d+)', line)
             if m2:
                 result["trifecta"] = {"combo": line.split("$")[0].strip(), "payout": float(m2.group(1))}
