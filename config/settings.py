@@ -196,8 +196,17 @@ def daily_double_base(track_code: str) -> float:
 
 # Rolling double (top 3 x top 3 picks, 9 combos) play list. Chosen from
 # 9/1-10/19 backtest: GP +42%, LRL +27%, WO +6% over 96-162 doubles each; SA
-# -15% but 45% hits and the new model hits 67% there. Revisit monthly.
-ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "WO", "SA"]
+# -15% but 45% hits and the new model hits 67% there. FL added 2026-10-21:
+# -8.6% since 9/1 but +13.5% over the last 30 days (79 doubles). Revisit monthly.
+ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "WO", "SA", "FL"]
+
+# Stake per combo actually bet, where it differs from the chart base. A $1
+# combo at a $2-base track returns half the posted payout.
+ROLLING_DOUBLE_STAKE = {"FL": 1}
+
+
+def rolling_double_stake(track_code: str) -> float:
+    return float(ROLLING_DOUBLE_STAKE.get(track_code, daily_double_base(track_code)))
 
 # Equibase post times are track-local with no AM/PM. Tracks not listed are
 # US Eastern. Used to convert post times to ET for the pick freeze/lock.

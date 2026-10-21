@@ -2368,8 +2368,9 @@ def get_rolling_doubles(race_date=None, tracks=None):
     consecutive races at the given tracks. status is one of:
       upcoming - leg 1 not run;  alive / dead - leg 1 run, winner in / not in top 3;
       hit / miss - both legs run;  no_pool - both run but no DD payout posted.
-    payout is per base wager (daily_double_base), as stored in results."""
-    from config.settings import ROLLING_DOUBLE_TRACKS, daily_double_base
+    cost and payout are at the stake per combo (rolling_double_stake); results
+    store the payout per daily_double_base."""
+    from config.settings import ROLLING_DOUBLE_TRACKS, daily_double_base, rolling_double_stake
     race_date = race_date or datetime.now(EASTERN).date().isoformat()
     tracks = tracks or ROLLING_DOUBLE_TRACKS
     marks = ",".join("?" * len(tracks))
@@ -2394,7 +2395,7 @@ def get_rolling_doubles(race_date=None, tracks=None):
         t1, t2 = leg1["top3"].split(","), leg2["top3"].split(",")
         if len(t1) < 3 or len(t2) < 3:
             continue
-        base = daily_double_base(tc)
+        base, stake = daily_double_base(tc), rolling_double_stake(tc)
         w1, w2 = leg1["winner_num"], leg2["winner_num"]
         payout = None
         if w1 is None:
@@ -2404,14 +2405,14 @@ def get_rolling_doubles(race_date=None, tracks=None):
         elif leg2["daily_double_payout"] is None:
             status = "no_pool"
         elif w1 in t1 and w2 in t2:
-            status, payout = "hit", leg2["daily_double_payout"]
+            status, payout = "hit", leg2["daily_double_payout"] * stake / base
         else:
             status = "miss"
         tickets.append({
             "track_code": tc, "track_name": leg1["track_name"],
             "leg1": n - 1, "leg2": n, "post_time": leg1["post_time"],
             "top1": t1, "top2": t2, "winner1": w1, "winner2": w2,
-            "base": base, "cost": 9 * base, "status": status, "payout": payout,
+            "base": base, "stake": stake, "cost": 9 * stake, "status": status, "payout": payout,
         })
     return tickets
 
@@ -2419,7 +2420,7 @@ def get_rolling_doubles(race_date=None, tracks=None):
 def get_rolling_double_record(days=30, tracks=None):
     """Settled rolling-double results over the last `days` days, per track and
     overall: {track_code or 'ALL': {doubles, hits, wagered, returned, roi}}.
-    Costs and returns are at each track's base wager."""
+    Costs and returns are at each track's stake per combo."""
     from config.settings import ROLLING_DOUBLE_TRACKS
     from datetime import timedelta
     tracks = tracks or ROLLING_DOUBLE_TRACKS
