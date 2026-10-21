@@ -658,7 +658,7 @@ def render_rolling_doubles_html(tickets, record):
     ret = sum(t["payout"] or 0 for t in settled)
 
     html = '<div style="padding:14px 16px;background:#0f1828;border:0.5px solid #1e2d4a;border-top:none;border-radius:0 0 6px 6px">'
-    sub = f'{len(tickets)} tickets today · 9 combos each at the track base'
+    sub = f'{len(tickets)} tickets today · 9 combos each ($1 at FL, otherwise the track base)'
     if settled:
         net = ret - wag
         sub += (f' · settled {sum(t["status"] == "hit" for t in settled)}/{len(settled)} hit, '
