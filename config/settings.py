@@ -40,6 +40,8 @@ EXCLUDED_TRACKS = [
     "Remington Park",       # RP  - Short races, not worth tracking
     "Harrah's Columbus Nebraska",  # Not on NYRA Bets
     "Eureka",                # EUR - mixed Paint/QH/TB card; Equibase posts entries but no results or charts
+    "Evangeline",            # EVD - removed at user's request 2026-10-22 (weak-signal track)
+    "Albuquerque",           # ALB - removed at user's request 2026-10-22
 ]
 
 # Set to True to only fetch priority tracks (faster)

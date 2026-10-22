@@ -457,17 +457,21 @@ def save_odds(race_id, program_num, horse_name, odds, odds_type="live"):
 
 
 def get_todays_races():
+    # Excluded tracks are skipped at fetch time; this also hides a card that was
+    # already loaded before its track was added to EXCLUDED_TRACKS.
+    from config.settings import EXCLUDED_TRACKS
     today = datetime.now(EASTERN).date().isoformat()
+    marks = ",".join("?" * len(EXCLUDED_TRACKS))
     with get_conn() as conn:
-        return conn.execute("""
+        return conn.execute(f"""
             SELECT r.*, COUNT(e.id) as entry_count,
                    SUM(e.scratched) as scratch_count
             FROM races r
             LEFT JOIN entries e ON e.race_id = r.id
-            WHERE r.race_date = ?
+            WHERE r.race_date = ? AND r.track_name NOT IN ({marks})
             GROUP BY r.id
             ORDER BY r.track_name, r.race_num
-        """, (today,)).fetchall()
+        """, (today, *EXCLUDED_TRACKS)).fetchall()
 
 
 def get_race_entries(race_id):
