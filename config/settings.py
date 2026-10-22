@@ -194,11 +194,12 @@ def daily_double_base(track_code: str) -> float:
     return float(DAILY_DOUBLE_BASE.get(track_code, DAILY_DOUBLE_BASE_DEFAULT))
 
 
-# Rolling double (top 3 x top 3 picks, 9 combos) play list. Chosen from
-# 9/1-10/19 backtest: GP +42%, LRL +27%, WO +6% over 96-162 doubles each; SA
-# -15% but 45% hits and the new model hits 67% there. FL added 2026-10-21:
-# -8.6% since 9/1 but +13.5% over the last 30 days (79 doubles). Revisit monthly.
-ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "WO", "SA", "FL"]
+# Rolling double (top 3 x top 3 picks, 9 combos) play list. Since 10/16 the
+# model's top 3 matches the morning-line top 3 in ~83% of races, so tracks are
+# judged on ML top-3 doubles over 9/1-10/21: GP +34%, LRL +10%, FL -4% (68%
+# hits). WO (-36%) and SA (-29%) dropped 2026-10-22; their earlier edge came
+# from the old model's picks. Revisit monthly.
+ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "FL"]
 
 # Stake per combo actually bet, where it differs from the chart base. A $1
 # combo at a $2-base track returns half the posted payout.
