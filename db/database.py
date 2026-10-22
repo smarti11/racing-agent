@@ -1810,10 +1810,11 @@ def get_stats_by_track() -> dict:
             ORDER BY races DESC
         """).fetchall()
 
+        from config.settings import EXCLUDED_TRACKS
         result = {}
         for row in rows:
             races = row["races"]
-            if races == 0:
+            if races == 0 or row["track_name"] in EXCLUDED_TRACKS:
                 continue
             result[row["track_name"]] = {
                 "races": races,
@@ -1896,9 +1897,12 @@ def get_track_roi_by_confidence() -> dict:
             GROUP BY r.track_name, ap.confidence
             ORDER BY r.track_name, ap.confidence
         """).fetchall()
+        from config.settings import EXCLUDED_TRACKS
         result = {}
         for row in rows:
             track = row["track_name"]
+            if track in EXCLUDED_TRACKS:
+                continue
             conf = row["confidence"] or "NONE"
             if track not in result:
                 result[track] = {}
