@@ -570,12 +570,13 @@
     if (!el) return;
     el.replaceChildren();
     const rows = [
-      ["Out", OUScore.nineSummary(scores[course], pars[course], 1, 9)],
-      ["In", OUScore.nineSummary(scores[course], pars[course], 10, 18)],
-      ["Total", OUScore.nineSummary(scores[course], pars[course], 1, 18)],
+      ["Out", OUScore.nineSummary(scores[course], pars[course], 1, 9), false],
+      ["In", OUScore.nineSummary(scores[course], pars[course], 10, 18), false],
+      ["18 holes", OUScore.nineSummary(scores[course], pars[course], 1, 18), true],
     ];
     rows.forEach((row) => {
       const cell = document.createElement("div");
+      if (row[2]) cell.className = "round-total";
       const label = document.createElement("span");
       label.textContent = row[0];
       const strong = document.createElement("strong");
