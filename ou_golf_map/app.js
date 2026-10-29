@@ -376,15 +376,15 @@
       labels,
       pins,
     ] = await Promise.all([
-      loadJSON("data/meta.json"),
-      loadJSON("data/boundary.geojson"),
-      loadJSON("data/fairways.geojson"),
-      loadJSON("data/greens.geojson"),
-      loadJSON("data/tees.geojson"),
-      loadJSON("data/cartpaths.geojson"),
-      loadJSON("data/holes.geojson"),
-      loadJSON("data/hole_labels.geojson"),
-      loadJSON("data/pins.geojson"),
+      loadJSON("meta.json"),
+      loadJSON("boundary.geojson"),
+      loadJSON("fairways.geojson"),
+      loadJSON("greens.geojson"),
+      loadJSON("tees.geojson"),
+      loadJSON("cartpaths.geojson"),
+      loadJSON("holes.geojson"),
+      loadJSON("hole_labels.geojson"),
+      loadJSON("pins.geojson"),
     ]);
 
     document.getElementById("attrib").textContent =

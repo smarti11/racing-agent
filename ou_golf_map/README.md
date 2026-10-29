@@ -33,4 +33,4 @@ Open `http://localhost:8091` (GPS needs HTTPS or localhost).
 
 ## Deploy
 
-Upload the whole `ou_golf_map/` folder (including `data/`) to Cloudflare Pages / Workers static assets, same way as Tee Align.
+Upload the files inside `ou_golf_map/` to the existing Cloudflare Worker (`tiny-thunder-291b`) with **New deployment**. Drag the files themselves so `index.html`, `app.js`, and the `.geojson` files are side by side. Cloudflare does not keep a `data` folder, and the map loads those course files from next to `index.html`.
