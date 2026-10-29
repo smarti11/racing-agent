@@ -12,6 +12,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 - Live **GPS presence** (watch position + accuracy ring)
 - Tap a hole number to zoom to that hole (par + black-tee yardage)
 - **Live yards to green** from your GPS when a hole is selected (updates as you walk; dashed aim line to the green)
+- **Scorecard** for each course. Tap a hole, then say the strokes ("five", "birdie", "one over") or type them. Out is holes 1–9, In is holes 10–18, then the round total. Scores stay in this browser until you tap Clear. The microphone needs Safari or Chrome, and HTTPS or localhost.
 
 ## Data sources
 

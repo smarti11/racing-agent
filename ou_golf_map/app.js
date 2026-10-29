@@ -12,6 +12,19 @@
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
   const yhMeta = document.getElementById("yh-meta");
+  const scoreHint = document.getElementById("score-hint");
+  const scoreEntry = document.getElementById("score-entry");
+  const scoreKicker = document.getElementById("score-kicker");
+  const scoreHole = document.getElementById("score-hole");
+  const scoreNext = document.getElementById("score-next");
+  const scoreMinus = document.getElementById("score-minus");
+  const scorePlus = document.getElementById("score-plus");
+  const scoreInput = document.getElementById("score-input");
+  const scoreMic = document.getElementById("score-mic");
+  const scoreHeard = document.getElementById("score-heard");
+
+  const SCORE_KEY = "ou-golf-scores-v1";
+  const COURSE_NAMES = { katke: "Katke-Cousins", sharf: "R&S Sharf" };
 
   const KATKE = "#3ecf7a";
   const SHARF = "#4ea1ff";
@@ -56,6 +69,9 @@
   };
 
   let holeIndex = { katke: {}, sharf: {} };
+  let holeButtons = { katke: {}, sharf: {} };
+  let pars = { katke: {}, sharf: {} };
+  let scores = loadScores();
   /** @type {Record<string, Record<number, {lat:number, lon:number, props:object}>>} */
   let greenTargets = { katke: {}, sharf: {} };
   let userMarker = null;
@@ -66,6 +82,8 @@
   let lastUser = null; // { lat, lon, accuracy }
   let aimLine = null;
   let greenMarker = null;
+  let recognition = null;
+  let listening = false;
 
   function holeIcon(course, num) {
     return L.divIcon({
@@ -102,9 +120,11 @@
       liveYards != null
         ? `<br/><strong>${liveYards} yd</strong> to green (GPS)`
         : "";
+    const saved = scores[p.course] && scores[p.course][p.hole];
+    const scoreLine = saved != null ? `<br/>Your score: ${saved}` : "";
     return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>Par ${
       p.par || "—"
-    } · ${p.yards || "—"} yd (Black)${live}`;
+    } · ${p.yards || "—"} yd (Black)${scoreLine}${live}`;
   }
 
   function liveYardsFor(props) {
@@ -216,15 +236,18 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "hole-btn " + course;
-      btn.textContent = String(n);
       btn.addEventListener("click", () => focusHole(course, n, btn));
+      holeButtons[course][n] = btn;
       listEl.appendChild(btn);
+      paintScore(course, n);
     }
+    renderTotals(course);
   }
 
   function focusHole(course, n, btn) {
     const layer = holeIndex[course][n];
     if (!layer) return;
+    stopListening();
     if (activeHoleBtn) activeHoleBtn.classList.remove("active");
     if (btn) {
       btn.classList.add("active");
@@ -242,6 +265,7 @@
     map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
     layer.openPopup();
     updateYardageHud();
+    showScoreEntry();
   }
 
   function applyToggles() {
@@ -337,6 +361,7 @@
   }
 
   async function init() {
+    prepareMic();
     buildHoleButtons("katke", listKatke);
     buildHoleButtons("sharf", listSharf);
 
@@ -428,6 +453,7 @@
           lat: end[1],
           props: p,
         };
+        if (p.par) pars[p.course][p.hole] = p.par;
         layer.bindPopup(popupHole(p));
         holeIndex[p.course][p.hole] = layer;
         if (p.course === "katke") layer.addTo(layers.holesKatke);
@@ -482,7 +508,288 @@
     }
 
     applyToggles();
+    paintAllScores();
     startGps(false);
+  }
+
+  function loadScores() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SCORE_KEY) || "{}");
+      return { katke: sanitizeCourse(raw.katke), sharf: sanitizeCourse(raw.sharf) };
+    } catch (err) {
+      return { katke: {}, sharf: {} };
+    }
+  }
+
+  function sanitizeCourse(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object") return out;
+    for (let n = 1; n <= 18; n += 1) {
+      const value = OUScore.clampStrokes(raw[n] != null ? raw[n] : raw[String(n)]);
+      if (value != null) out[n] = value;
+    }
+    return out;
+  }
+
+  function saveScores() {
+    try {
+      localStorage.setItem(SCORE_KEY, JSON.stringify(scores));
+    } catch (err) {
+      /* Private mode can block storage; the card still works for this visit. */
+    }
+  }
+
+  function paintScore(course, hole) {
+    const btn = holeButtons[course][hole];
+    if (!btn) return;
+    const value = scores[course][hole];
+    btn.replaceChildren();
+    const num = document.createElement("span");
+    num.className = "hb-n";
+    num.textContent = String(hole);
+    const mark = document.createElement("span");
+    mark.className = "hb-s";
+    mark.textContent = value == null ? "" : String(value);
+    btn.append(num, mark);
+    btn.classList.toggle("scored", value != null);
+    btn.setAttribute(
+      "aria-label",
+      value == null ? "Hole " + hole : "Hole " + hole + ", " + value + " strokes"
+    );
+  }
+
+  function paintAllScores() {
+    ["katke", "sharf"].forEach((course) => {
+      for (let n = 1; n <= 18; n += 1) paintScore(course, n);
+      renderTotals(course);
+    });
+  }
+
+  function renderTotals(course) {
+    const el = document.getElementById("totals-" + course);
+    if (!el) return;
+    el.replaceChildren();
+    const rows = [
+      ["Out", OUScore.nineSummary(scores[course], pars[course], 1, 9)],
+      ["In", OUScore.nineSummary(scores[course], pars[course], 10, 18)],
+      ["Total", OUScore.nineSummary(scores[course], pars[course], 1, 18)],
+    ];
+    rows.forEach((row) => {
+      const cell = document.createElement("div");
+      const label = document.createElement("span");
+      label.textContent = row[0];
+      const strong = document.createElement("strong");
+      strong.textContent = OUScore.formatStrokes(row[1]);
+      cell.append(label, strong);
+      el.appendChild(cell);
+    });
+  }
+
+  function showScoreEntry() {
+    if (!selectedHole) {
+      scoreEntry.hidden = true;
+      scoreHint.hidden = false;
+      return;
+    }
+    const course = selectedHole.course;
+    const hole = selectedHole.hole;
+    const par = pars[course][hole];
+    const saved = scores[course][hole];
+    scoreEntry.hidden = false;
+    scoreHint.hidden = true;
+    scoreKicker.textContent = COURSE_NAMES[course] || course;
+    scoreHole.textContent = "Hole " + hole + (par ? " · Par " + par : "");
+    scoreInput.value = saved == null ? "" : String(saved);
+    scoreNext.disabled = hole >= 18;
+    scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
+    scoreHeard.textContent =
+      saved == null
+        ? "Say the strokes, or type them."
+        : saved + (saved === 1 ? " stroke saved." : " strokes saved.");
+    scoreEntry.scrollIntoView({ block: "nearest" });
+  }
+
+  function setScore(course, hole, strokes) {
+    if (strokes == null) delete scores[course][hole];
+    else scores[course][hole] = strokes;
+    saveScores();
+    paintScore(course, hole);
+    renderTotals(course);
+    if (selectedHole && selectedHole.course === course && selectedHole.hole === hole) {
+      const shown = strokes == null ? "" : String(strokes);
+      if (scoreInput.value !== shown) scoreInput.value = shown;
+    }
+    refreshHolePopup(course, hole);
+  }
+
+  function commitTypedScore() {
+    if (!selectedHole) return;
+    const raw = scoreInput.value.trim();
+    if (raw === "") {
+      setScore(selectedHole.course, selectedHole.hole, null);
+      scoreHeard.textContent = "Score cleared. Say or type the strokes.";
+      return;
+    }
+    const strokes = OUScore.clampStrokes(raw);
+    if (strokes == null) {
+      const saved = scores[selectedHole.course][selectedHole.hole];
+      scoreInput.value = saved == null ? "" : String(saved);
+      scoreHeard.textContent = "Enter 1 to 20 strokes.";
+      return;
+    }
+    setScore(selectedHole.course, selectedHole.hole, strokes);
+    scoreHeard.textContent =
+      strokes + (strokes === 1 ? " stroke saved." : " strokes saved.");
+  }
+
+  function bumpScore(delta) {
+    if (!selectedHole) return;
+    const course = selectedHole.course;
+    const hole = selectedHole.hole;
+    const current = scores[course][hole];
+    let next;
+    if (current == null) {
+      if (delta < 0) return;
+      next = pars[course][hole] || 4;
+    } else {
+      next = current + delta;
+    }
+    next = OUScore.clampStrokes(next);
+    if (next == null) return;
+    setScore(course, hole, next);
+    scoreHeard.textContent =
+      next + (next === 1 ? " stroke saved." : " strokes saved.");
+  }
+
+  function clearCourse(course) {
+    const name = COURSE_NAMES[course] || course;
+    if (!window.confirm("Clear all " + name + " scores?")) return;
+    scores[course] = {};
+    saveScores();
+    for (let n = 1; n <= 18; n += 1) {
+      paintScore(course, n);
+      refreshHolePopup(course, n);
+    }
+    renderTotals(course);
+    if (selectedHole && selectedHole.course === course) showScoreEntry();
+  }
+
+  function speechCtor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
+
+  function prepareMic() {
+    if (speechCtor()) return;
+    scoreMic.disabled = true;
+    scoreMic.textContent = "No mic";
+    scoreMic.title = "This browser cannot hear a score. Type the strokes.";
+  }
+
+  function stopListening() {
+    if (!recognition) return;
+    try {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      recognition.abort();
+    } catch (err) {
+      /* already stopped */
+    }
+    listening = false;
+    scoreMic.classList.remove("listening");
+    scoreMic.setAttribute("aria-pressed", "false");
+    if (!scoreMic.disabled) scoreMic.textContent = "Say score";
+  }
+
+  function listenForScore() {
+    const Ctor = speechCtor();
+    if (!Ctor || !selectedHole) return;
+    if (listening) {
+      stopListening();
+      scoreHeard.textContent = "Stopped. Say the strokes, or type them.";
+      return;
+    }
+    const course = selectedHole.course;
+    const hole = selectedHole.hole;
+    const par = pars[course][hole];
+    recognition = new Ctor();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 4;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      listening = true;
+      scoreMic.classList.add("listening");
+      scoreMic.setAttribute("aria-pressed", "true");
+      scoreMic.textContent = "Listening";
+      scoreHeard.textContent = "Listening… say the strokes, like 5, or bogey.";
+    };
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      let finalText = "";
+      const finals = [];
+      for (let i = 0; i < event.results.length; i += 1) {
+        const piece = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += piece;
+          for (let a = 0; a < event.results[i].length; a += 1) {
+            finals.push(event.results[i][a].transcript);
+          }
+        } else {
+          interim += piece;
+        }
+      }
+      if (!finalText.trim()) {
+        scoreHeard.textContent = interim.trim()
+          ? "Hearing “" + interim.trim() + "”…"
+          : "Listening…";
+        return;
+      }
+      const heard = (finals[0] || finalText).trim();
+      let strokes = null;
+      const candidates = finals.length ? finals : [finalText];
+      for (let i = 0; i < candidates.length; i += 1) {
+        strokes = OUScore.parseSpokenScore(candidates[i], par);
+        if (strokes != null) break;
+      }
+      if (strokes == null) {
+        scoreHeard.textContent = heard
+          ? "Heard “" + heard + "”. Say a number of strokes, or type it."
+          : "Didn't catch that. Type the strokes.";
+        return;
+      }
+      if (!selectedHole || selectedHole.course !== course || selectedHole.hole !== hole) return;
+      setScore(course, hole, strokes);
+      scoreHeard.textContent = "Heard “" + heard + "”. Saved " + strokes + ".";
+    };
+
+    recognition.onerror = (event) => {
+      if (!event || event.error === "aborted") return;
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        scoreHeard.textContent =
+          "Microphone is blocked. Type the strokes, or allow the mic for this site.";
+      } else if (event.error === "no-speech") {
+        scoreHeard.textContent = "Didn't hear a score. Try again, or type the strokes.";
+      } else {
+        scoreHeard.textContent = "Couldn't use the microphone. Type the strokes.";
+      }
+    };
+
+    recognition.onend = () => {
+      listening = false;
+      scoreMic.classList.remove("listening");
+      scoreMic.setAttribute("aria-pressed", "false");
+      if (!scoreMic.disabled) scoreMic.textContent = "Say score";
+    };
+
+    try {
+      recognition.start();
+    } catch (err) {
+      listening = false;
+      scoreHeard.textContent = "Couldn't start listening. Type the strokes.";
+    }
   }
 
   togKatke.addEventListener("change", applyToggles);
@@ -490,6 +797,29 @@
   togPaths.addEventListener("change", applyToggles);
   togFairways.addEventListener("change", applyToggles);
   btnLocate.addEventListener("click", () => startGps(true));
+  scoreMinus.addEventListener("click", () => bumpScore(-1));
+  scorePlus.addEventListener("click", () => bumpScore(1));
+  scoreInput.addEventListener("input", () => {
+    if (!selectedHole) return;
+    const raw = scoreInput.value.trim();
+    if (raw === "") {
+      setScore(selectedHole.course, selectedHole.hole, null);
+      return;
+    }
+    const strokes = OUScore.clampStrokes(raw);
+    if (strokes == null) return;
+    setScore(selectedHole.course, selectedHole.hole, strokes);
+    scoreHeard.textContent =
+      strokes + (strokes === 1 ? " stroke saved." : " strokes saved.");
+  });
+  scoreInput.addEventListener("blur", commitTypedScore);
+  scoreMic.addEventListener("click", listenForScore);
+  scoreNext.addEventListener("click", () => {
+    if (!selectedHole || selectedHole.hole >= 18) return;
+    focusHole(selectedHole.course, selectedHole.hole + 1);
+  });
+  document.getElementById("clear-katke").addEventListener("click", () => clearCourse("katke"));
+  document.getElementById("clear-sharf").addEventListener("click", () => clearCourse("sharf"));
 
   init().catch((err) => {
     console.error(err);

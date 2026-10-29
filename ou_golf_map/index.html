@@ -41,14 +41,41 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
+      <p class="score-hint" id="score-hint">Tap a hole, then say or type your strokes. Out is the front nine. In is the back nine.</p>
+
+      <section class="score-entry" id="score-entry" hidden>
+        <div class="score-entry-top">
+          <div>
+            <div class="score-kicker" id="score-kicker">Score</div>
+            <div class="score-hole" id="score-hole">Hole</div>
+          </div>
+          <button type="button" id="score-next" class="text-btn">Next hole</button>
+        </div>
+        <div class="score-entry-row">
+          <button type="button" id="score-minus" class="step-btn" aria-label="One fewer stroke">−</button>
+          <input id="score-input" inputmode="numeric" autocomplete="off" enterkeyhint="done" aria-label="Strokes for this hole" />
+          <button type="button" id="score-plus" class="step-btn" aria-label="One more stroke">+</button>
+          <button type="button" id="score-mic" class="mic-btn" aria-pressed="false">Say score</button>
+        </div>
+        <p class="score-heard" id="score-heard" aria-live="polite"></p>
+      </section>
+
       <div class="hole-lists">
         <section>
-          <h2>Katke-Cousins</h2>
+          <div class="course-head">
+            <h2>Katke-Cousins</h2>
+            <button type="button" id="clear-katke" class="text-btn">Clear</button>
+          </div>
           <div id="list-katke" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-katke" aria-live="polite"></div>
         </section>
         <section>
-          <h2>R&amp;S Sharf</h2>
+          <div class="course-head">
+            <h2>R&amp;S Sharf</h2>
+            <button type="button" id="clear-sharf" class="text-btn">Clear</button>
+          </div>
           <div id="list-sharf" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-sharf" aria-live="polite"></div>
         </section>
       </div>
 
@@ -57,6 +84,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="score.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
