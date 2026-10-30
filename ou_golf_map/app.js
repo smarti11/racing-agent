@@ -37,12 +37,23 @@
   const map = L.map(mapEl, {
     zoomControl: false,
     attributionControl: true,
+    maxZoom: 19,
   }).setView([42.6665, -83.203], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
+  mapEl.addEventListener("pointerdown", () => {
+    if (flying) flyPointer = true;
+  });
+  mapEl.addEventListener(
+    "wheel",
+    () => {
+      if (flying) flyPointer = true;
+    },
+    { passive: true }
+  );
   map.on("dragstart zoomstart", () => {
-    if (flyInternal || !flying) return;
+    if (!flying || !flyPointer) return;
     stopFlyover();
   });
 
@@ -98,7 +109,8 @@
   let flyToken = 0;
   let flyMarker = null;
   let flying = false;
-  let flyInternal = false;
+  let flyPointer = false;
+  let flySnap = null;
 
   function holeIcon(course, num) {
     return L.divIcon({
@@ -323,10 +335,17 @@
     );
   }
 
+  function restoreFlySnap() {
+    if (flySnap == null) return;
+    map.options.zoomSnap = flySnap;
+    flySnap = null;
+  }
+
   function stopFlyover() {
     flyToken += 1;
     flying = false;
-    flyInternal = false;
+    flyPointer = false;
+    restoreFlySnap();
     if (flyMarker) {
       map.removeLayer(flyMarker);
       flyMarker = null;
@@ -343,16 +362,23 @@
     const layer = holeIndex[selectedHole.course][selectedHole.hole];
     const path = layer ? holeLatLngs(layer) : [];
     if (path.length < 2) return;
-    const samples = resamplePath(path, 80);
+    const samples = resamplePath(path, 90);
     if (layer) layer.closePopup();
     const meters = map.distance(samples[0], samples[samples.length - 1]);
     const reduceMotion =
       window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduceMotion
+    const closeZoom = Math.min(19, map.getMaxZoom() || 19);
+    const startZoom = map.getZoom();
+    const dive = reduceMotion ? 0 : 1600;
+    const cruise = reduceMotion
       ? 0
-      : Math.max(4500, Math.min(8000, meters * M_TO_YD * 14));
+      : Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
+    const duration = Math.max(1, dive + cruise);
+    if (flySnap == null) flySnap = map.options.zoomSnap;
+    map.options.zoomSnap = 0;
     flying = true;
+    flyPointer = false;
     const token = ++flyToken;
     updateFlyButton();
     flyMarker = L.marker(samples[0], {
@@ -371,23 +397,36 @@
 
     function frame(now) {
       if (token !== flyToken) return;
-      const raw = duration <= 0 ? 1 : Math.min(1, (now - started) / duration);
-      const eased = raw < 0.5 ? 2 * raw * raw : 1 - ((-2 * raw + 2) ** 2) / 2;
-      const here = pointAlong(samples, eased);
-      const look = pointAlong(samples, Math.min(1, eased + 0.08));
-      const brg = bearingDeg(here, look);
+      const elapsed = now - started;
+      let along = 1;
+      let zoom = closeZoom;
+      if (elapsed < dive) {
+        const u = elapsed / dive;
+        const eased = 1 - (1 - u) ** 3;
+        along = 0;
+        zoom = startZoom + (closeZoom - startZoom) * eased;
+      } else if (cruise > 0) {
+        const u = Math.min(1, (elapsed - dive) / cruise);
+        along = u < 0.5 ? 2 * u * u : 1 - ((-2 * u + 2) ** 2) / 2;
+        zoom = closeZoom;
+      }
+      const here = pointAlong(samples, along);
+      const ahead = pointAlong(samples, Math.min(1, Math.max(along, 0.015) + 0.03));
+      const brg = bearingDeg(here, ahead);
       if (brg != null) lastBearing = brg % 360;
-      const zoom = 16.8 + Math.sin(Math.PI * raw) * 1.3;
-      flyInternal = true;
-      map.setView(look, zoom, { animate: false });
-      flyInternal = false;
-      flyMarker.setLatLng(here);
-      const chevron = flyMarker.getElement() && flyMarker.getElement().querySelector(".fly-chevron");
-      if (chevron) chevron.style.transform = "rotate(" + lastBearing + "deg)";
-      if (raw < 1) {
+      map.setView(here, zoom, { animate: false });
+      if (flyMarker) {
+        flyMarker.setLatLng(here);
+        const chevron =
+          flyMarker.getElement() && flyMarker.getElement().querySelector(".fly-chevron");
+        if (chevron) chevron.style.transform = "rotate(" + lastBearing + "deg)";
+      }
+      if (elapsed < duration) {
         requestAnimationFrame(frame);
       } else {
         flying = false;
+        flyPointer = false;
+        restoreFlySnap();
         if (flyMarker) {
           map.removeLayer(flyMarker);
           flyMarker = null;
