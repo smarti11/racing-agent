@@ -8,6 +8,7 @@
   const togSharf = document.getElementById("tog-sharf");
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
+  const btnFly = document.getElementById("btn-fly");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
@@ -38,6 +39,11 @@
   }).setView([42.6665, -83.203], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
+
+  map.on("dragstart zoomstart", () => {
+    if (flyInternal || !flying) return;
+    stopFlyover();
+  });
 
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -86,6 +92,10 @@
   let recognition = null;
   let listening = false;
   let scoreCollapsed = false;
+  let flyToken = 0;
+  let flyMarker = null;
+  let flying = false;
+  let flyInternal = false;
 
   function holeIcon(course, num) {
     return L.divIcon({
@@ -246,9 +256,150 @@
     renderTotals(course);
   }
 
+  function holeLatLngs(layer) {
+    let pts = layer.getLatLngs ? layer.getLatLngs() : [];
+    if (pts.length && Array.isArray(pts[0])) pts = pts[0];
+    return pts.filter((p) => p && typeof p.lat === "number");
+  }
+
+  function resamplePath(latlngs, steps) {
+    if (latlngs.length < 2) return latlngs.slice();
+    const seg = [];
+    let total = 0;
+    for (let i = 1; i < latlngs.length; i += 1) {
+      const d = map.distance(latlngs[i - 1], latlngs[i]);
+      seg.push(d);
+      total += d;
+    }
+    if (total < 1) return latlngs.slice();
+    const out = [];
+    for (let s = 0; s <= steps; s += 1) {
+      let remain = (total * s) / steps;
+      let i = 0;
+      while (i < seg.length - 1 && remain > seg[i]) {
+        remain -= seg[i];
+        i += 1;
+      }
+      const frac = seg[i] ? Math.min(1, remain / seg[i]) : 0;
+      const a = latlngs[i];
+      const b = latlngs[i + 1] || a;
+      out.push(L.latLng(a.lat + (b.lat - a.lat) * frac, a.lng + (b.lng - a.lng) * frac));
+    }
+    return out;
+  }
+
+  function pointAlong(samples, t) {
+    const clamped = Math.max(0, Math.min(1, t));
+    const idx = clamped * (samples.length - 1);
+    const i = Math.min(samples.length - 2, Math.floor(idx));
+    const frac = idx - i;
+    const a = samples[i];
+    const b = samples[i + 1];
+    return L.latLng(a.lat + (b.lat - a.lat) * frac, a.lng + (b.lng - a.lng) * frac);
+  }
+
+  function bearingDeg(a, b) {
+    if (map.distance(a, b) < 0.5) return null;
+    const φ1 = (a.lat * Math.PI) / 180;
+    const φ2 = (b.lat * Math.PI) / 180;
+    const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x =
+      Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    return (Math.atan2(y, x) * 180) / Math.PI + 360;
+  }
+
+  function updateFlyButton() {
+    if (!btnFly) return;
+    btnFly.hidden = !selectedHole;
+    btnFly.textContent = flying ? "Stop" : "Fly over";
+    btnFly.setAttribute("aria-pressed", flying ? "true" : "false");
+    btnFly.setAttribute(
+      "aria-label",
+      flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
+    );
+  }
+
+  function stopFlyover() {
+    flyToken += 1;
+    flying = false;
+    flyInternal = false;
+    if (flyMarker) {
+      map.removeLayer(flyMarker);
+      flyMarker = null;
+    }
+    updateFlyButton();
+  }
+
+  function flyOver() {
+    if (!selectedHole) return;
+    if (flying) {
+      stopFlyover();
+      return;
+    }
+    const layer = holeIndex[selectedHole.course][selectedHole.hole];
+    const path = layer ? holeLatLngs(layer) : [];
+    if (path.length < 2) return;
+    const samples = resamplePath(path, 80);
+    if (layer) layer.closePopup();
+    const meters = map.distance(samples[0], samples[samples.length - 1]);
+    const reduceMotion =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = reduceMotion
+      ? 0
+      : Math.max(4500, Math.min(8000, meters * M_TO_YD * 14));
+    flying = true;
+    const token = ++flyToken;
+    updateFlyButton();
+    flyMarker = L.marker(samples[0], {
+      icon: L.divIcon({
+        className: "fly-marker",
+        html: '<div class="fly-chevron"></div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      }),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 900,
+    }).addTo(map);
+    let lastBearing = 0;
+    const started = performance.now();
+
+    function frame(now) {
+      if (token !== flyToken) return;
+      const raw = duration <= 0 ? 1 : Math.min(1, (now - started) / duration);
+      const eased = raw < 0.5 ? 2 * raw * raw : 1 - ((-2 * raw + 2) ** 2) / 2;
+      const here = pointAlong(samples, eased);
+      const look = pointAlong(samples, Math.min(1, eased + 0.08));
+      const brg = bearingDeg(here, look);
+      if (brg != null) lastBearing = brg % 360;
+      const zoom = 16.8 + Math.sin(Math.PI * raw) * 1.3;
+      flyInternal = true;
+      map.setView(look, zoom, { animate: false });
+      flyInternal = false;
+      flyMarker.setLatLng(here);
+      const chevron = flyMarker.getElement() && flyMarker.getElement().querySelector(".fly-chevron");
+      if (chevron) chevron.style.transform = "rotate(" + lastBearing + "deg)";
+      if (raw < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        flying = false;
+        if (flyMarker) {
+          map.removeLayer(flyMarker);
+          flyMarker = null;
+        }
+        updateFlyButton();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
   function focusHole(course, n, btn) {
     const layer = holeIndex[course][n];
     if (!layer) return;
+    stopFlyover();
     stopListening();
     if (activeHoleBtn) activeHoleBtn.classList.remove("active");
     if (btn) {
@@ -269,6 +420,7 @@
     else layer.openPopup();
     updateYardageHud();
     showScoreEntry();
+    updateFlyButton();
   }
 
   function applyToggles() {
@@ -818,6 +970,7 @@
   togPaths.addEventListener("change", applyToggles);
   togFairways.addEventListener("change", applyToggles);
   btnLocate.addEventListener("click", () => startGps(true));
+  btnFly.addEventListener("click", flyOver);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
   scorePlus.addEventListener("click", () => bumpScore(1));
   scoreInput.addEventListener("input", () => {

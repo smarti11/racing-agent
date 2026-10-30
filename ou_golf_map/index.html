@@ -24,6 +24,7 @@
 
     <div class="map-wrap">
       <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
+      <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
       <div id="yardage-hud" class="yardage-hud" hidden>
         <div class="yh-hole" id="yh-hole">Select a hole</div>
         <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
@@ -41,7 +42,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Tap a hole, then say or type your strokes. Out is the front nine, In is the back nine, and 18 holes is the round.</p>
+      <p class="score-hint" id="score-hint">Tap a hole, then Fly over to follow it from the tee to the green. Say or type your strokes. Out is the front nine, In is the back nine, and 18 holes is the round.</p>
 
       <section class="score-entry" id="score-entry" hidden>
         <div class="score-entry-top">
