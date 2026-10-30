@@ -179,6 +179,20 @@ html, body {
 
 .score-entry[hidden] { display: none; }
 
+.score-entry.is-collapsed {
+  padding: 8px 10px;
+}
+
+.score-entry.is-collapsed #score-body {
+  display: none;
+}
+
+.score-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .score-entry-top,
 .course-head {
   display: flex;

@@ -49,8 +49,12 @@
             <div class="score-kicker" id="score-kicker">Score</div>
             <div class="score-hole" id="score-hole">Hole</div>
           </div>
-          <button type="button" id="score-next" class="text-btn">Next hole</button>
+          <div class="score-actions">
+            <button type="button" id="score-collapse" class="text-btn" aria-expanded="true" aria-controls="score-body">Hide</button>
+            <button type="button" id="score-next" class="text-btn">Next hole</button>
+          </div>
         </div>
+        <div id="score-body">
         <div class="score-entry-row">
           <button type="button" id="score-minus" class="step-btn" aria-label="One fewer stroke">−</button>
           <input id="score-input" inputmode="numeric" autocomplete="off" enterkeyhint="done" aria-label="Strokes for this hole" />
@@ -58,6 +62,7 @@
           <button type="button" id="score-mic" class="mic-btn" aria-pressed="false">Say score</button>
         </div>
         <p class="score-heard" id="score-heard" aria-live="polite"></p>
+        </div>
       </section>
 
       <div class="hole-lists">

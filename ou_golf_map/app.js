@@ -17,6 +17,7 @@
   const scoreKicker = document.getElementById("score-kicker");
   const scoreHole = document.getElementById("score-hole");
   const scoreNext = document.getElementById("score-next");
+  const scoreCollapse = document.getElementById("score-collapse");
   const scoreMinus = document.getElementById("score-minus");
   const scorePlus = document.getElementById("score-plus");
   const scoreInput = document.getElementById("score-input");
@@ -84,6 +85,7 @@
   let greenMarker = null;
   let recognition = null;
   let listening = false;
+  let scoreCollapsed = false;
 
   function holeIcon(course, num) {
     return L.divIcon({
@@ -263,7 +265,8 @@
     selectedHole = { course, hole: n };
     refreshHolePopup(course, n);
     map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
-    layer.openPopup();
+    if (scoreCollapsed) layer.closePopup();
+    else layer.openPopup();
     updateYardageHud();
     showScoreEntry();
   }
@@ -599,7 +602,11 @@
     scoreEntry.hidden = false;
     scoreHint.hidden = true;
     scoreKicker.textContent = COURSE_NAMES[course] || course;
-    scoreHole.textContent = "Hole " + hole + (par ? " · Par " + par : "");
+    scoreHole.textContent =
+      "Hole " +
+      hole +
+      (par ? " · Par " + par : "") +
+      (scoreCollapsed && saved != null ? " · " + saved : "");
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
@@ -607,7 +614,20 @@
       saved == null
         ? "Say the strokes, or type them."
         : saved + (saved === 1 ? " stroke saved." : " strokes saved.");
-    scoreEntry.scrollIntoView({ block: "nearest" });
+    scoreEntry.classList.toggle("is-collapsed", scoreCollapsed);
+    scoreCollapse.textContent = scoreCollapsed ? "Score" : "Hide";
+    scoreCollapse.setAttribute("aria-expanded", scoreCollapsed ? "false" : "true");
+    if (!scoreCollapsed) scoreEntry.scrollIntoView({ block: "nearest" });
+  }
+
+  function setScoreCollapsed(collapsed) {
+    scoreCollapsed = collapsed;
+    if (collapsed) stopListening();
+    if (selectedHole) {
+      const layer = holeIndex[selectedHole.course][selectedHole.hole];
+      if (layer && collapsed) layer.closePopup();
+    }
+    showScoreEntry();
   }
 
   function setScore(course, hole, strokes) {
@@ -815,6 +835,7 @@
   });
   scoreInput.addEventListener("blur", commitTypedScore);
   scoreMic.addEventListener("click", listenForScore);
+  scoreCollapse.addEventListener("click", () => setScoreCollapsed(!scoreCollapsed));
   scoreNext.addEventListener("click", () => {
     if (!selectedHole || selectedHole.hole >= 18) return;
     focusHole(selectedHole.course, selectedHole.hole + 1);
