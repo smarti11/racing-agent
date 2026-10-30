@@ -24,7 +24,10 @@
 
     <div class="map-wrap">
       <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
-      <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+      <div class="map-actions">
+        <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
+      </div>
       <div id="yardage-hud" class="yardage-hud" hidden>
         <div class="yh-hole" id="yh-hole">Select a hole</div>
         <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
@@ -42,7 +45,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. Only that course’s holes and score stay on screen. Tap a hole, then Fly over, or say or type your strokes.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. Tap a hole, then Fly over, or say or type your strokes. Reset clears the selected hole on either course.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>

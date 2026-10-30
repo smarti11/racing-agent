@@ -9,6 +9,7 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
+  const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
@@ -327,6 +328,7 @@
   function updateFlyButton() {
     if (!btnFly) return;
     btnFly.hidden = !selectedHole;
+    if (btnReset) btnReset.hidden = !selectedHole;
     btnFly.textContent = flying ? "Stop" : "Fly over";
     btnFly.setAttribute("aria-pressed", flying ? "true" : "false");
     btnFly.setAttribute(
@@ -436,6 +438,28 @@
     }
 
     requestAnimationFrame(frame);
+  }
+
+  function clearHoleSelection() {
+    stopFlyover();
+    stopListening();
+    if (selectedHole) {
+      const layer = holeIndex[selectedHole.course] && holeIndex[selectedHole.course][selectedHole.hole];
+      if (layer) layer.closePopup();
+    }
+    document.querySelectorAll(".hole-btn.active").forEach((btn) => btn.classList.remove("active"));
+    activeHoleBtn = null;
+    selectedHole = null;
+    lastHole.katke = null;
+    lastHole.sharf = null;
+    map.closePopup();
+    updateYardageHud();
+    showScoreEntry();
+    updateFlyButton();
+    const holes = Object.values(holeIndex[playingCourse] || {});
+    if (holes.length) {
+      map.fitBounds(L.featureGroup(holes).getBounds(), { padding: [30, 30] });
+    }
   }
 
   function focusHole(course, n, btn) {
@@ -1073,6 +1097,7 @@
   document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
+  btnReset.addEventListener("click", clearHoleSelection);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
   scorePlus.addEventListener("click", () => bumpScore(1));
   scoreInput.addEventListener("input", () => {
