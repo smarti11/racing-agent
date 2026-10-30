@@ -207,6 +207,33 @@ html, body {
   color: var(--muted);
 }
 
+.course-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.course-switch button {
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 246, 239, 0.18);
+  background: rgba(243, 246, 239, 0.06);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.86rem;
+}
+
+.course-switch button[aria-selected="true"] {
+  color: #0e1f14;
+}
+
+#play-katke[aria-selected="true"] { background: var(--katke); }
+#play-sharf[aria-selected="true"] { background: var(--sharf); }
+
+.hole-lists section[hidden] { display: none; }
+
 .score-entry {
   margin: 0 0 12px;
   padding: 10px;

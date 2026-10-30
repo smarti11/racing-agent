@@ -26,6 +26,7 @@
   const scoreHeard = document.getElementById("score-heard");
 
   const SCORE_KEY = "ou-golf-scores-v1";
+  const PLAY_KEY = "ou-golf-playing-v1";
   const COURSE_NAMES = { katke: "Katke-Cousins", sharf: "R&S Sharf" };
 
   const KATKE = "#3ecf7a";
@@ -86,6 +87,8 @@
   let accuracyCircle = null;
   let activeHoleBtn = null;
   let selectedHole = null; // { course, hole }
+  let playingCourse = loadPlayingCourse();
+  let lastHole = { katke: null, sharf: null };
   let lastUser = null; // { lat, lon, accuracy }
   let aimLine = null;
   let greenMarker = null;
@@ -414,6 +417,8 @@
       }
     }
     selectedHole = { course, hole: n };
+    lastHole[course] = n;
+    setPlayingCourse(course);
     refreshHolePopup(course, n);
     map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
     if (scoreCollapsed) layer.closePopup();
@@ -664,7 +669,63 @@
 
     applyToggles();
     paintAllScores();
+    setPlayingCourse(playingCourse);
     startGps(false);
+  }
+
+  function loadPlayingCourse() {
+    try {
+      const saved = localStorage.getItem(PLAY_KEY);
+      if (saved === "sharf" || saved === "katke") return saved;
+    } catch (err) {
+      /* Private mode can block storage. */
+    }
+    return "katke";
+  }
+
+  function setPlayingCourse(course) {
+    if (course !== "katke" && course !== "sharf") course = "katke";
+    playingCourse = course;
+    try {
+      localStorage.setItem(PLAY_KEY, course);
+    } catch (err) {
+      /* The choice still applies for this visit. */
+    }
+    const katkePanel = document.getElementById("course-katke");
+    const sharfPanel = document.getElementById("course-sharf");
+    const panel = course === "katke" ? katkePanel : sharfPanel;
+    panel.hidden = false;
+    const head = panel.querySelector(".course-head");
+    if (head && scoreEntry.parentElement !== panel) {
+      head.insertAdjacentElement("afterend", scoreEntry);
+    }
+    katkePanel.hidden = course !== "katke";
+    sharfPanel.hidden = course !== "sharf";
+    document.getElementById("play-katke").setAttribute("aria-selected", course === "katke" ? "true" : "false");
+    document.getElementById("play-sharf").setAttribute("aria-selected", course === "sharf" ? "true" : "false");
+  }
+
+  function showPlayingCourse(course) {
+    const remembered = lastHole[course];
+    if (remembered && holeIndex[course] && holeIndex[course][remembered]) {
+      focusHole(course, remembered);
+      return;
+    }
+    stopFlyover();
+    stopListening();
+    setPlayingCourse(course);
+    if (selectedHole && selectedHole.course !== course) {
+      if (activeHoleBtn) activeHoleBtn.classList.remove("active");
+      activeHoleBtn = null;
+      selectedHole = null;
+      updateYardageHud();
+      updateFlyButton();
+    }
+    showScoreEntry();
+    const holes = Object.values((holeIndex[course]) || {});
+    if (holes.length) {
+      map.fitBounds(L.featureGroup(holes).getBounds(), { padding: [30, 30] });
+    }
   }
 
   function loadScores() {
@@ -742,7 +803,7 @@
   }
 
   function showScoreEntry() {
-    if (!selectedHole) {
+    if (!selectedHole || selectedHole.course !== playingCourse) {
       scoreEntry.hidden = true;
       scoreHint.hidden = false;
       return;
@@ -969,6 +1030,8 @@
   togSharf.addEventListener("change", applyToggles);
   togPaths.addEventListener("change", applyToggles);
   togFairways.addEventListener("change", applyToggles);
+  document.getElementById("play-katke").addEventListener("click", () => showPlayingCourse("katke"));
+  document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
@@ -995,6 +1058,8 @@
   });
   document.getElementById("clear-katke").addEventListener("click", () => clearCourse("katke"));
   document.getElementById("clear-sharf").addEventListener("click", () => clearCourse("sharf"));
+
+  setPlayingCourse(playingCourse);
 
   init().catch((err) => {
     console.error(err);
