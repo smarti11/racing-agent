@@ -93,7 +93,10 @@ def get_todays_tracks():
                 # Filter out pick pools and non-US tracks
                 skip_keywords = ["Pick", "Brazil", "Panama", "Chile", "Hipico",
                                   "Coast", "Cross", "Tropical", "Sunset", "Turf Pick",
-                                  "Houston Turf", "Sa All", "Kentucky Derby Future"]
+                                  "Houston Turf", "Sa All", "Kentucky Derby Future",
+                                  # cross-card wagers listed like tracks, e.g.
+                                  # "BC Juvenile - Classic Double", "Breeders Cup Future Wager"
+                                  "Double", "Future Wager"]
                 if any(kw.lower() in name.lower() for kw in skip_keywords):
                     continue
                 if name and name not in seen and len(name) > 2:
