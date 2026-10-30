@@ -192,15 +192,13 @@
     }
 
     yardageHud.hidden = false;
-    yhHole.textContent = `${t.props.courseName} · Hole ${hole}`;
+    yhHole.textContent = `Hole ${hole}`;
 
-    const scorecard = `Par ${t.props.par || "—"} · ${
-      t.props.yards || "—"
-    } yd Black (scorecard)`;
+    const scorecard = `Par ${t.props.par || "—"} · ${t.props.yards || "—"} black`;
 
     if (!lastUser) {
       yhYards.textContent = "—";
-      yhMeta.textContent = "Waiting for GPS… · " + scorecard;
+      yhMeta.textContent = "Waiting for GPS · " + scorecard;
       return;
     }
 
@@ -213,10 +211,7 @@
         : null;
     yhYards.textContent = String(yds);
     yhMeta.textContent =
-      "to green from your GPS" +
-      (accYd != null ? ` (±${accYd} yd)` : "") +
-      " · " +
-      scorecard;
+      "GPS" + (accYd != null ? ` ±${accYd}` : "") + " · " + scorecard;
 
     const from = [lastUser.lat, lastUser.lon];
     const to = [t.lat, t.lon];
