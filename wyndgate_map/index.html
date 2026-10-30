@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0e1f14" />
+  <title>Wyndgate Golf Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Libre+Franklin:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div>
+        <div class="brand">Wyndgate</div>
+        <div class="sub">The Wyndgate · Black tees</div>
+      </div>
+      <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
+    </header>
+
+    <div class="map-wrap">
+      <div id="map" role="application" aria-label="The Wyndgate golf course map"></div>
+      <div class="map-actions">
+        <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
+      </div>
+      <div id="yardage-hud" class="yardage-hud" hidden>
+        <div class="yh-top">
+          <div class="yh-hole" id="yh-hole">Select a hole</div>
+          <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+        </div>
+        <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="toggles">
+        <label class="chip"><input type="checkbox" id="tog-holes" checked /> Holes</label>
+        <label class="chip"><input type="checkbox" id="tog-paths" checked /> Cart paths</label>
+        <label class="chip"><input type="checkbox" id="tog-fairways" checked /> Fairways &amp; greens</label>
+      </div>
+
+      <div class="status" id="gps-status">GPS: waiting…</div>
+
+      <p class="score-hint" id="score-hint">Tap a hole, then Fly over, or say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+
+      <div class="hole-lists">
+        <section id="course-wyndgate">
+          <div class="course-head">
+            <h2>The Wyndgate</h2>
+            <button type="button" id="clear-wyndgate" class="text-btn">Clear</button>
+          </div>
+          <section class="score-entry" id="score-entry" hidden>
+            <div class="score-entry-top">
+              <div>
+                <div class="score-kicker" id="score-kicker">Score</div>
+                <div class="score-hole" id="score-hole">Hole</div>
+              </div>
+              <div class="score-actions">
+                <button type="button" id="score-collapse" class="text-btn" aria-expanded="true" aria-controls="score-body">Hide</button>
+                <button type="button" id="score-next" class="text-btn">Next hole</button>
+              </div>
+            </div>
+            <div id="score-body">
+            <div class="score-entry-row">
+              <button type="button" id="score-minus" class="step-btn" aria-label="One fewer stroke">−</button>
+              <input id="score-input" inputmode="numeric" autocomplete="off" enterkeyhint="done" aria-label="Strokes for this hole" />
+              <button type="button" id="score-plus" class="step-btn" aria-label="One more stroke">+</button>
+              <button type="button" id="score-mic" class="mic-btn" aria-pressed="false">Say score</button>
+            </div>
+            <p class="score-heard" id="score-heard" aria-live="polite"></p>
+            </div>
+          </section>
+          <div id="list-wyndgate" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-wyndgate" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="score.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
