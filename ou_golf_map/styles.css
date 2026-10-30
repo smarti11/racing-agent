@@ -78,52 +78,144 @@ html, body {
   background: #14261a;
 }
 
+.map-actions {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 450;
+  display: flex;
+  gap: 8px;
+}
+
+.fly-btn {
+  border: 1px solid rgba(243, 246, 239, 0.28);
+  background: rgba(12, 28, 18, 0.92);
+  color: var(--ink);
+  border-radius: 999px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.fly-btn[hidden] { display: none; }
+
+.fly-btn[aria-pressed="true"] {
+  background: #f7f3e8;
+  color: #14261a;
+}
+
+.fly-marker {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.fly-chevron {
+  width: 22px;
+  height: 22px;
+  margin: 3px;
+  background: #f7f3e8;
+  clip-path: polygon(50% 0%, 88% 100%, 50% 74%, 12% 100%);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
+}
+
 .yardage-hud {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 14px;
+  left: 8px;
+  right: 74px;
+  bottom: 18px;
   z-index: 450;
   pointer-events: none;
-  padding: 12px 14px;
-  border-radius: 16px;
+  padding: 5px 8px;
+  border-radius: 12px;
   background:
     linear-gradient(135deg, rgba(12, 28, 18, 0.92), rgba(18, 42, 28, 0.88));
   border: 1px solid rgba(243, 246, 239, 0.18);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(8px);
 }
 
 .yardage-hud[hidden] { display: none; }
 
+.yh-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .yh-hole {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   letter-spacing: -0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .yh-dist {
-  margin-top: 2px;
+  flex: none;
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
-  font-size: 2.35rem;
+  font-size: 1.05rem;
   line-height: 1;
   letter-spacing: -0.04em;
   color: #f7f3e8;
 }
 
 .yh-unit {
-  font-size: 1.05rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--muted);
-  margin-left: 2px;
+  margin-left: 1px;
 }
 
 .yh-meta {
-  margin-top: 6px;
-  font-size: 0.8rem;
+  margin-top: 1px;
+  font-size: 0.65rem;
+  line-height: 1.2;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaflet-right .leaflet-control-zoom {
+  display: flex;
+  margin-right: 6px !important;
+  margin-bottom: 16px !important;
+  border: 0;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.leaflet-control-zoom a {
+  width: 30px;
+  height: 30px;
+  line-height: 28px;
+  font-size: 16px;
+  border-bottom: none;
+}
+
+.leaflet-control-zoom a:first-child {
+  border-right: 1px solid #ccc;
+  border-radius: 8px 0 0 8px;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  line-height: 1.15;
+  max-width: calc(100% - 86px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .panel {
@@ -163,32 +255,237 @@ html, body {
 .status.ok { color: var(--katke); }
 .status.err { color: #ff7a5c; }
 
-.hole-lists {
+.score-hint {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.course-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.course-switch button {
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 246, 239, 0.18);
+  background: rgba(243, 246, 239, 0.06);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.86rem;
+}
+
+.course-switch button[aria-selected="true"] {
+  color: #0e1f14;
+}
+
+#play-katke[aria-selected="true"] { background: var(--katke); }
+#play-sharf[aria-selected="true"] { background: var(--sharf); }
+
+.hole-lists section[hidden] { display: none; }
+
+.score-entry {
+  margin: 0 0 12px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(243,246,239,0.06);
+  border: 1px solid rgba(243,246,239,0.14);
+}
+
+.score-entry[hidden] { display: none; }
+
+.score-entry.is-collapsed {
+  padding: 8px 10px;
+}
+
+.score-entry.is-collapsed #score-body {
+  display: none;
+}
+
+.score-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-entry-top,
+.course-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.score-hole {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.score-entry-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.step-btn,
+#score-input,
+.mic-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+}
+
+.step-btn {
+  width: 44px;
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(20,40,28,0.75);
+  color: var(--ink);
+  font-size: 1.3rem;
+}
+
+#score-input {
+  width: 64px;
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(8,18,12,0.65);
+  color: var(--ink);
+  text-align: center;
+  font-size: 1.35rem;
+}
+
+.mic-btn {
+  flex: 1;
+  min-width: 108px;
+  border: 0;
+  background: #f7f3e8;
+  color: #14261a;
+}
+
+.mic-btn.listening {
+  background: #ff5a3c;
+  color: #fff;
+}
+
+.mic-btn:disabled {
+  opacity: 0.55;
+}
+
+.text-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  min-height: 32px;
+  padding: 0 2px;
+}
+
+.text-btn:disabled { opacity: 0.45; }
+
+.score-heard {
+  min-height: 1.1em;
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.hole-lists {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 
 .hole-lists h2 {
-  margin: 0 0 8px;
+  margin: 0;
   font-family: "Libre Franklin", sans-serif;
   font-size: 0.92rem;
 }
 
 .hole-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .hole-btn {
   appearance: none;
   border: 0;
   border-radius: 10px;
-  min-height: 36px;
+  min-height: 42px;
+  padding: 2px 0;
   background: rgba(243,246,239,0.1);
   color: var(--ink);
   font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+}
+
+.hb-n { font-size: 0.92rem; }
+.hb-s {
+  min-height: 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--path);
+}
+
+.nine-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.nine-totals .round-total {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: rgba(247, 243, 232, 0.12);
+  border: 1px solid rgba(247, 243, 232, 0.28);
+}
+
+.nine-totals .round-total strong {
+  font-size: 1.35rem;
+}
+
+.nine-totals div {
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(243,246,239,0.06);
+}
+
+.nine-totals span {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nine-totals strong {
+  display: block;
+  margin-top: 2px;
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .hole-btn.katke { box-shadow: inset 0 0 0 1px rgba(62,207,122,0.45); }
@@ -246,8 +543,27 @@ html, body {
   .yardage-hud {
     left: 16px;
     right: auto;
-    min-width: 220px;
-    max-width: 280px;
+    bottom: 16px;
+    min-width: 240px;
+    max-width: 320px;
+    padding: 10px 12px;
   }
-  .hole-lists { grid-template-columns: 1fr; }
+  .yh-hole { font-size: 0.95rem; }
+  .yh-dist { font-size: 1.7rem; }
+  .yh-unit { font-size: 0.9rem; }
+  .yh-meta { font-size: 0.75rem; margin-top: 3px; }
+  .leaflet-right .leaflet-control-zoom {
+    display: block;
+    margin-right: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  .leaflet-control-zoom a:first-child {
+    border-right: none;
+    border-bottom: 1px solid #ccc;
+    border-radius: 8px 8px 0 0;
+  }
+  .leaflet-control-zoom a:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+  .hole-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }

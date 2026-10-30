@@ -24,9 +24,15 @@
 
     <div class="map-wrap">
       <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
+      <div class="map-actions">
+        <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
+      </div>
       <div id="yardage-hud" class="yardage-hud" hidden>
-        <div class="yh-hole" id="yh-hole">Select a hole</div>
-        <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+        <div class="yh-top">
+          <div class="yh-hole" id="yh-hole">Select a hole</div>
+          <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+        </div>
         <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
       </div>
     </div>
@@ -41,14 +47,51 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
+      <p class="score-hint" id="score-hint">Choose the course you are playing. Tap a hole, then Fly over, or say or type your strokes. Reset clears the selected hole on either course.</p>
+
+      <div class="course-switch" role="tablist" aria-label="Course being played">
+        <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
+        <button type="button" id="play-sharf" role="tab" aria-selected="false" aria-controls="course-sharf">R&amp;S Sharf</button>
+      </div>
+
+      <section class="score-entry" id="score-entry" hidden>
+        <div class="score-entry-top">
+          <div>
+            <div class="score-kicker" id="score-kicker">Score</div>
+            <div class="score-hole" id="score-hole">Hole</div>
+          </div>
+          <div class="score-actions">
+            <button type="button" id="score-collapse" class="text-btn" aria-expanded="true" aria-controls="score-body">Hide</button>
+            <button type="button" id="score-next" class="text-btn">Next hole</button>
+          </div>
+        </div>
+        <div id="score-body">
+        <div class="score-entry-row">
+          <button type="button" id="score-minus" class="step-btn" aria-label="One fewer stroke">−</button>
+          <input id="score-input" inputmode="numeric" autocomplete="off" enterkeyhint="done" aria-label="Strokes for this hole" />
+          <button type="button" id="score-plus" class="step-btn" aria-label="One more stroke">+</button>
+          <button type="button" id="score-mic" class="mic-btn" aria-pressed="false">Say score</button>
+        </div>
+        <p class="score-heard" id="score-heard" aria-live="polite"></p>
+        </div>
+      </section>
+
       <div class="hole-lists">
-        <section>
-          <h2>Katke-Cousins</h2>
+        <section id="course-katke" role="tabpanel" aria-labelledby="play-katke">
+          <div class="course-head">
+            <h2>Katke-Cousins</h2>
+            <button type="button" id="clear-katke" class="text-btn">Clear</button>
+          </div>
           <div id="list-katke" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-katke" aria-live="polite"></div>
         </section>
-        <section>
-          <h2>R&amp;S Sharf</h2>
+        <section id="course-sharf" role="tabpanel" aria-labelledby="play-sharf" hidden>
+          <div class="course-head">
+            <h2>R&amp;S Sharf</h2>
+            <button type="button" id="clear-sharf" class="text-btn">Clear</button>
+          </div>
           <div id="list-sharf" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-sharf" aria-live="polite"></div>
         </section>
       </div>
 
@@ -57,6 +100,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="score.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
