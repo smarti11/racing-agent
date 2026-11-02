@@ -11,7 +11,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 - Toggle Katke / Sharf / fairways & greens / **maintenance & cart paths**
 - Live **GPS presence** (watch position + accuracy ring)
 - Tap a hole number to zoom to that hole (par + black-tee yardage), then **Fly over** to zoom in and follow that hole from the tee to the green. Stop, pick another hole, or drag the map to cancel. **Reset** clears the selected hole on either course and zooms back out. Scores stay saved.
-- **Live yards to green** from your GPS when a hole is selected (updates as you walk; dashed aim line to the green)
+- **Front, center, and back** of the green from your GPS, in one short bar. Tap the map to measure to a bunker or a layup. **Center** puts the number back on the middle of the green.
 - **Scorecard** for the course you are playing. Katke-Cousins and R&S Sharf each have their own holes and totals; the other course stays hidden until you switch. Tap a hole, then say the strokes ("five", "birdie", "one over") or type them. Out is holes 1–9, In is holes 10–18, and **18 holes** is the full round. Scores stay in this browser until you tap Clear. The microphone needs Safari or Chrome, and HTTPS or localhost.
 
 ## Data sources

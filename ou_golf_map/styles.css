@@ -159,13 +159,34 @@ html, body {
 
 .yh-dist {
   flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
   font-size: 1.05rem;
   line-height: 1;
   letter-spacing: -0.04em;
   color: #f7f3e8;
+  white-space: nowrap;
 }
+
+.yh-edge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(247, 243, 232, 0.78);
+}
+
+.yh-edge[hidden] { display: none; }
+
+.yh-tag {
+  font-size: 0.55rem;
+  font-weight: 800;
+  margin-right: 2px;
+  color: var(--muted);
+}
+
+.yh-mid { color: #ffb020; }
 
 .yh-unit {
   font-size: 0.68rem;
@@ -550,6 +571,8 @@ html, body {
   }
   .yh-hole { font-size: 0.95rem; }
   .yh-dist { font-size: 1.7rem; }
+  .yh-edge { font-size: 1rem; }
+  .yh-tag { font-size: 0.7rem; }
   .yh-unit { font-size: 0.9rem; }
   .yh-meta { font-size: 0.75rem; margin-top: 3px; }
   .leaflet-right .leaflet-control-zoom {

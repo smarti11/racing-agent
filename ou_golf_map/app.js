@@ -13,7 +13,12 @@
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
+  const yhFrontWrap = document.getElementById("yh-front-wrap");
+  const yhBackWrap = document.getElementById("yh-back-wrap");
+  const yhFront = document.getElementById("yh-front");
+  const yhBack = document.getElementById("yh-back");
   const yhMeta = document.getElementById("yh-meta");
+  const btnCenter = document.getElementById("btn-center");
   const scoreHint = document.getElementById("score-hint");
   const scoreEntry = document.getElementById("score-entry");
   const scoreKicker = document.getElementById("score-kicker");
@@ -57,6 +62,19 @@
     if (!flying || !flyPointer) return;
     stopFlyover();
   });
+  map.on("click", (e) => {
+    if (!selectedHole || flying) return;
+    const el = e.originalEvent && e.originalEvent.target;
+    if (
+      el &&
+      el.closest &&
+      el.closest(".leaflet-marker-icon, .leaflet-popup, .hole-label, .fly-btn, .leaflet-control")
+    ) {
+      return;
+    }
+    markTarget = e.latlng;
+    updateYardageHud();
+  });
 
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -99,6 +117,8 @@
   let accuracyCircle = null;
   let activeHoleBtn = null;
   let selectedHole = null; // { course, hole }
+  let markTarget = null; // a map tap, measured instead of the green
+  let markMarker = null;
   let playingCourse = loadPlayingCourse();
   let lastHole = { katke: null, sharf: null };
   let lastUser = null; // { lat, lon, accuracy }
@@ -170,9 +190,107 @@
     layer.setPopupContent(popupHole(t.props, yds));
   }
 
+  function toLocalMeters(lat, lon, originLat) {
+    const latM = 111320;
+    const lonM = 111320 * Math.cos((originLat * Math.PI) / 180);
+    return { x: lon * lonM, y: lat * latM };
+  }
+
+  // Front and back are where the shot from you through the pin enters and leaves the green.
+  function greenEdges(userLat, userLon, pinLat, pinLon, ring) {
+    if (!ring || ring.length < 4) return null;
+    const P = toLocalMeters(userLat, userLon, userLat);
+    const C = toLocalMeters(pinLat, pinLon, userLat);
+    const dx = C.x - P.x;
+    const dy = C.y - P.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 1) return null;
+    const hits = [];
+    for (let i = 0; i < ring.length - 1; i += 1) {
+      const A = toLocalMeters(ring[i][0], ring[i][1], userLat);
+      const B = toLocalMeters(ring[i + 1][0], ring[i + 1][1], userLat);
+      const ex = B.x - A.x;
+      const ey = B.y - A.y;
+      const den = dx * ey - dy * ex;
+      if (Math.abs(den) < 1e-6) continue;
+      const ax = A.x - P.x;
+      const ay = A.y - P.y;
+      const t = (ax * ey - ay * ex) / den;
+      const u = (ax * dy - ay * dx) / den;
+      if (t > 0.001 && u >= -0.0001 && u <= 1.0001) hits.push(t);
+    }
+    if (hits.length < 2) return null;
+    return {
+      front: Math.round(Math.min.apply(null, hits) * length * M_TO_YD),
+      back: Math.round(Math.max.apply(null, hits) * length * M_TO_YD),
+    };
+  }
+
+  function assignGreenRings(greensFc) {
+    const rings = (greensFc.features || [])
+      .map((feature) => {
+        const coords =
+          feature.geometry &&
+          feature.geometry.coordinates &&
+          feature.geometry.coordinates[0];
+        if (!coords || coords.length < 4) return null;
+        const ring = coords.map((c) => [c[1], c[0]]);
+        const n = ring.length - 1;
+        let lat = 0;
+        let lon = 0;
+        for (let i = 0; i < n; i += 1) {
+          lat += ring[i][0];
+          lon += ring[i][1];
+        }
+        return { ring, lat: lat / n, lon: lon / n };
+      })
+      .filter(Boolean);
+    const pins = [];
+    Object.keys(greenTargets).forEach((course) => {
+      Object.keys(greenTargets[course]).forEach((hole) => {
+        pins.push(greenTargets[course][hole]);
+      });
+    });
+    const pairs = [];
+    pins.forEach((pin) => {
+      rings.forEach((ring) => {
+        pairs.push({
+          pin,
+          ring,
+          d: yardsBetween(pin.lat, pin.lon, ring.lat, ring.lon),
+        });
+      });
+    });
+    pairs.sort((a, b) => a.d - b.d);
+    const usedPins = new Set();
+    const usedRings = new Set();
+    pairs.forEach((pair) => {
+      if (pair.d > 80 || usedPins.has(pair.pin) || usedRings.has(pair.ring)) return;
+      usedPins.add(pair.pin);
+      usedRings.add(pair.ring);
+      pair.pin.ring = pair.ring.ring;
+    });
+  }
+
+  function showGreenEdges(edges) {
+    const on = !!(edges && !markTarget);
+    if (yhFrontWrap) yhFrontWrap.hidden = !on;
+    if (yhBackWrap) yhBackWrap.hidden = !on;
+    if (!on) return;
+    yhFront.textContent = String(edges.front);
+    yhBack.textContent = String(edges.back);
+  }
+
+  function updateMarkButton() {
+    if (!btnCenter) return;
+    btnCenter.hidden = !selectedHole || !markTarget;
+  }
+
   function updateYardageHud() {
     if (!selectedHole) {
       yardageHud.hidden = true;
+      showGreenEdges(null);
+      updateMarkButton();
       if (aimLine) {
         map.removeLayer(aimLine);
         aimLine = null;
@@ -180,6 +298,10 @@
       if (greenMarker) {
         map.removeLayer(greenMarker);
         greenMarker = null;
+      }
+      if (markMarker) {
+        map.removeLayer(markMarker);
+        markMarker = null;
       }
       return;
     }
@@ -198,33 +320,69 @@
 
     if (!lastUser) {
       yhYards.textContent = "—";
+      showGreenEdges(null);
+      updateMarkButton();
       yhMeta.textContent = "Waiting for GPS · " + scorecard;
       return;
     }
 
-    const yds = Math.round(
-      yardsBetween(lastUser.lat, lastUser.lon, t.lat, t.lon)
-    );
     const accYd =
       lastUser.accuracy != null
         ? Math.round(lastUser.accuracy * M_TO_YD)
         : null;
+    const gpsBit = "GPS" + (accYd != null ? ` ±${accYd}` : "");
+    const centerYds = Math.round(
+      yardsBetween(lastUser.lat, lastUser.lon, t.lat, t.lon)
+    );
+    let yds = centerYds;
+    if (markTarget) {
+      yds = Math.round(
+        yardsBetween(lastUser.lat, lastUser.lon, markTarget.lat, markTarget.lng)
+      );
+      showGreenEdges(null);
+      yhMeta.textContent = gpsBit + " · to the mark · " + scorecard;
+    } else {
+      const edges = greenEdges(lastUser.lat, lastUser.lon, t.lat, t.lon, t.ring);
+      showGreenEdges(edges);
+      yhMeta.textContent = gpsBit + " · " + scorecard;
+    }
+    updateMarkButton();
     yhYards.textContent = String(yds);
-    yhMeta.textContent =
-      "GPS" + (accYd != null ? ` ±${accYd}` : "") + " · " + scorecard;
 
     const from = [lastUser.lat, lastUser.lon];
-    const to = [t.lat, t.lon];
+    const to = markTarget
+      ? [markTarget.lat, markTarget.lng]
+      : [t.lat, t.lon];
     if (!aimLine) {
       aimLine = L.polyline([from, to], {
-        color: "#ffffff",
+        color: markTarget ? "#ffb020" : "#ffffff",
         weight: 2,
         opacity: 0.85,
         dashArray: "6 8",
       }).addTo(map);
     } else {
+      aimLine.setStyle({ color: markTarget ? "#ffb020" : "#ffffff" });
       aimLine.setLatLngs([from, to]);
       if (!map.hasLayer(aimLine)) aimLine.addTo(map);
+    }
+
+    if (markTarget) {
+      if (!markMarker) {
+        markMarker = L.circleMarker(markTarget, {
+          radius: 7,
+          color: "#ffb020",
+          weight: 2,
+          fillColor: "#ffb020",
+          fillOpacity: 0.95,
+          interactive: false,
+        }).addTo(map);
+      } else {
+        markMarker.setLatLng(markTarget);
+        if (!map.hasLayer(markMarker)) markMarker.addTo(map);
+      }
+    } else if (markMarker) {
+      map.removeLayer(markMarker);
+      markMarker = null;
     }
 
     if (!greenMarker) {
@@ -244,13 +402,7 @@
   }
 
   function addPolygonLayer(fc, group, style) {
-    L.geoJSON(fc, {
-      style,
-      onEachFeature(feature, layer) {
-        const k = feature.properties && feature.properties.kind;
-        if (k) layer.bindPopup(k.replace("_", " "));
-      },
-    }).addTo(group);
+    L.geoJSON(fc, { style }).addTo(group);
   }
 
   function buildHoleButtons(course, listEl) {
@@ -445,6 +597,7 @@
     document.querySelectorAll(".hole-btn.active").forEach((btn) => btn.classList.remove("active"));
     activeHoleBtn = null;
     selectedHole = null;
+    markTarget = null;
     lastHole.katke = null;
     lastHole.sharf = null;
     map.closePopup();
@@ -462,6 +615,7 @@
     if (!layer) return;
     stopFlyover();
     stopListening();
+    markTarget = null;
     if (activeHoleBtn) activeHoleBtn.classList.remove("active");
     if (btn) {
       btn.classList.add("active");
@@ -707,6 +861,8 @@
         });
       },
     }).addTo(layers.pins);
+
+    assignGreenRings(greens);
 
     if (meta.clubhouse) {
       L.marker([meta.clubhouse.lat, meta.clubhouse.lon])
@@ -1092,6 +1248,10 @@
   document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
+  btnCenter.addEventListener("click", () => {
+    markTarget = null;
+    updateYardageHud();
+  });
   btnReset.addEventListener("click", clearHoleSelection);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
   scorePlus.addEventListener("click", () => bumpScore(1));
