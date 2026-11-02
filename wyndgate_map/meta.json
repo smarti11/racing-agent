@@ -1,0 +1,26 @@
+{
+  "clubhouse": {
+    "lat": 42.7378593,
+    "lon": -83.1774923,
+    "name": "The Wyndgate",
+    "address": "1975 West Gunn Road, Rochester Hills, MI 48306"
+  },
+  "center": {
+    "lat": 42.7351328,
+    "lon": -83.1769306
+  },
+  "courses": {
+    "wyndgate": {
+      "name": "The Wyndgate",
+      "par": 72,
+      "yards": 7329,
+      "rating": 76.2,
+      "slope": 148,
+      "tees": "Black",
+      "holes": 18,
+      "color": "#1f6b3a"
+    }
+  },
+  "source": "OpenStreetMap contributors. Black-tee par and yardage from the published Wyndgate scorecard (76.2/148, 7,329 yards). Westwynd is a different course and is not on this map.",
+  "attribution": "© OpenStreetMap contributors"
+}
