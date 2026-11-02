@@ -9,7 +9,7 @@ This site is separate from the Oakland University golf map. It has its own folde
 - Satellite map of the 18-hole course, black tees only (par 72, 7,329 yards, 76.2/148)
 - Tap a hole to see par and black-tee yardage, then **Fly over** from tee to green
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
-- Live yards to the green from your GPS, with a short bar on a phone
+- Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
 - Scorecard: say the strokes or type them. Out, In, and the full 18. Scores stay in this browser until you tap Clear
 
 Westwynd, the course on Adams Road, is not included.

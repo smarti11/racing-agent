@@ -26,12 +26,17 @@
       <div id="map" role="application" aria-label="The Wyndgate golf course map"></div>
       <div class="map-actions">
         <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
       <div id="yardage-hud" class="yardage-hud" hidden>
         <div class="yh-top">
           <div class="yh-hole" id="yh-hole">Select a hole</div>
-          <div class="yh-dist"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></div>
+          <div class="yh-dist" id="yh-dist">
+            <span class="yh-edge" id="yh-front-wrap" hidden><span class="yh-tag">F</span><span id="yh-front"></span></span>
+            <span class="yh-mid"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></span>
+            <span class="yh-edge" id="yh-back-wrap" hidden><span class="yh-tag">B</span><span id="yh-back"></span></span>
+          </div>
         </div>
         <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
       </div>
@@ -46,7 +51,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Tap a hole, then Fly over, or say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+      <p class="score-hint" id="score-hint">Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over, or say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
 
       <div class="hole-lists">
         <section id="course-wyndgate">
