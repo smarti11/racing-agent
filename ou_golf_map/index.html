@@ -52,7 +52,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over, or say or type your strokes. Reset clears the selected hole.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over, or say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
@@ -89,6 +89,8 @@
           </div>
           <div id="list-katke" class="hole-grid"></div>
           <div class="nine-totals" id="totals-katke" aria-live="polite"></div>
+          <button type="button" id="save-katke" class="save-btn">Save this score</button>
+          <p class="save-note" id="save-note-katke" aria-live="polite"></p>
         </section>
         <section id="course-sharf" role="tabpanel" aria-labelledby="play-sharf" hidden>
           <div class="course-head">
@@ -97,6 +99,8 @@
           </div>
           <div id="list-sharf" class="hole-grid"></div>
           <div class="nine-totals" id="totals-sharf" aria-live="polite"></div>
+          <button type="button" id="save-sharf" class="save-btn">Save this score</button>
+          <p class="save-note" id="save-note-sharf" aria-live="polite"></p>
         </section>
       </div>
 
