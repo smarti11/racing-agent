@@ -156,11 +156,67 @@
     return text;
   }
 
+  function holeValue(bag, n) {
+    if (!bag) return null;
+    if (bag[n] != null) return bag[n];
+    if (bag[String(n)] != null) return bag[String(n)];
+    return null;
+  }
+
+  function summaryLine(label, summary) {
+    if (!summary || summary.counted === 0) return label + ": not scored";
+    return label + ": " + formatStrokes(summary);
+  }
+
+  /**
+   * Plain-text card a phone can store in Files or Notes.
+   * Missing holes stay listed so a front nine still reads in order.
+   */
+  function scorecardText(courseName, scores, pars, dateLabel) {
+    var lines = [String(courseName || "Score"), dateLabel ? String(dateLabel) : "", ""];
+    for (var n = 1; n <= 18; n += 1) {
+      if (n === 10) lines.push("");
+      var par = holeValue(pars, n);
+      var strokes = holeValue(scores, n);
+      lines.push(
+        "Hole " +
+          n +
+          "  Par " +
+          (par == null ? "—" : par) +
+          "  " +
+          (strokes == null ? "not scored" : strokes)
+      );
+    }
+    lines.push("");
+    lines.push(summaryLine("Out", nineSummary(scores, pars, 1, 9)));
+    lines.push(summaryLine("In", nineSummary(scores, pars, 10, 18)));
+    lines.push(summaryLine("18 holes", nineSummary(scores, pars, 1, 18)));
+    lines.push("");
+    lines.push("Saved from OU Golf Map on this phone.");
+    return lines.join("\n");
+  }
+
+  function scorecardFilename(courseName, date) {
+    var when = date instanceof Date ? date : new Date();
+    var y = when.getFullYear();
+    var m = String(when.getMonth() + 1);
+    var d = String(when.getDate());
+    if (m.length < 2) m = "0" + m;
+    if (d.length < 2) d = "0" + d;
+    var slug = String(courseName || "score")
+      .replace(/&/g, " and ")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return (slug || "score") + "-" + y + "-" + m + "-" + d + ".txt";
+  }
+
   return {
     clampStrokes: clampStrokes,
     parseSpokenScore: parseSpokenScore,
     nineSummary: nineSummary,
     formatToPar: formatToPar,
     formatStrokes: formatStrokes,
+    scorecardText: scorecardText,
+    scorecardFilename: scorecardFilename,
   };
 });

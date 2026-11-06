@@ -1061,6 +1061,7 @@
     if (strokes == null) delete scores[course][hole];
     else scores[course][hole] = strokes;
     saveScores();
+    setSaveNote(course, "");
     paintScore(course, hole);
     renderTotals(course);
     if (selectedHole && selectedHole.course === course && selectedHole.hole === hole) {
@@ -1114,12 +1115,74 @@
     if (!window.confirm("Clear all " + name + " scores?")) return;
     scores[course] = {};
     saveScores();
+    setSaveNote(course, "");
     for (let n = 1; n <= 18; n += 1) {
       paintScore(course, n);
       refreshHolePopup(course, n);
     }
     renderTotals(course);
     if (selectedHole && selectedHole.course === course) showScoreEntry();
+  }
+
+  function setSaveNote(course, message) {
+    const note = document.getElementById("save-note-" + course);
+    if (note) note.textContent = message || "";
+  }
+
+  function downloadScore(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  async function saveCourse(course) {
+    const button = document.getElementById("save-" + course);
+    const name = COURSE_NAMES[course] || course;
+    const round = OUScore.nineSummary(scores[course], pars[course], 1, 18);
+    if (!round.counted) {
+      setSaveNote(course, "Enter a score first.");
+      return;
+    }
+    const now = new Date();
+    const dateLabel = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const text = OUScore.scorecardText(name, scores[course], pars[course], dateLabel);
+    const filename = OUScore.scorecardFilename(name, now);
+    const file = new File([text], filename, { type: "text/plain" });
+    if (button) button.disabled = true;
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name + " score" });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else if (navigator.share) {
+        await navigator.share({ title: name + " score", text: text });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      try {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      } catch (downloadErr) {
+        setSaveNote(course, "Couldn't save. Try again.");
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
   }
 
   function speechCtor() {
@@ -1277,6 +1340,8 @@
   });
   document.getElementById("clear-katke").addEventListener("click", () => clearCourse("katke"));
   document.getElementById("clear-sharf").addEventListener("click", () => clearCourse("sharf"));
+  document.getElementById("save-katke").addEventListener("click", () => saveCourse("katke"));
+  document.getElementById("save-sharf").addEventListener("click", () => saveCourse("sharf"));
 
   setPlayingCourse(playingCourse);
 
