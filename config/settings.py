@@ -201,7 +201,9 @@ def daily_double_base(track_code: str) -> float:
 # judged on ML top-3 doubles over 9/1-10/21: GP +34%, LRL +10%, FL -4% (68%
 # hits). WO (-36%) and SA (-29%) dropped 2026-10-22; their earlier edge came
 # from the old model's picks. Revisit monthly.
-ROLLING_DOUBLE_TRACKS = ["GP", "LRL", "FL"]
+# FL dropped 2026-11-09: 4 straight losing days (11/2-11/4, 11/9), $270 in,
+# $143 back at $1/combo; hits paid $4-8 on a $9 ticket.
+ROLLING_DOUBLE_TRACKS = ["GP", "LRL"]
 
 # Stake per combo actually bet, where it differs from the chart base. A $1
 # combo at a $2-base track returns half the posted payout.
@@ -230,6 +232,7 @@ TRACK_TIMEZONES = {
     "MIL": "America/Edmonton", "ONE": "America/Boise", "POD": "America/Boise",
     "SRP": "America/Denver", "SWF": "America/Denver", "WYO": "America/Denver",
     "TUP": "America/Phoenix",
+    "ZIA": "America/Denver",
     # Pacific
     "DMR": "America/Los_Angeles", "ELK": "America/Los_Angeles",
     "ELY": "America/Los_Angeles", "EMD": "America/Los_Angeles",
