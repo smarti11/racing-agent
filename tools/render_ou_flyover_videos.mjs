@@ -92,19 +92,22 @@ function framesFor(coords) {
   const seconds = Math.max(7, Math.min(11, total / 48));
   const fps = 8;
   const count = Math.round(seconds * fps);
-  const zoom = total < 180 ? 18.05 : total < 280 ? 17.7 : total < 420 ? 17.35 : 17.05;
+  const farZoom = total < 180 ? 18.05 : total < 280 ? 17.7 : total < 420 ? 17.35 : 17.05;
+  const nearZoom = Math.min(18.75, farZoom + 1.2);
   const frames = [];
   for (let i = 0; i < count; i++) {
     const u = count === 1 ? 1 : i / (count - 1);
     const eased = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+    const rise = Math.min(1, Math.max(0, (eased - 0.05) / 0.34));
     const dist = eased * total;
-    const look = pointAlong(coords, Math.min(total, dist + Math.min(110, total * 0.24)));
+    const lookAhead = 42 + (Math.min(110, total * 0.24) - 42) * rise;
+    const look = pointAlong(coords, Math.min(total, dist + lookAhead));
     frames.push({
       lon: look.lon,
       lat: look.lat,
       heading: look.heading,
-      pitch: 62 - 16 * eased,
-      zoom,
+      pitch: 72 - 24 * rise,
+      zoom: nearZoom + (farZoom - nearZoom) * rise,
     });
   }
   return frames;
