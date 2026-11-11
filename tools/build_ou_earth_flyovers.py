@@ -76,39 +76,49 @@ def heading_at(points, index):
 
 
 def cameras_for(coords):
-    samples = densify(coords, 45)
-    opening_heading = heading_at(samples, 0)
-    back_lon, back_lat = destination(samples[0][0], samples[0][1], (opening_heading + 180) % 360, 60)
-    cameras = [{
-        "lon": back_lon,
-        "lat": back_lat,
-        "alt": 170,
-        "heading": opening_heading,
-        "tilt": 55,
-        "duration": 2.2,
-    }]
-    last = len(samples) - 1
+    """Start at eye level on the tee, hold, then climb to 10 m and fly the hole."""
+    samples = densify(coords, 20)
+    distances = [0.0]
+    for (lon1, lat1), (lon2, lat2) in zip(samples, samples[1:]):
+        distances.append(distances[-1] + haversine(lon1, lat1, lon2, lat2))
+    total = distances[-1] or 1.0
+    rise_m = min(70.0, total * 0.18)
+    events = []
     for i, (lon, lat) in enumerate(samples):
-        along = i / last if last else 1
-        if along < 0.82:
-            alt, tilt = 115, 68
+        traveled = distances[i]
+        if traveled <= rise_m:
+            u = traveled / rise_m if rise_m else 1.0
+            smooth = u * u * (3 - 2 * u)
+            alt = 1.8 + (10.0 - 1.8) * smooth
+            tilt = 85 - 10 * smooth
+            speed = 6.0
         else:
-            alt = 115 - (115 - 75) * ((along - 0.82) / 0.18)
-            tilt = 68 - (68 - 50) * ((along - 0.82) / 0.18)
-        prev = cameras[-1]
-        dist = haversine(prev["lon"], prev["lat"], lon, lat)
-        cameras.append({
+            remaining = total - traveled
+            alt = 10.0
+            tilt = 62 if remaining < 35 else 75
+            speed = 12.0
+        if i == 0:
+            duration = 2.0
+        else:
+            step = distances[i] - distances[i - 1]
+            duration = min(2.2, max(0.35, step / speed))
+        events.append({
+            "kind": "camera",
             "lon": lon,
             "lat": lat,
             "alt": alt,
             "heading": heading_at(samples, i),
             "tilt": tilt,
-            "duration": min(2.4, max(0.55, dist / 42.0)),
+            "duration": duration,
         })
-    return cameras
+        if i == 0:
+            events.append({"kind": "wait", "duration": 1.2})
+    return events
 
 
 def flyto(camera):
+    if camera["kind"] == "wait":
+        return f"      <gx:Wait><gx:duration>{camera['duration']:.1f}</gx:duration></gx:Wait>"
     return f"""      <gx:FlyTo>
         <gx:duration>{camera['duration']:.2f}</gx:duration>
         <gx:flyToMode>smooth</gx:flyToMode>
@@ -177,7 +187,7 @@ def main():
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
   <Document>
     <name>OU Golf Flyovers</name>
-    <description>Double-click a hole. The camera flies from the tee to the green.</description>
+    <description>Double-click a hole. The camera starts at eye level on the tee, rises to 10 meters, and flies to the green.</description>
     <open>1</open>"""]
 
     labels = (("katke", "Katke-Cousins"), ("sharf", "R&S Sharf"))
@@ -198,7 +208,7 @@ def main():
             all_cameras.extend(cameras)
             parts.append(tour(
                 f"Play Hole {row['hole']}",
-                f"{row['name']} hole {row['hole']}, par {row['par']}, {row['yards']} yards. Double-click to fly from the tee to the green.",
+                f"{row['name']} hole {row['hole']}, par {row['par']}, {row['yards']} yards. Starts at eye level on the tee, rises to 10 meters, then flies to the green.",
                 cameras_for(row["coords"]),
             ))
         parts.append(tour(
