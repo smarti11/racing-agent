@@ -197,12 +197,10 @@ html, body {
 
 .yh-meta {
   margin-top: 1px;
-  font-size: 0.65rem;
-  line-height: 1.2;
+  font-size: 0.72rem;
+  line-height: 1.25;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .leaflet-right .leaflet-control-zoom {
@@ -304,6 +302,35 @@ html, body {
   color: #0e1f14;
 }
 
+.card-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.card-picks label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card-picks select {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(8,18,12,0.65);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0 8px;
+}
+
 #play-katke[aria-selected="true"] { background: var(--katke); }
 #play-sharf[aria-selected="true"] { background: var(--sharf); }
 
@@ -353,6 +380,14 @@ html, body {
   font-weight: 800;
   font-size: 1.05rem;
 }
+
+.score-plays {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: #f7f3e8;
+}
+
+.score-plays:empty { display: none; }
 
 .score-entry-row {
   display: flex;
@@ -447,7 +482,7 @@ html, body {
   appearance: none;
   border: 0;
   border-radius: 10px;
-  min-height: 42px;
+  min-height: 52px;
   padding: 2px 0;
   background: rgba(243,246,239,0.1);
   color: var(--ink);
@@ -460,6 +495,19 @@ html, body {
 }
 
 .hb-n { font-size: 0.92rem; }
+.hb-h {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--muted);
+}
+.hb-p {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #ffb020;
+}
 .hb-s {
   min-height: 0.75rem;
   font-size: 0.68rem;

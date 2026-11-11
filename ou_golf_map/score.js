@@ -156,6 +156,30 @@
     return text;
   }
 
+  /**
+   * Scorecard yards adjusted for the rise from the tee to the green.
+   * One yard is added for every three feet uphill, and one yard is
+   * subtracted for every three feet downhill.
+   */
+  function playsLike(yards, teeFt, greenFt) {
+    var y = typeof yards === "number" ? yards : parseInt(yards, 10);
+    var tee = typeof teeFt === "number" ? teeFt : parseFloat(teeFt);
+    var green = typeof greenFt === "number" ? greenFt : parseFloat(greenFt);
+    if (!isFinite(y) || !isFinite(tee) || !isFinite(green)) return null;
+    var deltaFt = Math.round(green - tee);
+    var adjusted = Math.round(y + deltaFt / 3);
+    if (adjusted < 1) adjusted = 1;
+    return { yards: adjusted, deltaFt: deltaFt, flat: y };
+  }
+
+  function formatPlaysLike(info) {
+    if (!info) return "";
+    var hill = "level";
+    if (info.deltaFt > 1) hill = info.deltaFt + " ft up";
+    else if (info.deltaFt < -1) hill = Math.abs(info.deltaFt) + " ft down";
+    return "plays " + info.yards + " · " + hill;
+  }
+
   function holeValue(bag, n) {
     if (!bag) return null;
     if (bag[n] != null) return bag[n];
@@ -172,19 +196,30 @@
    * Plain-text card a phone can store in Files or Notes.
    * Missing holes stay listed so a front nine still reads in order.
    */
-  function scorecardText(courseName, scores, pars, dateLabel) {
-    var lines = [String(courseName || "Score"), dateLabel ? String(dateLabel) : "", ""];
+  function scorecardText(courseName, scores, pars, dateLabel, details) {
+    var lines = [String(courseName || "Score")];
+    if (dateLabel) lines.push(String(dateLabel));
+    if (details && details.heading) lines.push(String(details.heading));
+    lines.push("");
     for (var n = 1; n <= 18; n += 1) {
       if (n === 10) lines.push("");
       var par = holeValue(pars, n);
       var strokes = holeValue(scores, n);
+      var info = details && details.holes ? holeValue(details.holes, n) : null;
+      var extra = "";
+      if (info && info.hcp != null) extra += "  Hcp " + info.hcp;
+      if (info && info.yards != null) {
+        extra += "  " + (info.teeName || "Tee") + " " + info.yards;
+        if (info.plays != null) extra += "  plays " + info.plays;
+      }
       lines.push(
         "Hole " +
           n +
           "  Par " +
           (par == null ? "—" : par) +
           "  " +
-          (strokes == null ? "not scored" : strokes)
+          (strokes == null ? "not scored" : strokes) +
+          extra
       );
     }
     lines.push("");
@@ -216,6 +251,8 @@
     nineSummary: nineSummary,
     formatToPar: formatToPar,
     formatStrokes: formatStrokes,
+    playsLike: playsLike,
+    formatPlaysLike: formatPlaysLike,
     scorecardText: scorecardText,
     scorecardFilename: scorecardFilename,
   };
