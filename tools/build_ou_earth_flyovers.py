@@ -149,6 +149,24 @@ def flyto(camera):
       </gx:FlyTo>"""
 
 
+def kml_document(name, description, inner):
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <Document>
+    <name>{escape(name)}</name>
+    <description>{escape(description)}</description>
+    <open>1</open>
+{inner}
+  </Document>
+</kml>
+"""
+
+
+def write_kmz(path, kml_text):
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("doc.kml", kml_text)
+
+
 def tour(name, description, cameras):
     body = "\n".join(flyto(c) for c in cameras)
     body += "\n      <gx:Wait><gx:duration>1.5</gx:duration></gx:Wait>"
@@ -197,12 +215,7 @@ def main():
             "end_green": end_green,
         })
 
-    parts = ["""<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-  <Document>
-    <name>OU Golf Flyovers</name>
-    <description>Double-click a hole. The camera starts at eye level on the tee, rises to 10 meters, and flies to the green.</description>
-    <open>1</open>"""]
+    parts = []
 
     labels = (("katke", "Katke-Cousins"), ("sharf", "R&S Sharf"))
     for course, title in labels:
@@ -216,19 +229,28 @@ def main():
                 f"stops {sum(1 for c in cameras if c['kind'] == 'camera'):2d}  "
                 f"tee {row['start_tee']:5.0f}m  green {row['end_green']:5.0f}m"
             )
-            parts.append(tour(
+            hole_tour = tour(
                 f"Play Hole {row['hole']}",
                 f"{row['name']} hole {row['hole']}, par {row['par']}, {row['yards']} yards. Starts at eye level on the tee, rises to 10 meters, then flies to the green.",
                 cameras,
+            )
+            parts.append(hole_tour)
+            hole_kmz = MAP / f"flyover-{course}-{row['hole']}.kmz"
+            write_kmz(hole_kmz, kml_document(
+                f"{row['name']} hole {row['hole']}",
+                "Double-click Play Hole to fly from the tee to the green.",
+                hole_tour,
             ))
         parts.append("    </Folder>")
-    parts.append("  </Document>\n</kml>\n")
-    kml = "\n".join(parts)
+    kml = kml_document(
+        "OU Golf Flyovers",
+        "Double-click a hole. The camera starts at eye level on the tee, rises to 10 meters, and flies to the green.",
+        "\n".join(parts),
+    )
     kml_path = MAP / "ou_golf_flyovers.kml"
     kmz_path = MAP / "ou_golf_flyovers.kmz"
     kml_path.write_text(kml)
-    with zipfile.ZipFile(kmz_path, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("doc.kml", kml)
+    write_kmz(kmz_path, kml)
     print(f"wrote {kml_path} ({kml_path.stat().st_size} bytes)")
     print(f"wrote {kmz_path} ({kmz_path.stat().st_size} bytes)")
 

@@ -9,6 +9,7 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
+  const btnEarth = document.getElementById("btn-earth");
   const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
@@ -493,6 +494,24 @@
     btnFly.setAttribute(
       "aria-label",
       flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
+    );
+    updateEarthLink();
+  }
+
+  function updateEarthLink() {
+    if (!btnEarth) return;
+    if (!selectedHole) {
+      btnEarth.hidden = true;
+      btnEarth.removeAttribute("href");
+      return;
+    }
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const hole = selectedHole.hole;
+    btnEarth.hidden = false;
+    btnEarth.href = "flyover-" + course + "-" + hole + ".kmz";
+    btnEarth.setAttribute(
+      "aria-label",
+      "Open the Google Earth flyover for " + (course === "katke" ? "Katke" : "Sharf") + " hole " + hole
     );
   }
 
