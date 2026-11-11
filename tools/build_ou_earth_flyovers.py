@@ -57,17 +57,6 @@ def nearest(point, centers):
     return min(haversine(point[0], point[1], c[0], c[1]) for c in centers)
 
 
-def densify(coords, step_m):
-    points = [(coords[0][0], coords[0][1])]
-    for (lon1, lat1), (lon2, lat2) in zip(coords, coords[1:]):
-        dist = haversine(lon1, lat1, lon2, lat2)
-        pieces = max(1, int(round(dist / step_m)))
-        for i in range(1, pieces + 1):
-            t = i / pieces
-            points.append((lon1 + (lon2 - lon1) * t, lat1 + (lat2 - lat1) * t))
-    return points
-
-
 def heading_at(points, index):
     nxt = min(len(points) - 1, index + 1)
     if nxt == index and index > 0:
@@ -75,44 +64,69 @@ def heading_at(points, index):
     return bearing(points[index][0], points[index][1], points[nxt][0], points[nxt][1])
 
 
+def path_length(coords):
+    return sum(
+        haversine(a[0], a[1], b[0], b[1])
+        for a, b in zip(coords, coords[1:])
+    )
+
+
+def point_along(coords, distance_m):
+    """Return lon, lat, and the heading at a distance along the hole line."""
+    if len(coords) == 1 or distance_m <= 0:
+        heading = heading_at(coords, 0)
+        return coords[0][0], coords[0][1], heading
+    remaining = distance_m
+    for index, (start, end) in enumerate(zip(coords, coords[1:])):
+        segment = haversine(start[0], start[1], end[0], end[1])
+        heading = bearing(start[0], start[1], end[0], end[1])
+        if remaining <= segment or index == len(coords) - 2:
+            fraction = 0 if segment == 0 else min(1, remaining / segment)
+            lon = start[0] + (end[0] - start[0]) * fraction
+            lat = start[1] + (end[1] - start[1]) * fraction
+            return lon, lat, heading
+        remaining -= segment
+    heading = heading_at(coords, len(coords) - 1)
+    return coords[-1][0], coords[-1][1], heading
+
+
 def cameras_for(coords):
-    """Start at eye level on the tee, hold, then climb to 10 m and fly the hole."""
-    samples = densify(coords, 20)
-    distances = [0.0]
-    for (lon1, lat1), (lon2, lat2) in zip(samples, samples[1:]):
-        distances.append(distances[-1] + haversine(lon1, lat1, lon2, lat2))
-    total = distances[-1] or 1.0
-    rise_m = min(70.0, total * 0.18)
+    """A few camera stops: eye level on the tee, then 10 m down the hole.
+
+    A stop every 20 meters made the file heavy enough to freeze Google Earth.
+    """
+    total = path_length(coords) or 1.0
+    rise_m = min(70.0, total * 0.2)
+    marks = [0.0, rise_m, total * 0.45, total * 0.75, total]
     events = []
-    for i, (lon, lat) in enumerate(samples):
-        traveled = distances[i]
-        if traveled <= rise_m:
-            u = traveled / rise_m if rise_m else 1.0
-            smooth = u * u * (3 - 2 * u)
-            alt = 1.8 + (10.0 - 1.8) * smooth
-            tilt = 85 - 10 * smooth
-            speed = 6.0
+    previous = None
+    for distance in marks:
+        lon, lat, heading = point_along(coords, distance)
+        if distance <= 0:
+            alt, tilt, speed = 1.8, 85, 8
+        elif distance <= rise_m:
+            alt, tilt, speed = 10.0, 75, 8
+        elif total - distance < 30:
+            alt, tilt, speed = 10.0, 62, 12
         else:
-            remaining = total - traveled
-            alt = 10.0
-            tilt = 62 if remaining < 35 else 75
-            speed = 12.0
-        if i == 0:
-            duration = 2.0
+            alt, tilt, speed = 10.0, 75, 12
+        if previous is None:
+            duration = 1.5
         else:
-            step = distances[i] - distances[i - 1]
-            duration = min(2.2, max(0.35, step / speed))
+            step = haversine(previous[0], previous[1], lon, lat)
+            duration = min(8.0, max(1.2, step / speed))
         events.append({
             "kind": "camera",
             "lon": lon,
             "lat": lat,
             "alt": alt,
-            "heading": heading_at(samples, i),
+            "heading": heading,
             "tilt": tilt,
             "duration": duration,
         })
-        if i == 0:
-            events.append({"kind": "wait", "duration": 1.2})
+        if distance <= 0:
+            events.append({"kind": "wait", "duration": 1.0})
+        previous = (lon, lat)
     return events
 
 
@@ -193,29 +207,20 @@ def main():
     labels = (("katke", "Katke-Cousins"), ("sharf", "R&S Sharf"))
     for course, title in labels:
         rows = sorted(by_course[course], key=lambda row: row["hole"])
-        parts.append(f"    <Folder><name>{escape(title)}</name><open>1</open>")
-        all_cameras = []
+        parts.append(f"    <Folder><name>{escape(title)}</name><open>0</open>")
         for row in rows:
             cameras = cameras_for(row["coords"])
             seconds = sum(c["duration"] for c in cameras) + 1.5
             print(
                 f"{row['name']} {row['hole']:2d}  {seconds:4.0f}s  "
-                f"tee {row['start_tee']:5.0f}m  green {row['end_green']:5.0f}m  "
-                f"{'reversed' if row['reversed'] else 'as drawn'}"
+                f"stops {sum(1 for c in cameras if c['kind'] == 'camera'):2d}  "
+                f"tee {row['start_tee']:5.0f}m  green {row['end_green']:5.0f}m"
             )
-            if all_cameras:
-                cameras = [dict(cameras[0], duration=3.0)] + cameras[1:]
-            all_cameras.extend(cameras)
             parts.append(tour(
                 f"Play Hole {row['hole']}",
                 f"{row['name']} hole {row['hole']}, par {row['par']}, {row['yards']} yards. Starts at eye level on the tee, rises to 10 meters, then flies to the green.",
-                cameras_for(row["coords"]),
+                cameras,
             ))
-        parts.append(tour(
-            "Play all 18 holes",
-            f"Flies {title} from hole 1 through hole 18.",
-            all_cameras,
-        ))
         parts.append("    </Folder>")
     parts.append("  </Document>\n</kml>\n")
     kml = "\n".join(parts)
