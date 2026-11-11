@@ -30,9 +30,15 @@
   const scoreInput = document.getElementById("score-input");
   const scoreMic = document.getElementById("score-mic");
   const scoreHeard = document.getElementById("score-heard");
+  const scorePlays = document.getElementById("score-plays");
+  const teeSelect = document.getElementById("tee-select");
+  const hcpSelect = document.getElementById("hcp-select");
 
   const SCORE_KEY = "ou-golf-scores-v1";
   const PLAY_KEY = "ou-golf-playing-v1";
+  const TEE_KEY = "ou-golf-tee-v1";
+  const HCP_KEY = "ou-golf-hcp-v1";
+  const TEE_IDS = ["black", "gold", "bear", "white", "cub", "silver"];
   const COURSE_NAMES = { katke: "Katke-Cousins", sharf: "R&S Sharf" };
 
   const KATKE = "#3ecf7a";
@@ -109,6 +115,9 @@
   let holeIndex = { katke: {}, sharf: {} };
   let holeButtons = { katke: {}, sharf: {} };
   let pars = { katke: {}, sharf: {} };
+  let card = null;
+  let teeId = loadTee();
+  let hcpSet = loadHcp();
   let scores = loadScores();
   /** @type {Record<string, Record<number, {lat:number, lon:number, props:object}>>} */
   let greenTargets = { katke: {}, sharf: {} };
@@ -170,9 +179,11 @@
         : "";
     const saved = scores[p.course] && scores[p.course][p.hole];
     const scoreLine = saved != null ? `<br/>Your score: ${saved}` : "";
-    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>Par ${
-      p.par || "—"
-    } · ${p.yards || "—"} yd (Black)${scoreLine}${live}`;
+    const facts = holeFacts(p.course, p.hole);
+    const fallback = `Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
+    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>${
+      facts || fallback
+    }${scoreLine}${live}`;
   }
 
   function liveYardsFor(props) {
@@ -314,9 +325,10 @@
     }
 
     yardageHud.hidden = false;
-    yhHole.textContent = `Hole ${hole}`;
+    const hcp = handicapFor(course, hole);
+    yhHole.textContent = hcp != null ? `Hole ${hole} · Hcp ${hcp}` : `Hole ${hole}`;
 
-    const scorecard = `Par ${t.props.par || "—"} · ${t.props.yards || "—"} black`;
+    const scorecard = playsLine(course, hole) || `Par ${t.props.par || "—"} · ${t.props.yards || "—"} black`;
 
     if (!lastUser) {
       yhYards.textContent = "—";
@@ -747,6 +759,7 @@
       holes,
       labels,
       pins,
+      cardData,
     ] = await Promise.all([
       loadJSON("meta.json"),
       loadJSON("boundary.geojson"),
@@ -757,7 +770,10 @@
       loadJSON("holes.geojson"),
       loadJSON("hole_labels.geojson"),
       loadJSON("pins.geojson"),
+      loadJSON("card.json"),
     ]);
+    card = cardData;
+    paintAllScores();
 
     document.getElementById("attrib").textContent =
       meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri";
@@ -887,6 +903,107 @@
     startGps(false);
   }
 
+  function loadTee() {
+    try {
+      const saved = localStorage.getItem(TEE_KEY);
+      if (TEE_IDS.indexOf(saved) !== -1) return saved;
+    } catch (err) {
+      /* keep the default tee */
+    }
+    return "black";
+  }
+
+  function loadHcp() {
+    try {
+      if (localStorage.getItem(HCP_KEY) === "women") return "women";
+    } catch (err) {
+      /* keep the men's card */
+    }
+    return "men";
+  }
+
+  function rememberChoice(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      /* Private mode can block storage. */
+    }
+  }
+
+  function holeCard(course, hole) {
+    const holes = card && card.courses && card.courses[course] && card.courses[course].holes;
+    if (!holes) return null;
+    return holes[hole - 1] || null;
+  }
+
+  function teeName(id) {
+    const row = card && card.tees && card.tees.find((tee) => tee.id === id);
+    if (row) return row.name;
+    return id ? id.charAt(0).toUpperCase() + id.slice(1) : "Tee";
+  }
+
+  function handicapFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info) return null;
+    return hcpSet === "women" ? info.hcpWomen : info.hcpMen;
+  }
+
+  function yardageFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info || !info.yards || info.yards[teeId] == null) return null;
+    return info.yards[teeId];
+  }
+
+  function playsFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info || !info.elevFt) return null;
+    return OUScore.playsLike(info.yards[teeId], info.elevFt[teeId], info.elevFt.green);
+  }
+
+  function playsLine(course, hole) {
+    const yards = yardageFor(course, hole);
+    if (yards == null) return "";
+    const plays = OUScore.formatPlaysLike(playsFor(course, hole));
+    return plays ? teeName(teeId) + " " + yards + " · " + plays : teeName(teeId) + " " + yards;
+  }
+
+  function holeFacts(course, hole) {
+    const info = holeCard(course, hole);
+    const par = (info && info.par) || (pars[course] && pars[course][hole]);
+    const hcp = handicapFor(course, hole);
+    const bits = [];
+    if (par) bits.push("Par " + par);
+    if (hcp != null) bits.push("Hcp " + hcp);
+    const line = playsLine(course, hole);
+    if (line) bits.push(line);
+    return bits.join(" · ");
+  }
+
+  function saveDetails(course) {
+    const holes = {};
+    for (let n = 1; n <= 18; n += 1) {
+      const plays = playsFor(course, n);
+      holes[n] = {
+        hcp: handicapFor(course, n),
+        teeName: teeName(teeId),
+        yards: yardageFor(course, n),
+        plays: plays ? plays.yards : null,
+      };
+    }
+    return holes;
+  }
+
+  function applyCardChoices() {
+    rememberChoice(TEE_KEY, teeId);
+    rememberChoice(HCP_KEY, hcpSet);
+    paintAllScores();
+    ["katke", "sharf"].forEach((course) => {
+      for (let n = 1; n <= 18; n += 1) refreshHolePopup(course, n);
+    });
+    updateYardageHud();
+    showScoreEntry();
+  }
+
   function loadPlayingCourse() {
     try {
       const saved = localStorage.getItem(PLAY_KEY);
@@ -973,19 +1090,31 @@
     const btn = holeButtons[course][hole];
     if (!btn) return;
     const value = scores[course][hole];
+    const hcp = handicapFor(course, hole);
+    const plays = playsFor(course, hole);
     btn.replaceChildren();
     const num = document.createElement("span");
     num.className = "hb-n";
     num.textContent = String(hole);
-    const mark = document.createElement("span");
-    mark.className = "hb-s";
-    mark.textContent = value == null ? "" : String(value);
-    btn.append(num, mark);
+    const hcpMark = document.createElement("span");
+    hcpMark.className = "hb-h";
+    hcpMark.textContent = hcp == null ? "" : "H" + hcp;
+    const playsMark = document.createElement("span");
+    playsMark.className = "hb-p";
+    playsMark.textContent = plays ? String(plays.yards) : "";
+    btn.append(num, hcpMark, playsMark);
+    if (value != null) {
+      const mark = document.createElement("span");
+      mark.className = "hb-s";
+      mark.textContent = String(value);
+      btn.append(mark);
+    }
     btn.classList.toggle("scored", value != null);
-    btn.setAttribute(
-      "aria-label",
-      value == null ? "Hole " + hole : "Hole " + hole + ", " + value + " strokes"
-    );
+    const bits = ["Hole " + hole];
+    if (hcp != null) bits.push("handicap " + hcp);
+    if (plays) bits.push("plays " + plays.yards);
+    if (value != null) bits.push(value + " strokes");
+    btn.setAttribute("aria-label", bits.join(", "));
   }
 
   function paintAllScores() {
@@ -1028,12 +1157,15 @@
     const saved = scores[course][hole];
     scoreEntry.hidden = false;
     scoreHint.hidden = true;
+    const hcp = handicapFor(course, hole);
     scoreKicker.textContent = COURSE_NAMES[course] || course;
     scoreHole.textContent =
       "Hole " +
       hole +
       (par ? " · Par " + par : "") +
+      (hcp != null ? " · Hcp " + hcp : "") +
       (scoreCollapsed && saved != null ? " · " + saved : "");
+    if (scorePlays) scorePlays.textContent = playsLine(course, hole);
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
@@ -1157,7 +1289,10 @@
       month: "long",
       day: "numeric",
     });
-    const text = OUScore.scorecardText(name, scores[course], pars[course], dateLabel);
+    const text = OUScore.scorecardText(name, scores[course], pars[course], dateLabel, {
+      heading: teeName(teeId) + " tees · " + (hcpSet === "women" ? "women's" : "men's") + " handicap",
+      holes: saveDetails(course),
+    });
     const filename = OUScore.scorecardFilename(name, now);
     const file = new File([text], filename, { type: "text/plain" });
     if (button) button.disabled = true;
@@ -1342,6 +1477,21 @@
   document.getElementById("clear-sharf").addEventListener("click", () => clearCourse("sharf"));
   document.getElementById("save-katke").addEventListener("click", () => saveCourse("katke"));
   document.getElementById("save-sharf").addEventListener("click", () => saveCourse("sharf"));
+  if (teeSelect) {
+    teeSelect.value = teeId;
+    teeSelect.addEventListener("change", () => {
+      if (TEE_IDS.indexOf(teeSelect.value) === -1) return;
+      teeId = teeSelect.value;
+      applyCardChoices();
+    });
+  }
+  if (hcpSelect) {
+    hcpSelect.value = hcpSet;
+    hcpSelect.addEventListener("change", () => {
+      hcpSet = hcpSelect.value === "women" ? "women" : "men";
+      applyCardChoices();
+    });
+  }
 
   setPlayingCourse(playingCourse);
 
