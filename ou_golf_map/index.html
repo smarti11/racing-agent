@@ -26,7 +26,7 @@
       <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
       <div class="map-actions">
         <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
-        <a id="btn-earth" class="fly-btn" hidden>Earth</a>
+        <button type="button" id="btn-video" class="fly-btn" hidden>Video</button>
         <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
@@ -53,7 +53,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Earth opens that hole in Google Earth. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a saved flyover of that hole, with no other app. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
@@ -127,6 +127,16 @@
 
       <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
     </aside>
+  </div>
+
+  <div id="video-modal" class="video-modal" hidden>
+    <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
+      <div class="video-bar">
+        <div id="video-title">Flyover</div>
+        <button type="button" id="video-close" class="fly-btn">Close</button>
+      </div>
+      <video id="hole-video" controls playsinline preload="none"></video>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

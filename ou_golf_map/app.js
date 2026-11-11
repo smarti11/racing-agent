@@ -9,7 +9,11 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
-  const btnEarth = document.getElementById("btn-earth");
+  const btnVideo = document.getElementById("btn-video");
+  const videoModal = document.getElementById("video-modal");
+  const videoTitle = document.getElementById("video-title");
+  const holeVideo = document.getElementById("hole-video");
+  const videoClose = document.getElementById("video-close");
   const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
@@ -495,24 +499,36 @@
       "aria-label",
       flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
     );
-    updateEarthLink();
+    updateVideoButton();
   }
 
-  function updateEarthLink() {
-    if (!btnEarth) return;
-    if (!selectedHole) {
-      btnEarth.hidden = true;
-      btnEarth.removeAttribute("href");
-      return;
-    }
+  function updateVideoButton() {
+    if (!btnVideo) return;
+    btnVideo.hidden = !selectedHole;
+    if (!selectedHole) return;
     const course = selectedHole.course === "sharf" ? "sharf" : "katke";
-    const hole = selectedHole.hole;
-    btnEarth.hidden = false;
-    btnEarth.href = "flyover-" + course + "-" + hole + ".kmz";
-    btnEarth.setAttribute(
-      "aria-label",
-      "Open the Google Earth flyover for " + (course === "katke" ? "Katke" : "Sharf") + " hole " + hole
-    );
+    const name = course === "katke" ? "Katke" : "Sharf";
+    btnVideo.setAttribute("aria-label", "Play the flyover video for " + name + " hole " + selectedHole.hole);
+  }
+
+  function closeHoleVideo() {
+    if (!videoModal || videoModal.hidden) return;
+    if (holeVideo) {
+      holeVideo.pause();
+      holeVideo.removeAttribute("src");
+      holeVideo.load();
+    }
+    videoModal.hidden = true;
+  }
+
+  function playHoleVideo() {
+    if (!selectedHole || !holeVideo || !videoModal) return;
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const name = course === "katke" ? "Katke" : "Sharf";
+    videoTitle.textContent = name + " hole " + selectedHole.hole;
+    holeVideo.src = "flyover-" + course + "-" + selectedHole.hole + ".mp4";
+    videoModal.hidden = false;
+    holeVideo.play().catch(() => {});
   }
 
   function restoreFlySnap() {
@@ -619,6 +635,7 @@
   }
 
   function clearHoleSelection() {
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     if (selectedHole) {
@@ -644,6 +661,7 @@
   function focusHole(course, n, btn) {
     const layer = holeIndex[course][n];
     if (!layer) return;
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     markTarget = null;
@@ -1061,6 +1079,7 @@
       focusHole(course, remembered);
       return;
     }
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     setPlayingCourse(course);
@@ -1465,6 +1484,16 @@
   document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
+  if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
+  if (videoClose) videoClose.addEventListener("click", closeHoleVideo);
+  if (videoModal) {
+    videoModal.addEventListener("click", (event) => {
+      if (event.target === videoModal) closeHoleVideo();
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeHoleVideo();
+  });
   btnCenter.addEventListener("click", () => {
     markTarget = null;
     updateYardageHud();

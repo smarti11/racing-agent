@@ -108,6 +108,46 @@ html, body {
 
 .fly-btn[hidden] { display: none; }
 
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(6, 14, 9, 0.84);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.video-modal[hidden] { display: none; }
+
+.video-card {
+  width: min(960px, 100%);
+  background: #0e1f14;
+  border: 1px solid rgba(243, 246, 239, 0.22);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.video-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+}
+
+.video-card video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  background: #000;
+}
+
 .fly-btn[aria-pressed="true"] {
   background: #f7f3e8;
   color: #14261a;
