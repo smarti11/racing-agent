@@ -9,6 +9,7 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
+  const btnVideo = document.getElementById("btn-video");
   const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
@@ -40,6 +41,27 @@
   const HCP_KEY = "ou-golf-hcp-v1";
   const TEE_IDS = ["black", "gold", "bear", "white", "cub", "silver"];
   const COURSE_NAMES = { katke: "Katke-Cousins", sharf: "R&S Sharf" };
+  // Google Earth hole flyovers from https://www.youtube.com/@infotreedev
+  const KATKE_FLYOVER = {
+    1: "tteNNuxjlJk",
+    2: "Iu6_CZ8EDw8",
+    3: "FseDPRD8tNI",
+    4: "RKogazpm_Xg",
+    5: "uEwvs3DzFb4",
+    6: "aQqnMzB0x4I",
+    7: "5sRa0S00UyQ",
+    8: "sYotII4xIq0",
+    9: "xtyC-rP-1nw",
+    10: "GyVqNIq5BtA",
+    11: "JCADFsaeT6s",
+    12: "Wae2nyJyGyg",
+    13: "3urdxBCo6D0",
+    14: "Rt5pWhl6Gd0",
+    15: "iSHngcW_QcE",
+    16: "qtMFWhK4-vw",
+    17: "5a2Wk_ZzYoQ",
+    18: "dbjReM40tvM",
+  };
 
   const KATKE = "#3ecf7a";
   const SHARF = "#4ea1ff";
@@ -494,6 +516,22 @@
       "aria-label",
       flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
     );
+    updateVideoLink();
+  }
+
+  function updateVideoLink() {
+    if (!btnVideo) return;
+    const hole = selectedHole && selectedHole.course === "katke" ? selectedHole.hole : 0;
+    const id = KATKE_FLYOVER[hole];
+    if (!id) {
+      btnVideo.hidden = true;
+      btnVideo.removeAttribute("href");
+      btnVideo.removeAttribute("aria-label");
+      return;
+    }
+    btnVideo.hidden = false;
+    btnVideo.href = "https://www.youtube.com/watch?v=" + id;
+    btnVideo.setAttribute("aria-label", "Watch the video flyover of Katke hole " + hole);
   }
 
   function restoreFlySnap() {
