@@ -1,8 +1,9 @@
 :root {
-  --bg: #0e1f14;
+  --bg: #111111;
+  --gold: #bc955c;
   --panel: rgba(10, 22, 14, 0.92);
   --ink: #f3f6ef;
-  --muted: #c5d2c0;
+  --muted: #e4d3ae;
   --katke: #3ecf7a;
   --sharf: #4ea1ff;
   --path: #f0c14b;
@@ -36,14 +37,30 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
-  background: linear-gradient(to bottom, rgba(8,18,12,0.92), rgba(8,18,12,0.55));
+  background: #000;
+  border-bottom: 3px solid var(--gold);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.grizzly {
+  width: 46px;
+  height: auto;
+  flex: 0 0 auto;
 }
 
 .brand {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.02rem;
+  line-height: 1.15;
   letter-spacing: -0.03em;
+  color: var(--gold);
 }
 
 .sub {
@@ -53,9 +70,15 @@ html, body {
   text-transform: uppercase;
 }
 
+@media (max-width: 380px) {
+  .grizzly { width: 40px; }
+  .brand { font-size: 0.78rem; }
+  .sub { font-size: 0.62rem; letter-spacing: 0.02em; }
+}
+
 .icon-btn {
-  border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  border: 1px solid var(--gold);
+  background: #1a1a1a;
   color: var(--ink);
   border-radius: 12px;
   min-height: 42px;
@@ -82,8 +105,10 @@ html, body {
   position: absolute;
   top: 12px;
   left: 12px;
+  right: 12px;
   z-index: 450;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -98,9 +123,53 @@ html, body {
   font-weight: 800;
   letter-spacing: -0.02em;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .fly-btn[hidden] { display: none; }
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(6, 14, 9, 0.84);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.video-modal[hidden] { display: none; }
+
+.video-card {
+  width: min(960px, 100%);
+  background: #0e1f14;
+  border: 1px solid rgba(243, 246, 239, 0.22);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.video-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+}
+
+.video-card video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  background: #000;
+}
 
 .fly-btn[aria-pressed="true"] {
   background: #f7f3e8;
@@ -583,6 +652,24 @@ html, body {
 .hole-btn.katke { box-shadow: inset 0 0 0 1px rgba(62,207,122,0.45); }
 .hole-btn.sharf { box-shadow: inset 0 0 0 1px rgba(78,161,255,0.45); }
 .hole-btn.active { background: rgba(243,246,239,0.22); }
+
+.site-open {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 44px;
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  background: #000;
+  color: var(--gold);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.site-card { background: #fff; }
+.site-card .video-bar { background: #000; color: var(--gold); }
+.site-link { display: block; background: #fff; }
+.site-link img { display: block; width: 100%; height: auto; }
 
 .attrib {
   margin: 12px 0 0;

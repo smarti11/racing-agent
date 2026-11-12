@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0e1f14" />
-  <title>OU Golf Map</title>
+  <meta name="theme-color" content="#000000" />
+  <title>OU Golf &amp; Learning Center</title>
+  <link rel="icon" href="grizzly.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Libre+Franklin:wght@700;800&display=swap" rel="stylesheet" />
@@ -15,9 +16,12 @@
 <body>
   <div id="app">
     <header class="top">
-      <div>
-        <div class="brand">OU Golf Map</div>
-        <div class="sub">Katke-Cousins · R&amp;S Sharf</div>
+      <div class="brand-lockup">
+        <img class="grizzly" src="grizzly.svg" alt="Golden Grizzlies" width="52" height="41" />
+        <div>
+          <div class="brand">OU Golf &amp; Learning Center</div>
+          <div class="sub">Katke-Cousins · R&amp;S Sharf</div>
+        </div>
       </div>
       <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
     </header>
@@ -26,6 +30,7 @@
       <div id="map" role="application" aria-label="Oakland University golf courses map"></div>
       <div class="map-actions">
         <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-video" class="fly-btn" hidden>Video</button>
         <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
@@ -52,7 +57,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over, or say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
@@ -124,8 +129,32 @@
         </section>
       </div>
 
+      <button type="button" id="btn-site" class="site-open">Golf app QR code</button>
+
       <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
     </aside>
+  </div>
+
+  <div id="video-modal" class="video-modal" hidden>
+    <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
+      <div class="video-bar">
+        <div id="video-title">Flyover</div>
+        <button type="button" id="video-close" class="fly-btn">Close</button>
+      </div>
+      <video id="hole-video" controls playsinline preload="none"></video>
+    </div>
+  </div>
+
+  <div id="site-modal" class="video-modal" hidden>
+    <div class="video-card site-card" role="dialog" aria-modal="true" aria-labelledby="site-title">
+      <div class="video-bar">
+        <div id="site-title">Golf app</div>
+        <button type="button" id="site-close" class="fly-btn">Close</button>
+      </div>
+      <a class="site-link" href="https://tiny-thunder-291b.smarti2006.workers.dev">
+        <img src="grizzly-qr.png" alt="Grizzly QR code that opens the OU Golf and Learning Center app" />
+      </a>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

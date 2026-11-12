@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+html,body,#map{margin:0;height:100%;width:100%;background:#0e1f14}
+.maplibregl-ctrl-attrib,.maplibregl-ctrl-logo{display:none}
+#label{position:absolute;left:16px;top:14px;z-index:2;color:#f7f3e8;font:700 22px "Libre Franklin",sans-serif;text-shadow:0 2px 8px #000}
+#credit{position:absolute;right:12px;bottom:8px;z-index:2;color:#f7f3e8;font:600 12px sans-serif;opacity:.85;text-shadow:0 1px 4px #000}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="label"></div>
+<div id="credit">Imagery © Esri</div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      sat: {
+        type: "raster",
+        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        tileSize: 256,
+        maxzoom: 19
+      },
+      dem: {
+        type: "raster-dem",
+        tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        encoding: "terrarium",
+        maxzoom: 14
+      }
+    },
+    layers: [{ id: "sat", type: "raster", source: "sat" }]
+  },
+  center: [-83.2, 42.67],
+  zoom: 16,
+  pitch: 58,
+  bearing: 0,
+  maxPitch: 78,
+  fadeDuration: 0,
+  attributionControl: false,
+  canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true }
+});
+map.on("load", () => {
+  map.setTerrain({ source: "dem", exaggeration: 1.1 });
+  window.mapReady = true;
+});
+window.setLabel = (text) => { document.getElementById("label").textContent = text; };
+window.showHole = (coords) => {
+  const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
+  if (map.getSource("hole")) {
+    map.getSource("hole").setData(data);
+    return;
+  }
+  map.addSource("hole", { type: "geojson", data });
+  map.addLayer({
+    id: "hole-line",
+    type: "line",
+    source: "hole",
+    paint: { "line-color": "#f4e27a", "line-width": 3, "line-opacity": 0.92 }
+  });
+};
+window.setCam = (lng, lat, zoom, heading, pitch) => {
+  map.jumpTo({ center: [lng, lat], zoom, bearing: heading, pitch });
+};
+window.settle = () => new Promise((resolve) => {
+  let done = false;
+  const finish = () => { if (!done) { done = true; resolve(); } };
+  if (map.areTilesLoaded() && !map.isMoving()) {
+    setTimeout(finish, 70);
+    return;
+  }
+  map.once("idle", finish);
+  setTimeout(finish, 2200);
+});
+</script>
+</body>
+</html>

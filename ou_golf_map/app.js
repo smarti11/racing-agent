@@ -9,6 +9,11 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
+  const btnVideo = document.getElementById("btn-video");
+  const videoModal = document.getElementById("video-modal");
+  const videoTitle = document.getElementById("video-title");
+  const holeVideo = document.getElementById("hole-video");
+  const videoClose = document.getElementById("video-close");
   const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
@@ -494,6 +499,63 @@
       "aria-label",
       flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
     );
+    updateVideoButton();
+  }
+
+  function updateVideoButton() {
+    if (!btnVideo) return;
+    btnVideo.hidden = !selectedHole;
+    if (!selectedHole) return;
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const name = course === "katke" ? "Katke" : "Sharf";
+    btnVideo.setAttribute("aria-label", "Play the flyover video for " + name + " hole " + selectedHole.hole);
+  }
+
+  const holeVoice = new Audio();
+
+  function voiceFile() {
+    if (!selectedHole) return "";
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const tee = TEE_IDS.indexOf(teeId) === -1 ? "black" : teeId;
+    return "voice-" + course + "-" + selectedHole.hole + "-" + tee + ".m4a";
+  }
+
+  function stopHoleVoice() {
+    holeVoice.pause();
+    holeVoice.removeAttribute("src");
+    holeVoice.load();
+  }
+
+  function playSelectedVoice() {
+    const file = voiceFile();
+    if (!file) return;
+    holeVoice.pause();
+    holeVoice.src = file;
+    holeVoice.muted = holeVideo.muted;
+    holeVoice.volume = holeVideo.volume;
+    holeVoice.play().catch(() => {});
+  }
+
+  function closeHoleVideo() {
+    if (!videoModal || videoModal.hidden) return;
+    stopHoleVoice();
+    if (holeVideo) {
+      holeVideo.pause();
+      holeVideo.removeAttribute("src");
+      holeVideo.load();
+    }
+    videoModal.hidden = true;
+  }
+
+  function playHoleVideo() {
+    if (!selectedHole || !holeVideo || !videoModal) return;
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const name = course === "katke" ? "Katke" : "Sharf";
+    videoTitle.textContent = name + " hole " + selectedHole.hole;
+    holeVideo.src = "flyover-" + course + "-" + selectedHole.hole + ".mp4";
+    videoModal.hidden = false;
+    playSelectedVoice();
+    holeVideo.play().catch(() => {});
   }
 
   function restoreFlySnap() {
@@ -600,6 +662,7 @@
   }
 
   function clearHoleSelection() {
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     if (selectedHole) {
@@ -625,6 +688,7 @@
   function focusHole(course, n, btn) {
     const layer = holeIndex[course][n];
     if (!layer) return;
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     markTarget = null;
@@ -776,7 +840,7 @@
     paintAllScores();
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri";
+      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {
@@ -1042,6 +1106,7 @@
       focusHole(course, remembered);
       return;
     }
+    closeHoleVideo();
     stopFlyover();
     stopListening();
     setPlayingCourse(course);
@@ -1446,6 +1511,45 @@
   document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
+  if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
+  if (holeVideo) {
+    holeVideo.addEventListener("pause", () => holeVoice.pause());
+    holeVideo.addEventListener("play", () => {
+      if (!holeVoice.src || holeVoice.ended) return;
+      holeVoice.play().catch(() => {});
+    });
+    holeVideo.addEventListener("volumechange", () => {
+      holeVoice.muted = holeVideo.muted;
+      holeVoice.volume = holeVideo.volume;
+    });
+  }
+  const siteModal = document.getElementById("site-modal");
+  const btnSite = document.getElementById("btn-site");
+  const siteClose = document.getElementById("site-close");
+
+  function closeSite() {
+    if (!siteModal || siteModal.hidden) return;
+    siteModal.hidden = true;
+  }
+
+  if (btnSite && siteModal) btnSite.addEventListener("click", () => { siteModal.hidden = false; });
+  if (siteClose) siteClose.addEventListener("click", closeSite);
+  if (siteModal) {
+    siteModal.addEventListener("click", (event) => {
+      if (event.target === siteModal) closeSite();
+    });
+  }
+  if (videoClose) videoClose.addEventListener("click", closeHoleVideo);
+  if (videoModal) {
+    videoModal.addEventListener("click", (event) => {
+      if (event.target === videoModal) closeHoleVideo();
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (siteModal && !siteModal.hidden) closeSite();
+    else closeHoleVideo();
+  });
   btnCenter.addEventListener("click", () => {
     markTarget = null;
     updateYardageHud();
@@ -1483,6 +1587,7 @@
       if (TEE_IDS.indexOf(teeSelect.value) === -1) return;
       teeId = teeSelect.value;
       applyCardChoices();
+      if (videoModal && !videoModal.hidden) playSelectedVoice();
     });
   }
   if (hcpSelect) {
