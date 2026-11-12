@@ -511,8 +511,34 @@
     btnVideo.setAttribute("aria-label", "Play the flyover video for " + name + " hole " + selectedHole.hole);
   }
 
+  const holeVoice = new Audio();
+
+  function voiceFile() {
+    if (!selectedHole) return "";
+    const course = selectedHole.course === "sharf" ? "sharf" : "katke";
+    const tee = TEE_IDS.indexOf(teeId) === -1 ? "black" : teeId;
+    return "voice-" + course + "-" + selectedHole.hole + "-" + tee + ".m4a";
+  }
+
+  function stopHoleVoice() {
+    holeVoice.pause();
+    holeVoice.removeAttribute("src");
+    holeVoice.load();
+  }
+
+  function playSelectedVoice() {
+    const file = voiceFile();
+    if (!file) return;
+    holeVoice.pause();
+    holeVoice.src = file;
+    holeVoice.muted = holeVideo.muted;
+    holeVoice.volume = holeVideo.volume;
+    holeVoice.play().catch(() => {});
+  }
+
   function closeHoleVideo() {
     if (!videoModal || videoModal.hidden) return;
+    stopHoleVoice();
     if (holeVideo) {
       holeVideo.pause();
       holeVideo.removeAttribute("src");
@@ -528,6 +554,7 @@
     videoTitle.textContent = name + " hole " + selectedHole.hole;
     holeVideo.src = "flyover-" + course + "-" + selectedHole.hole + ".mp4";
     videoModal.hidden = false;
+    playSelectedVoice();
     holeVideo.play().catch(() => {});
   }
 
@@ -1485,6 +1512,17 @@
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
   if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
+  if (holeVideo) {
+    holeVideo.addEventListener("pause", () => holeVoice.pause());
+    holeVideo.addEventListener("play", () => {
+      if (!holeVoice.src || holeVoice.ended) return;
+      holeVoice.play().catch(() => {});
+    });
+    holeVideo.addEventListener("volumechange", () => {
+      holeVoice.muted = holeVideo.muted;
+      holeVoice.volume = holeVideo.volume;
+    });
+  }
   if (videoClose) videoClose.addEventListener("click", closeHoleVideo);
   if (videoModal) {
     videoModal.addEventListener("click", (event) => {
@@ -1531,6 +1569,7 @@
       if (TEE_IDS.indexOf(teeSelect.value) === -1) return;
       teeId = teeSelect.value;
       applyCardChoices();
+      if (videoModal && !videoModal.hidden) playSelectedVoice();
     });
   }
   if (hcpSelect) {
