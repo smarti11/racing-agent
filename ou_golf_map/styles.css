@@ -653,6 +653,24 @@ html, body {
 .hole-btn.sharf { box-shadow: inset 0 0 0 1px rgba(78,161,255,0.45); }
 .hole-btn.active { background: rgba(243,246,239,0.22); }
 
+.site-open {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 44px;
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  background: #000;
+  color: var(--gold);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.site-card { background: #fff; }
+.site-card .video-bar { background: #000; color: var(--gold); }
+.site-link { display: block; background: #fff; }
+.site-link img { display: block; width: 100%; height: auto; }
+
 .attrib {
   margin: 12px 0 0;
   font-size: 0.72rem;

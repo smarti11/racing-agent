@@ -1523,6 +1523,22 @@
       holeVoice.volume = holeVideo.volume;
     });
   }
+  const siteModal = document.getElementById("site-modal");
+  const btnSite = document.getElementById("btn-site");
+  const siteClose = document.getElementById("site-close");
+
+  function closeSite() {
+    if (!siteModal || siteModal.hidden) return;
+    siteModal.hidden = true;
+  }
+
+  if (btnSite && siteModal) btnSite.addEventListener("click", () => { siteModal.hidden = false; });
+  if (siteClose) siteClose.addEventListener("click", closeSite);
+  if (siteModal) {
+    siteModal.addEventListener("click", (event) => {
+      if (event.target === siteModal) closeSite();
+    });
+  }
   if (videoClose) videoClose.addEventListener("click", closeHoleVideo);
   if (videoModal) {
     videoModal.addEventListener("click", (event) => {
@@ -1530,7 +1546,9 @@
     });
   }
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeHoleVideo();
+    if (event.key !== "Escape") return;
+    if (siteModal && !siteModal.hidden) closeSite();
+    else closeHoleVideo();
   });
   btnCenter.addEventListener("click", () => {
     markTarget = null;
