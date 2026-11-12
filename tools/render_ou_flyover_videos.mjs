@@ -89,25 +89,25 @@ function pointAlong(coords, distance) {
 
 function framesFor(coords) {
   const total = pathLength(coords) || 1;
-  const seconds = Math.max(7, Math.min(11, total / 48));
+  const seconds = Math.max(8, Math.min(12, total / 42));
   const fps = 8;
   const count = Math.round(seconds * fps);
-  const farZoom = total < 180 ? 18.05 : total < 280 ? 17.7 : total < 420 ? 17.35 : 17.05;
-  const nearZoom = Math.min(18.75, farZoom + 1.2);
   const frames = [];
   for (let i = 0; i < count; i++) {
     const u = count === 1 ? 1 : i / (count - 1);
-    const eased = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
-    const rise = Math.min(1, Math.max(0, (eased - 0.05) / 0.34));
+    const travel = Math.min(1, u / 0.8);
+    const eased = travel < 0.5 ? 2 * travel * travel : 1 - (-2 * travel + 2) ** 2 / 2;
+    const settle = Math.min(1, Math.max(0, (u - 0.62) / 0.18));
+    const smooth = settle * settle * (3 - 2 * settle);
     const dist = eased * total;
-    const lookAhead = 42 + (Math.min(110, total * 0.24) - 42) * rise;
+    const lookAhead = 34 * (1 - smooth);
     const look = pointAlong(coords, Math.min(total, dist + lookAhead));
     frames.push({
       lon: look.lon,
       lat: look.lat,
       heading: look.heading,
-      pitch: 72 - 24 * rise,
-      zoom: nearZoom + (farZoom - nearZoom) * rise,
+      pitch: 68 - 36 * smooth,
+      zoom: 18.65 + 0.3 * smooth,
     });
   }
   return frames;
