@@ -813,7 +813,7 @@
     paintAllScores();
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri";
+      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {
