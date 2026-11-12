@@ -1,8 +1,9 @@
 :root {
-  --bg: #0e1f14;
+  --bg: #111111;
+  --gold: #bc955c;
   --panel: rgba(10, 22, 14, 0.92);
   --ink: #f3f6ef;
-  --muted: #c5d2c0;
+  --muted: #e4d3ae;
   --katke: #3ecf7a;
   --sharf: #4ea1ff;
   --path: #f0c14b;
@@ -36,14 +37,30 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
-  background: linear-gradient(to bottom, rgba(8,18,12,0.92), rgba(8,18,12,0.55));
+  background: #000;
+  border-bottom: 3px solid var(--gold);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.grizzly {
+  width: 46px;
+  height: auto;
+  flex: 0 0 auto;
 }
 
 .brand {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.02rem;
+  line-height: 1.15;
   letter-spacing: -0.03em;
+  color: var(--gold);
 }
 
 .sub {
@@ -53,9 +70,15 @@ html, body {
   text-transform: uppercase;
 }
 
+@media (max-width: 380px) {
+  .grizzly { width: 40px; }
+  .brand { font-size: 0.78rem; }
+  .sub { font-size: 0.62rem; letter-spacing: 0.02em; }
+}
+
 .icon-btn {
-  border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  border: 1px solid var(--gold);
+  background: #1a1a1a;
   color: var(--ink);
   border-radius: 12px;
   min-height: 42px;
