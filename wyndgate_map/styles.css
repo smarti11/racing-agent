@@ -1,8 +1,10 @@
 :root {
-  --bg: #0e1f14;
-  --panel: rgba(10, 22, 14, 0.92);
-  --ink: #f3f6ef;
-  --muted: #c5d2c0;
+  --bg: #161c29;
+  --navy: #161c29;
+  --hatch: url("wyndgate-hatch.png");
+  --panel: #161c29;
+  --ink: #f4f7fb;
+  --muted: #c5d2e0;
   --katke: #3ecf7a;
   --sharf: #4ea1ff;
   --path: #f0c14b;
@@ -19,7 +21,10 @@ html, body {
   height: 100%;
   color: var(--ink);
   font-family: "DM Sans", system-ui, sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
 }
 
 #app {
@@ -35,15 +40,30 @@ html, body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
-  background: linear-gradient(to bottom, rgba(8,18,12,0.92), rgba(8,18,12,0.55));
+  padding: calc(var(--pad-t) + 6px) var(--pad-r) 8px var(--pad);
+  background-color: var(--navy);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
+  border-bottom: 1px solid rgba(243, 246, 239, 0.16);
 }
 
-.brand {
-  font-family: "Libre Franklin", sans-serif;
-  font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: -0.03em;
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.club-logo {
+  display: block;
+  height: 52px;
+  width: auto;
+}
+
+@media (max-width: 380px) {
+  .club-logo { height: 44px; }
+  .sub { font-size: 0.68rem; }
 }
 
 .sub {
@@ -55,7 +75,7 @@ html, body {
 
 .icon-btn {
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  background: rgba(18, 46, 86, 0.75);
   color: var(--ink);
   border-radius: 12px;
   min-height: 42px;
@@ -75,21 +95,23 @@ html, body {
   width: 100%;
   height: 100%;
   min-height: 280px;
-  background: #14261a;
+  background: #123056;
 }
 
 .map-actions {
   position: absolute;
   top: 12px;
   left: 12px;
+  right: 12px;
   z-index: 450;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .fly-btn {
   border: 1px solid rgba(243, 246, 239, 0.28);
-  background: rgba(12, 28, 18, 0.92);
+  background: rgba(10, 32, 64, 0.92);
   color: var(--ink);
   border-radius: 999px;
   min-height: 42px;
@@ -104,7 +126,7 @@ html, body {
 
 .fly-btn[aria-pressed="true"] {
   background: #f7f3e8;
-  color: #14261a;
+  color: var(--navy);
 }
 
 .fly-marker {
@@ -131,7 +153,7 @@ html, body {
   padding: 5px 8px;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(12, 28, 18, 0.92), rgba(18, 42, 28, 0.88));
+    linear-gradient(135deg, rgba(8, 26, 52, 0.94), rgba(16, 48, 92, 0.9));
   border: 1px solid rgba(243, 246, 239, 0.18);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(8px);
@@ -244,7 +266,10 @@ html, body {
   max-height: 42dvh;
   overflow: auto;
   padding: 12px var(--pad-r) calc(var(--pad-b) + 10px) var(--pad);
-  background: var(--panel);
+  background-color: var(--panel);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
   border-top: 1px solid rgba(243,246,239,0.12);
   backdrop-filter: blur(10px);
 }
@@ -301,7 +326,7 @@ html, body {
 }
 
 .course-switch button[aria-selected="true"] {
-  color: #0e1f14;
+  color: var(--navy);
 }
 
 #play-katke[aria-selected="true"] { background: var(--katke); }
@@ -318,6 +343,14 @@ html, body {
 }
 
 .score-entry[hidden] { display: none; }
+
+.score-plays {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: #f4e27a;
+}
+
+.score-plays:empty { display: none; }
 
 .score-entry.is-collapsed {
   padding: 8px 10px;
@@ -374,7 +407,7 @@ html, body {
 .step-btn {
   width: 44px;
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  background: rgba(18, 46, 86, 0.75);
   color: var(--ink);
   font-size: 1.3rem;
 }
@@ -382,7 +415,7 @@ html, body {
 #score-input {
   width: 64px;
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(8,18,12,0.65);
+  background: rgba(8, 24, 48, 0.72);
   color: var(--ink);
   text-align: center;
   font-size: 1.35rem;
@@ -393,7 +426,7 @@ html, body {
   min-width: 108px;
   border: 0;
   background: #f7f3e8;
-  color: #14261a;
+  color: var(--navy);
 }
 
 .mic-btn.listening {
@@ -436,6 +469,41 @@ html, body {
   font-size: 0.92rem;
 }
 
+.card-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.card-picks label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card-picks select {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(8, 24, 48, 0.72);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0 8px;
+}
+
+.card-note {
+  margin: -2px 0 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .hole-grid {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
@@ -447,7 +515,7 @@ html, body {
   appearance: none;
   border: 0;
   border-radius: 10px;
-  min-height: 42px;
+  min-height: 52px;
   padding: 2px 0;
   background: rgba(243,246,239,0.1);
   color: var(--ink);
@@ -460,6 +528,19 @@ html, body {
 }
 
 .hb-n { font-size: 0.92rem; }
+.hb-h {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--muted);
+}
+.hb-y {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #f4e27a;
+}
 .hb-s {
   min-height: 0.75rem;
   font-size: 0.68rem;
@@ -516,13 +597,13 @@ html, body {
 .attrib {
   margin: 12px 0 0;
   font-size: 0.72rem;
-  color: rgba(197,210,192,0.75);
+  color: rgba(197, 210, 224, 0.75);
 }
 
-.leaflet-container { font: inherit; background: #14261a; }
+.leaflet-container { font: inherit; background: #123056; }
 
 .hole-label {
-  background: rgba(8,18,12,0.78);
+  background: rgba(8, 26, 52, 0.86);
   border: 2px solid var(--katke);
   color: #fff;
   border-radius: 999px;
@@ -589,4 +670,47 @@ html, body {
     border-radius: 0 0 8px 8px;
   }
   .hole-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(6, 16, 34, 0.84);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.video-modal[hidden] { display: none; }
+
+.video-card {
+  width: min(960px, 100%);
+  background-color: var(--navy);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
+  border: 1px solid rgba(243, 246, 239, 0.22);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.video-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+}
+
+.video-card video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  background: #000;
 }

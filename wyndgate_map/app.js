@@ -7,6 +7,11 @@
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
   const btnFly = document.getElementById("btn-fly");
+  const btnVideo = document.getElementById("btn-video");
+  const videoModal = document.getElementById("video-modal");
+  const videoTitle = document.getElementById("video-title");
+  const videoClose = document.getElementById("video-close");
+  const holeVideo = document.getElementById("hole-video");
   const btnReset = document.getElementById("btn-reset");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
@@ -28,10 +33,22 @@
   const scoreInput = document.getElementById("score-input");
   const scoreMic = document.getElementById("score-mic");
   const scoreHeard = document.getElementById("score-heard");
+  const scorePlays = document.getElementById("score-plays");
+
+  const teeSelect = document.getElementById("tee-select");
+  const hcpSelect = document.getElementById("hcp-select");
+  const brandSub = document.getElementById("brand-sub");
+  const cardNote = document.getElementById("card-note");
 
   const SCORE_KEY = "wyndgate-scores-v1";
+  const TEE_KEY = "wyndgate-tee-v1";
+  const HCP_KEY = "wyndgate-hcp-v1";
+  const TEE_IDS = ["black", "blue", "silver", "silvergreen", "green", "blackm", "gold"];
   const COURSE = "wyndgate";
   const COURSE_NAMES = { wyndgate: "The Wyndgate" };
+  let card = null;
+  let teeId = loadTee();
+  let hcpSet = loadHcp();
 
   const HOLE = "#3ecf7a";
   const PATH = "#f0c14b";
@@ -165,9 +182,11 @@
         : "";
     const saved = scores[p.course] && scores[p.course][p.hole];
     const scoreLine = saved != null ? `<br/>Your score: ${saved}` : "";
-    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>Par ${
-      p.par || "—"
-    } · ${p.yards || "—"} yd (Black)${scoreLine}${live}`;
+    const facts = holeFacts(p.course, p.hole);
+    const fallback = `Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
+    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>${
+      facts || fallback
+    }${scoreLine}${live}`;
   }
 
   function liveYardsFor(props) {
@@ -309,9 +328,10 @@
     }
 
     yardageHud.hidden = false;
-    yhHole.textContent = `Hole ${hole}`;
+    const hcp = handicapFor(course, hole);
+    yhHole.textContent = hcp != null ? `Hole ${hole} · Hcp ${hcp}` : `Hole ${hole}`;
 
-    const scorecard = `Par ${t.props.par || "—"} · ${t.props.yards || "—"} black`;
+    const scorecard = `Par ${t.props.par || "—"} · ${playsLine(course, hole) || teeName(teeId)}`;
 
     if (!lastUser) {
       yhYards.textContent = "—";
@@ -477,6 +497,62 @@
       "aria-label",
       flying ? "Stop the fly-over" : "Fly over this hole from tee to green"
     );
+    updateVideoButton();
+  }
+
+  function updateVideoButton() {
+    if (!btnVideo) return;
+    btnVideo.hidden = !selectedHole;
+    if (!selectedHole) return;
+    btnVideo.setAttribute(
+      "aria-label",
+      "Play the flyover video for Wyndgate hole " + selectedHole.hole
+    );
+  }
+
+  const holeVoice = new Audio();
+
+  function voiceFile() {
+    if (!selectedHole) return "";
+    const tee = TEE_IDS.indexOf(teeId) === -1 ? "black" : teeId;
+    return "voice-wyndgate-" + selectedHole.hole + "-" + tee + ".m4a";
+  }
+
+  function stopHoleVoice() {
+    holeVoice.pause();
+    holeVoice.removeAttribute("src");
+    holeVoice.load();
+  }
+
+  function playSelectedVoice() {
+    const file = voiceFile();
+    if (!file) return;
+    holeVoice.pause();
+    holeVoice.src = file;
+    holeVoice.muted = holeVideo.muted;
+    holeVoice.volume = holeVideo.volume;
+    holeVoice.play().catch(() => {});
+  }
+
+  function closeHoleVideo() {
+    if (!videoModal || videoModal.hidden) return;
+    stopHoleVoice();
+    if (holeVideo) {
+      holeVideo.pause();
+      holeVideo.removeAttribute("src");
+      holeVideo.load();
+    }
+    videoModal.hidden = true;
+  }
+
+  function playHoleVideo() {
+    if (!selectedHole || !holeVideo || !videoModal) return;
+    if (flying) stopFlyover();
+    videoTitle.textContent = "The Wyndgate · Hole " + selectedHole.hole;
+    holeVideo.src = "flyover-wyndgate-" + selectedHole.hole + ".mp4";
+    videoModal.hidden = false;
+    playSelectedVoice();
+    holeVideo.play().catch(() => {});
   }
 
   function restoreFlySnap() {
@@ -737,6 +813,7 @@
       holes,
       labels,
       pins,
+      cardJson,
     ] = await Promise.all([
       loadJSON("meta.json"),
       loadJSON("boundary.geojson"),
@@ -747,10 +824,12 @@
       loadJSON("holes.geojson"),
       loadJSON("hole_labels.geojson"),
       loadJSON("pins.geojson"),
+      loadJSON("card.json"),
     ]);
+    card = cardJson;
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Black tees · Imagery © Esri";
+      meta.attribution + " · Imagery © Esri";
 
     L.geoJSON(boundary, {
       style: {
@@ -866,7 +945,7 @@
     }
 
     applyToggles();
-    paintAllScores();
+    applyCardChoices();
     setPlayingCourse();
     startGps(false);
   }
@@ -907,23 +986,133 @@
     }
   }
 
+  function loadTee() {
+    try {
+      const saved = localStorage.getItem(TEE_KEY);
+      if (TEE_IDS.indexOf(saved) !== -1) return saved;
+    } catch (err) {
+      /* keep the black tees */
+    }
+    return "black";
+  }
+
+  function loadHcp() {
+    try {
+      if (localStorage.getItem(HCP_KEY) === "women") return "women";
+    } catch (err) {
+      /* keep the men's card */
+    }
+    return "men";
+  }
+
+  function rememberChoice(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (err) {
+      /* Private mode can block storage. */
+    }
+  }
+
+  function holeCard(course, hole) {
+    const holes = card && card.courses && card.courses[course] && card.courses[course].holes;
+    if (!holes) return null;
+    return holes[hole - 1] || null;
+  }
+
+  function teeName(id) {
+    const row = card && card.tees && card.tees.find((tee) => tee.id === id);
+    if (row) return row.name;
+    return id ? id.charAt(0).toUpperCase() + id.slice(1) : "Tee";
+  }
+
+  function handicapFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info) return null;
+    if (hcpSet === "women") return info.hcpWomen;
+    return info.hcpMen;
+  }
+
+  function ratingLine() {
+    const row = card && card.tees && card.tees.find((tee) => tee.id === teeId);
+    if (!row || row.yards == null) return "";
+    const yards = Number(row.yards).toLocaleString("en-US");
+    const women = hcpSet === "women" && row.ratingWomen != null;
+    const rating = women ? row.ratingWomen : row.rating;
+    const slope = women ? row.slopeWomen : row.slope;
+    if (rating == null || slope == null) return yards + " yards";
+    return yards + " yards · " + rating + " / " + slope;
+  }
+
+  function yardageFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info || !info.yards || info.yards[teeId] == null) return null;
+    return info.yards[teeId];
+  }
+
+  function playsFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info || !info.elevFt) return null;
+    return OUScore.playsLike(info.yards[teeId], info.elevFt[teeId], info.elevFt.green);
+  }
+
+  function playsLine(course, hole) {
+    const yards = yardageFor(course, hole);
+    if (yards == null) return "";
+    const plays = OUScore.formatPlaysLike(playsFor(course, hole));
+    return plays ? teeName(teeId) + " " + yards + " · " + plays : teeName(teeId) + " " + yards;
+  }
+
+  function holeFacts(course, hole) {
+    const info = holeCard(course, hole);
+    const par = (info && info.par) || (pars[course] && pars[course][hole]);
+    const hcp = handicapFor(course, hole);
+    const bits = [];
+    if (par) bits.push("Par " + par);
+    if (hcp != null) bits.push("Hcp " + hcp);
+    const line = playsLine(course, hole);
+    if (line) bits.push(line);
+    return bits.join(" · ");
+  }
+
+  function applyCardChoices() {
+    rememberChoice(TEE_KEY, teeId);
+    rememberChoice(HCP_KEY, hcpSet);
+    if (brandSub) brandSub.textContent = "Golf map · " + teeName(teeId) + " tees";
+    if (cardNote) cardNote.textContent = ratingLine();
+    paintAllScores();
+    for (let n = 1; n <= 18; n += 1) refreshHolePopup(COURSE, n);
+    updateYardageHud();
+    showScoreEntry();
+  }
+
   function paintScore(course, hole) {
     const btn = holeButtons[course][hole];
     if (!btn) return;
     const value = scores[course][hole];
+    const hcp = handicapFor(course, hole);
+    const yards = yardageFor(course, hole);
+    const plays = playsFor(course, hole);
     btn.replaceChildren();
     const num = document.createElement("span");
     num.className = "hb-n";
     num.textContent = String(hole);
+    const hcpMark = document.createElement("span");
+    hcpMark.className = "hb-h";
+    hcpMark.textContent = hcp == null ? "" : "H" + hcp;
+    const yardsMark = document.createElement("span");
+    yardsMark.className = "hb-y";
+    yardsMark.textContent = plays ? String(plays.yards) : yards == null ? "" : String(yards);
     const mark = document.createElement("span");
     mark.className = "hb-s";
     mark.textContent = value == null ? "" : String(value);
-    btn.append(num, mark);
+    btn.append(num, hcpMark, yardsMark, mark);
     btn.classList.toggle("scored", value != null);
-    btn.setAttribute(
-      "aria-label",
-      value == null ? "Hole " + hole : "Hole " + hole + ", " + value + " strokes"
-    );
+    const bits = ["Hole " + hole];
+    if (hcp != null) bits.push("handicap " + hcp);
+    if (plays) bits.push("plays " + plays.yards);
+    else if (yards != null) bits.push(teeName(teeId) + " " + yards + " yards");
+    if (value != null) bits.push(value + " strokes");
+    btn.setAttribute("aria-label", bits.join(", "));
   }
 
   function paintAllScores() {
@@ -964,6 +1153,7 @@
     const hole = selectedHole.hole;
     const par = pars[course][hole];
     const saved = scores[course][hole];
+    const hcp = handicapFor(course, hole);
     scoreEntry.hidden = false;
     scoreHint.hidden = true;
     scoreKicker.textContent = COURSE_NAMES[course] || course;
@@ -971,7 +1161,9 @@
       "Hole " +
       hole +
       (par ? " · Par " + par : "") +
+      (hcp != null ? " · Hcp " + hcp : "") +
       (scoreCollapsed && saved != null ? " · " + saved : "");
+    if (scorePlays) scorePlays.textContent = playsLine(course, hole);
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
@@ -1183,6 +1375,27 @@
   togFairways.addEventListener("change", applyToggles);
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
+  if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
+  if (holeVideo) {
+    holeVideo.addEventListener("pause", () => holeVoice.pause());
+    holeVideo.addEventListener("play", () => {
+      if (!holeVoice.src || holeVoice.ended) return;
+      holeVoice.play().catch(() => {});
+    });
+    holeVideo.addEventListener("volumechange", () => {
+      holeVoice.muted = holeVideo.muted;
+      holeVoice.volume = holeVideo.volume;
+    });
+  }
+  if (videoClose) videoClose.addEventListener("click", closeHoleVideo);
+  if (videoModal) {
+    videoModal.addEventListener("click", (event) => {
+      if (event.target === videoModal) closeHoleVideo();
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeHoleVideo();
+  });
   btnCenter.addEventListener("click", () => {
     markTarget = null;
     updateYardageHud();
@@ -1211,6 +1424,22 @@
     focusHole(selectedHole.course, selectedHole.hole + 1);
   });
   document.getElementById("clear-wyndgate").addEventListener("click", () => clearCourse(COURSE));
+  if (teeSelect) {
+    teeSelect.value = teeId;
+    teeSelect.addEventListener("change", () => {
+      if (TEE_IDS.indexOf(teeSelect.value) === -1) return;
+      teeId = teeSelect.value;
+      applyCardChoices();
+      if (videoModal && !videoModal.hidden) playSelectedVoice();
+    });
+  }
+  if (hcpSelect) {
+    hcpSelect.value = hcpSet;
+    hcpSelect.addEventListener("change", () => {
+      hcpSet = hcpSelect.value === "women" ? "women" : "men";
+      applyCardChoices();
+    });
+  }
 
   setPlayingCourse();
 
