@@ -1,7 +1,8 @@
 :root {
-  --bg: #0c2344;
-  --navy: #081a34;
-  --panel: rgba(8, 26, 52, 0.94);
+  --bg: #161c29;
+  --navy: #161c29;
+  --hatch: url("wyndgate-hatch.png");
+  --panel: #161c29;
   --ink: #f4f7fb;
   --muted: #c5d2e0;
   --katke: #3ecf7a;
@@ -20,7 +21,10 @@ html, body {
   height: 100%;
   color: var(--ink);
   font-family: "DM Sans", system-ui, sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
 }
 
 #app {
@@ -37,7 +41,10 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: calc(var(--pad-t) + 6px) var(--pad-r) 8px var(--pad);
-  background: var(--navy);
+  background-color: var(--navy);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
   border-bottom: 1px solid rgba(243, 246, 239, 0.16);
 }
 
@@ -259,7 +266,10 @@ html, body {
   max-height: 42dvh;
   overflow: auto;
   padding: 12px var(--pad-r) calc(var(--pad-b) + 10px) var(--pad);
-  background: var(--panel);
+  background-color: var(--panel);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
   border-top: 1px solid rgba(243,246,239,0.12);
   backdrop-filter: blur(10px);
 }
@@ -677,7 +687,10 @@ html, body {
 
 .video-card {
   width: min(960px, 100%);
-  background: var(--navy);
+  background-color: var(--navy);
+  background-image: var(--hatch);
+  background-repeat: repeat;
+  background-size: 12.5px 12.5px;
   border: 1px solid rgba(243, 246, 239, 0.22);
   border-radius: 16px;
   overflow: hidden;
