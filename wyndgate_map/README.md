@@ -18,7 +18,7 @@ Westwynd, the course on Adams Road, is not included.
 ## Data sources
 
 - Hole lines, greens, fairways, tees, pins, and cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
-- Par, handicap, and tee yardage: the [GolfCore Wyndgate card](https://www.golfcore.org/courses/wyndgate/#course-map) for 1975 W. Gunn Road. Men's and women's stroke indexes, and the Black (M) men's index, come from that card. Westwynd is a different course and is not this card
+- Par, tee yardage, and ratings: the [GolfCore Wyndgate card](https://www.golfcore.org/courses/wyndgate/#course-map). Men's and women's handicaps: the [18Birdies scorecard](https://18birdies.com/golf-courses/club/b3f9ffc0-86ac-11e4-8c28-020000005b00/the-wyndgate-golf-and-country-club) for the same course. Westwynd is a different course and is not this card
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
 - Imagery: Esri World Imagery
 

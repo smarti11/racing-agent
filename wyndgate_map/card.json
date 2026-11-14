@@ -59,16 +59,15 @@
       "slopeWomen": 125
     }
   ],
-  "source": "GolfCore scorecard for Wyndgate, 1975 W. Gunn Rd., Rochester Hills (golfcore.org/courses/wyndgate), updated 2026-11-10. Men's handicap is the stroke index on Black through Gold. Women's handicap is the index on the Green and Gold women's ratings. Black (M) has its own men's stroke index. Westwynd is a different course.",
+  "source": "Yardages and ratings from the GolfCore Wyndgate card (golfcore.org/courses/wyndgate). Men's and women's stroke indexes match the 18Birdies scorecard for The Wyndgate at 1975 W Gunn Rd. Westwynd is a different course.",
   "courses": {
     "wyndgate": {
       "holes": [
         {
           "hole": 1,
           "par": 4,
-          "hcpMen": 13,
+          "hcpMen": 11,
           "hcpWomen": 13,
-          "hcpBlackM": 11,
           "yards": {
             "black": 430,
             "blue": 410,
@@ -82,9 +81,8 @@
         {
           "hole": 2,
           "par": 5,
-          "hcpMen": 5,
+          "hcpMen": 9,
           "hcpWomen": 9,
-          "hcpBlackM": 9,
           "yards": {
             "black": 542,
             "blue": 531,
@@ -98,9 +96,8 @@
         {
           "hole": 3,
           "par": 4,
-          "hcpMen": 3,
+          "hcpMen": 1,
           "hcpWomen": 1,
-          "hcpBlackM": 1,
           "yards": {
             "black": 426,
             "blue": 406,
@@ -114,9 +111,8 @@
         {
           "hole": 4,
           "par": 5,
-          "hcpMen": 11,
+          "hcpMen": 7,
           "hcpWomen": 5,
-          "hcpBlackM": 7,
           "yards": {
             "black": 578,
             "blue": 557,
@@ -132,7 +128,6 @@
           "par": 3,
           "hcpMen": 15,
           "hcpWomen": 17,
-          "hcpBlackM": 15,
           "yards": {
             "black": 210,
             "blue": 188,
@@ -146,9 +141,8 @@
         {
           "hole": 6,
           "par": 4,
-          "hcpMen": 1,
+          "hcpMen": 3,
           "hcpWomen": 3,
-          "hcpBlackM": 3,
           "yards": {
             "black": 459,
             "blue": 437,
@@ -162,9 +156,8 @@
         {
           "hole": 7,
           "par": 4,
-          "hcpMen": 9,
+          "hcpMen": 13,
           "hcpWomen": 11,
-          "hcpBlackM": 13,
           "yards": {
             "black": 416,
             "blue": 410,
@@ -180,7 +173,6 @@
           "par": 3,
           "hcpMen": 17,
           "hcpWomen": 15,
-          "hcpBlackM": 17,
           "yards": {
             "black": 218,
             "blue": 193,
@@ -194,9 +186,8 @@
         {
           "hole": 9,
           "par": 4,
-          "hcpMen": 7,
+          "hcpMen": 5,
           "hcpWomen": 7,
-          "hcpBlackM": 5,
           "yards": {
             "black": 423,
             "blue": 415,
@@ -212,7 +203,6 @@
           "par": 4,
           "hcpMen": 4,
           "hcpWomen": 6,
-          "hcpBlackM": 4,
           "yards": {
             "black": 450,
             "blue": 437,
@@ -226,9 +216,8 @@
         {
           "hole": 11,
           "par": 4,
-          "hcpMen": 14,
+          "hcpMen": 12,
           "hcpWomen": 14,
-          "hcpBlackM": 12,
           "yards": {
             "black": 430,
             "blue": 409,
@@ -242,9 +231,8 @@
         {
           "hole": 12,
           "par": 5,
-          "hcpMen": 6,
+          "hcpMen": 10,
           "hcpWomen": 4,
-          "hcpBlackM": 10,
           "yards": {
             "black": 583,
             "blue": 575,
@@ -258,9 +246,8 @@
         {
           "hole": 13,
           "par": 4,
-          "hcpMen": 12,
+          "hcpMen": 14,
           "hcpWomen": 12,
-          "hcpBlackM": 14,
           "yards": {
             "black": 341,
             "blue": 337,
@@ -276,7 +263,6 @@
           "par": 3,
           "hcpMen": 18,
           "hcpWomen": 16,
-          "hcpBlackM": 18,
           "yards": {
             "black": 167,
             "blue": 152,
@@ -292,7 +278,6 @@
           "par": 5,
           "hcpMen": 2,
           "hcpWomen": 2,
-          "hcpBlackM": 2,
           "yards": {
             "black": 589,
             "blue": 565,
@@ -308,7 +293,6 @@
           "par": 3,
           "hcpMen": 16,
           "hcpWomen": 18,
-          "hcpBlackM": 16,
           "yards": {
             "black": 192,
             "blue": 182,
@@ -322,9 +306,8 @@
         {
           "hole": 17,
           "par": 4,
-          "hcpMen": 8,
+          "hcpMen": 6,
           "hcpWomen": 10,
-          "hcpBlackM": 6,
           "yards": {
             "black": 463,
             "blue": 427,
@@ -338,9 +321,8 @@
         {
           "hole": 18,
           "par": 4,
-          "hcpMen": 10,
+          "hcpMen": 8,
           "hcpWomen": 8,
-          "hcpBlackM": 8,
           "yards": {
             "black": 412,
             "blue": 397,

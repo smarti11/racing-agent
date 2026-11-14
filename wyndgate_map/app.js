@@ -1029,7 +1029,6 @@
     const info = holeCard(course, hole);
     if (!info) return null;
     if (hcpSet === "women") return info.hcpWomen;
-    if (teeId === "blackm" && info.hcpBlackM != null) return info.hcpBlackM;
     return info.hcpMen;
   }
 
