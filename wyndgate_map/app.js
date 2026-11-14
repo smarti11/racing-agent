@@ -37,11 +37,12 @@
   const teeSelect = document.getElementById("tee-select");
   const hcpSelect = document.getElementById("hcp-select");
   const brandSub = document.getElementById("brand-sub");
+  const cardNote = document.getElementById("card-note");
 
   const SCORE_KEY = "wyndgate-scores-v1";
   const TEE_KEY = "wyndgate-tee-v1";
   const HCP_KEY = "wyndgate-hcp-v1";
-  const TEE_IDS = ["black", "blue", "silver", "green", "red"];
+  const TEE_IDS = ["black", "blue", "silver", "silvergreen", "green", "blackm", "gold"];
   const COURSE = "wyndgate";
   const COURSE_NAMES = { wyndgate: "The Wyndgate" };
   let card = null;
@@ -1027,7 +1028,20 @@
   function handicapFor(course, hole) {
     const info = holeCard(course, hole);
     if (!info) return null;
-    return hcpSet === "women" ? info.hcpWomen : info.hcpMen;
+    if (hcpSet === "women") return info.hcpWomen;
+    if (teeId === "blackm" && info.hcpBlackM != null) return info.hcpBlackM;
+    return info.hcpMen;
+  }
+
+  function ratingLine() {
+    const row = card && card.tees && card.tees.find((tee) => tee.id === teeId);
+    if (!row || row.yards == null) return "";
+    const yards = Number(row.yards).toLocaleString("en-US");
+    const women = hcpSet === "women" && row.ratingWomen != null;
+    const rating = women ? row.ratingWomen : row.rating;
+    const slope = women ? row.slopeWomen : row.slope;
+    if (rating == null || slope == null) return yards + " yards";
+    return yards + " yards · " + rating + " / " + slope;
   }
 
   function yardageFor(course, hole) {
@@ -1052,6 +1066,7 @@
     rememberChoice(TEE_KEY, teeId);
     rememberChoice(HCP_KEY, hcpSet);
     if (brandSub) brandSub.textContent = "Golf map · " + teeName(teeId) + " tees";
+    if (cardNote) cardNote.textContent = ratingLine();
     paintAllScores();
     for (let n = 1; n <= 18; n += 1) refreshHolePopup(COURSE, n);
     updateYardageHud();

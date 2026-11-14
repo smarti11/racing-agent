@@ -3,83 +3,128 @@
     {
       "id": "black",
       "name": "Black",
-      "yards": 7329
+      "speech": "Black",
+      "yards": 7329,
+      "rating": 76.2,
+      "slope": 148
     },
     {
       "id": "blue",
       "name": "Blue",
-      "yards": 7028
+      "speech": "Blue",
+      "yards": 7028,
+      "rating": 74.5,
+      "slope": 145
     },
     {
       "id": "silver",
       "name": "Silver",
-      "yards": 6491
+      "speech": "Silver",
+      "yards": 6491,
+      "rating": 71.9,
+      "slope": 136
+    },
+    {
+      "id": "silvergreen",
+      "name": "Silver/Green",
+      "speech": "Silver green",
+      "yards": 6164,
+      "rating": 70.3,
+      "slope": 134
     },
     {
       "id": "green",
       "name": "Green",
-      "yards": 5744
+      "speech": "Green",
+      "yards": 5744,
+      "rating": 68.5,
+      "slope": 129,
+      "ratingWomen": 74.6,
+      "slopeWomen": 137
     },
     {
-      "id": "red",
-      "name": "Red",
-      "yards": 5059
+      "id": "blackm",
+      "name": "Black (M)",
+      "speech": "Black M",
+      "yards": 5438
+    },
+    {
+      "id": "gold",
+      "name": "Gold",
+      "speech": "Gold",
+      "yards": 5059,
+      "rating": 65.7,
+      "slope": 118,
+      "ratingWomen": 70.2,
+      "slopeWomen": 125
     }
   ],
-  "source": "The Wyndgate hole-by-hole card at 1975 West Gunn Road. The black row is the yardage already on this map (par 72, 7,329 yards). Westwynd, the other course at the club, is not this card.",
+  "source": "GolfCore scorecard for Wyndgate, 1975 W. Gunn Rd., Rochester Hills (golfcore.org/courses/wyndgate), updated 2026-11-10. Men's handicap is the stroke index on Black through Gold. Women's handicap is the index on the Green and Gold women's ratings. Black (M) has its own men's stroke index. Westwynd is a different course.",
   "courses": {
     "wyndgate": {
       "holes": [
         {
           "hole": 1,
           "par": 4,
-          "hcpMen": 11,
+          "hcpMen": 13,
           "hcpWomen": 13,
+          "hcpBlackM": 11,
           "yards": {
             "black": 430,
             "blue": 410,
             "silver": 383,
+            "silvergreen": 383,
             "green": 326,
-            "red": 313
+            "blackm": 304,
+            "gold": 313
           }
         },
         {
           "hole": 2,
           "par": 5,
-          "hcpMen": 9,
+          "hcpMen": 5,
           "hcpWomen": 9,
+          "hcpBlackM": 9,
           "yards": {
             "black": 542,
             "blue": 531,
             "silver": 490,
+            "silvergreen": 490,
             "green": 391,
-            "red": 354
+            "blackm": 430,
+            "gold": 354
           }
         },
         {
           "hole": 3,
           "par": 4,
-          "hcpMen": 1,
+          "hcpMen": 3,
           "hcpWomen": 1,
+          "hcpBlackM": 1,
           "yards": {
             "black": 426,
             "blue": 406,
             "silver": 381,
+            "silvergreen": 381,
             "green": 362,
-            "red": 335
+            "blackm": 327,
+            "gold": 335
           }
         },
         {
           "hole": 4,
           "par": 5,
-          "hcpMen": 7,
+          "hcpMen": 11,
           "hcpWomen": 5,
+          "hcpBlackM": 7,
           "yards": {
             "black": 578,
             "blue": 557,
             "silver": 510,
+            "silvergreen": 453,
             "green": 453,
-            "red": 394
+            "blackm": 417,
+            "gold": 394
           }
         },
         {
@@ -87,38 +132,47 @@
           "par": 3,
           "hcpMen": 15,
           "hcpWomen": 17,
+          "hcpBlackM": 15,
           "yards": {
             "black": 210,
             "blue": 188,
             "silver": 158,
+            "silvergreen": 158,
             "green": 146,
-            "red": 122
+            "blackm": 133,
+            "gold": 122
           }
         },
         {
           "hole": 6,
           "par": 4,
-          "hcpMen": 3,
+          "hcpMen": 1,
           "hcpWomen": 3,
+          "hcpBlackM": 3,
           "yards": {
             "black": 459,
             "blue": 437,
             "silver": 413,
+            "silvergreen": 311,
             "green": 311,
-            "red": 302
+            "blackm": 284,
+            "gold": 302
           }
         },
         {
           "hole": 7,
           "par": 4,
-          "hcpMen": 13,
+          "hcpMen": 9,
           "hcpWomen": 11,
+          "hcpBlackM": 13,
           "yards": {
             "black": 416,
             "blue": 410,
             "silver": 378,
+            "silvergreen": 378,
             "green": 344,
-            "red": 267
+            "blackm": 326,
+            "gold": 267
           }
         },
         {
@@ -126,25 +180,31 @@
           "par": 3,
           "hcpMen": 17,
           "hcpWomen": 15,
+          "hcpBlackM": 17,
           "yards": {
             "black": 218,
             "blue": 193,
             "silver": 154,
+            "silvergreen": 154,
             "green": 138,
-            "red": 110
+            "blackm": 126,
+            "gold": 110
           }
         },
         {
           "hole": 9,
           "par": 4,
-          "hcpMen": 5,
+          "hcpMen": 7,
           "hcpWomen": 7,
+          "hcpBlackM": 5,
           "yards": {
             "black": 423,
             "blue": 415,
             "silver": 402,
+            "silvergreen": 379,
             "green": 379,
-            "red": 335
+            "blackm": 354,
+            "gold": 335
           }
         },
         {
@@ -152,51 +212,63 @@
           "par": 4,
           "hcpMen": 4,
           "hcpWomen": 6,
+          "hcpBlackM": 4,
           "yards": {
             "black": 450,
             "blue": 437,
             "silver": 420,
+            "silvergreen": 361,
             "green": 361,
-            "red": 322
+            "blackm": 333,
+            "gold": 322
           }
         },
         {
           "hole": 11,
           "par": 4,
-          "hcpMen": 12,
+          "hcpMen": 14,
           "hcpWomen": 14,
+          "hcpBlackM": 12,
           "yards": {
             "black": 430,
             "blue": 409,
             "silver": 393,
+            "silvergreen": 350,
             "green": 350,
-            "red": 317
+            "blackm": 322,
+            "gold": 317
           }
         },
         {
           "hole": 12,
           "par": 5,
-          "hcpMen": 10,
+          "hcpMen": 6,
           "hcpWomen": 4,
+          "hcpBlackM": 10,
           "yards": {
             "black": 583,
             "blue": 575,
             "silver": 495,
+            "silvergreen": 495,
             "green": 469,
-            "red": 420
+            "blackm": 448,
+            "gold": 420
           }
         },
         {
           "hole": 13,
           "par": 4,
-          "hcpMen": 14,
+          "hcpMen": 12,
           "hcpWomen": 12,
+          "hcpBlackM": 14,
           "yards": {
             "black": 341,
             "blue": 337,
             "silver": 308,
+            "silvergreen": 308,
             "green": 284,
-            "red": 243
+            "blackm": 265,
+            "gold": 243
           }
         },
         {
@@ -204,12 +276,15 @@
           "par": 3,
           "hcpMen": 18,
           "hcpWomen": 16,
+          "hcpBlackM": 18,
           "yards": {
             "black": 167,
             "blue": 152,
             "silver": 144,
+            "silvergreen": 144,
             "green": 128,
-            "red": 109
+            "blackm": 117,
+            "gold": 109
           }
         },
         {
@@ -217,12 +292,15 @@
           "par": 5,
           "hcpMen": 2,
           "hcpWomen": 2,
+          "hcpBlackM": 2,
           "yards": {
             "black": 589,
             "blue": 565,
             "silver": 542,
+            "silvergreen": 542,
             "green": 470,
-            "red": 410
+            "blackm": 492,
+            "gold": 410
           }
         },
         {
@@ -230,38 +308,47 @@
           "par": 3,
           "hcpMen": 16,
           "hcpWomen": 18,
+          "hcpBlackM": 16,
           "yards": {
             "black": 192,
             "blue": 182,
             "silver": 169,
+            "silvergreen": 169,
             "green": 150,
-            "red": 105
+            "blackm": 137,
+            "gold": 105
           }
         },
         {
           "hole": 17,
           "par": 4,
-          "hcpMen": 6,
+          "hcpMen": 8,
           "hcpWomen": 10,
+          "hcpBlackM": 6,
           "yards": {
             "black": 463,
             "blue": 427,
             "silver": 388,
+            "silvergreen": 345,
             "green": 345,
-            "red": 317
+            "blackm": 316,
+            "gold": 317
           }
         },
         {
           "hole": 18,
           "par": 4,
-          "hcpMen": 8,
+          "hcpMen": 10,
           "hcpWomen": 8,
+          "hcpBlackM": 8,
           "yards": {
             "black": 412,
             "blue": 397,
             "silver": 363,
+            "silvergreen": 363,
             "green": 337,
-            "red": 284
+            "blackm": 307,
+            "gold": 284
           }
         }
       ]

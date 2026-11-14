@@ -86,7 +86,7 @@ def main():
         number = hole["hole"]
         for tee in tees:
             yards = hole["yards"][tee["id"]]
-            line = spoken_line(number, hole["par"], tee["name"], yards)
+            line = spoken_line(number, hole["par"], tee.get("speech") or tee["name"], yards)
             wav_path = work / f"wyndgate-{number}-{tee['id']}.wav"
             with wave.open(str(wav_path), "wb") as wav:
                 voice.synthesize_wav(line, wav, syn_config=config)
