@@ -35,15 +35,27 @@ html, body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
-  background: linear-gradient(to bottom, rgba(8,18,12,0.92), rgba(8,18,12,0.55));
+  padding: calc(var(--pad-t) + 6px) var(--pad-r) 8px var(--pad);
+  background: #0c1410;
+  border-bottom: 1px solid rgba(243, 246, 239, 0.16);
 }
 
-.brand {
-  font-family: "Libre Franklin", sans-serif;
-  font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: -0.03em;
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.club-logo {
+  display: block;
+  height: 52px;
+  width: auto;
+}
+
+@media (max-width: 380px) {
+  .club-logo { height: 44px; }
+  .sub { font-size: 0.68rem; }
 }
 
 .sub {
