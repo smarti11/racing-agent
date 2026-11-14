@@ -94,8 +94,10 @@ html, body {
   position: absolute;
   top: 12px;
   left: 12px;
+  right: 12px;
   z-index: 450;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -448,6 +450,35 @@ html, body {
   font-size: 0.92rem;
 }
 
+.card-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.card-picks label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card-picks select {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(243,246,239,0.25);
+  background: rgba(8,18,12,0.65);
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0 8px;
+}
+
 .hole-grid {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
@@ -459,7 +490,7 @@ html, body {
   appearance: none;
   border: 0;
   border-radius: 10px;
-  min-height: 42px;
+  min-height: 52px;
   padding: 2px 0;
   background: rgba(243,246,239,0.1);
   color: var(--ink);
@@ -472,6 +503,19 @@ html, body {
 }
 
 .hb-n { font-size: 0.92rem; }
+.hb-h {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--muted);
+}
+.hb-y {
+  min-height: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #f4e27a;
+}
 .hb-s {
   min-height: 0.75rem;
   font-size: 0.68rem;
@@ -601,4 +645,44 @@ html, body {
     border-radius: 0 0 8px 8px;
   }
   .hole-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+.video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(6, 14, 9, 0.84);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.video-modal[hidden] { display: none; }
+
+.video-card {
+  width: min(960px, 100%);
+  background: #0c1410;
+  border: 1px solid rgba(243, 246, 239, 0.22);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.video-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+}
+
+.video-card video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  background: #000;
 }

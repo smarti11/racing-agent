@@ -1,0 +1,270 @@
+{
+  "tees": [
+    {
+      "id": "black",
+      "name": "Black",
+      "yards": 7329
+    },
+    {
+      "id": "blue",
+      "name": "Blue",
+      "yards": 7028
+    },
+    {
+      "id": "silver",
+      "name": "Silver",
+      "yards": 6491
+    },
+    {
+      "id": "green",
+      "name": "Green",
+      "yards": 5744
+    },
+    {
+      "id": "red",
+      "name": "Red",
+      "yards": 5059
+    }
+  ],
+  "source": "The Wyndgate hole-by-hole card at 1975 West Gunn Road. The black row is the yardage already on this map (par 72, 7,329 yards). Westwynd, the other course at the club, is not this card.",
+  "courses": {
+    "wyndgate": {
+      "holes": [
+        {
+          "hole": 1,
+          "par": 4,
+          "hcpMen": 11,
+          "hcpWomen": 13,
+          "yards": {
+            "black": 430,
+            "blue": 410,
+            "silver": 383,
+            "green": 326,
+            "red": 313
+          }
+        },
+        {
+          "hole": 2,
+          "par": 5,
+          "hcpMen": 9,
+          "hcpWomen": 9,
+          "yards": {
+            "black": 542,
+            "blue": 531,
+            "silver": 490,
+            "green": 391,
+            "red": 354
+          }
+        },
+        {
+          "hole": 3,
+          "par": 4,
+          "hcpMen": 1,
+          "hcpWomen": 1,
+          "yards": {
+            "black": 426,
+            "blue": 406,
+            "silver": 381,
+            "green": 362,
+            "red": 335
+          }
+        },
+        {
+          "hole": 4,
+          "par": 5,
+          "hcpMen": 7,
+          "hcpWomen": 5,
+          "yards": {
+            "black": 578,
+            "blue": 557,
+            "silver": 510,
+            "green": 453,
+            "red": 394
+          }
+        },
+        {
+          "hole": 5,
+          "par": 3,
+          "hcpMen": 15,
+          "hcpWomen": 17,
+          "yards": {
+            "black": 210,
+            "blue": 188,
+            "silver": 158,
+            "green": 146,
+            "red": 122
+          }
+        },
+        {
+          "hole": 6,
+          "par": 4,
+          "hcpMen": 3,
+          "hcpWomen": 3,
+          "yards": {
+            "black": 459,
+            "blue": 437,
+            "silver": 413,
+            "green": 311,
+            "red": 302
+          }
+        },
+        {
+          "hole": 7,
+          "par": 4,
+          "hcpMen": 13,
+          "hcpWomen": 11,
+          "yards": {
+            "black": 416,
+            "blue": 410,
+            "silver": 378,
+            "green": 344,
+            "red": 267
+          }
+        },
+        {
+          "hole": 8,
+          "par": 3,
+          "hcpMen": 17,
+          "hcpWomen": 15,
+          "yards": {
+            "black": 218,
+            "blue": 193,
+            "silver": 154,
+            "green": 138,
+            "red": 110
+          }
+        },
+        {
+          "hole": 9,
+          "par": 4,
+          "hcpMen": 5,
+          "hcpWomen": 7,
+          "yards": {
+            "black": 423,
+            "blue": 415,
+            "silver": 402,
+            "green": 379,
+            "red": 335
+          }
+        },
+        {
+          "hole": 10,
+          "par": 4,
+          "hcpMen": 4,
+          "hcpWomen": 6,
+          "yards": {
+            "black": 450,
+            "blue": 437,
+            "silver": 420,
+            "green": 361,
+            "red": 322
+          }
+        },
+        {
+          "hole": 11,
+          "par": 4,
+          "hcpMen": 12,
+          "hcpWomen": 14,
+          "yards": {
+            "black": 430,
+            "blue": 409,
+            "silver": 393,
+            "green": 350,
+            "red": 317
+          }
+        },
+        {
+          "hole": 12,
+          "par": 5,
+          "hcpMen": 10,
+          "hcpWomen": 4,
+          "yards": {
+            "black": 583,
+            "blue": 575,
+            "silver": 495,
+            "green": 469,
+            "red": 420
+          }
+        },
+        {
+          "hole": 13,
+          "par": 4,
+          "hcpMen": 14,
+          "hcpWomen": 12,
+          "yards": {
+            "black": 341,
+            "blue": 337,
+            "silver": 308,
+            "green": 284,
+            "red": 243
+          }
+        },
+        {
+          "hole": 14,
+          "par": 3,
+          "hcpMen": 18,
+          "hcpWomen": 16,
+          "yards": {
+            "black": 167,
+            "blue": 152,
+            "silver": 144,
+            "green": 128,
+            "red": 109
+          }
+        },
+        {
+          "hole": 15,
+          "par": 5,
+          "hcpMen": 2,
+          "hcpWomen": 2,
+          "yards": {
+            "black": 589,
+            "blue": 565,
+            "silver": 542,
+            "green": 470,
+            "red": 410
+          }
+        },
+        {
+          "hole": 16,
+          "par": 3,
+          "hcpMen": 16,
+          "hcpWomen": 18,
+          "yards": {
+            "black": 192,
+            "blue": 182,
+            "silver": 169,
+            "green": 150,
+            "red": 105
+          }
+        },
+        {
+          "hole": 17,
+          "par": 4,
+          "hcpMen": 6,
+          "hcpWomen": 10,
+          "yards": {
+            "black": 463,
+            "blue": 427,
+            "silver": 388,
+            "green": 345,
+            "red": 317
+          }
+        },
+        {
+          "hole": 18,
+          "par": 4,
+          "hcpMen": 8,
+          "hcpWomen": 8,
+          "yards": {
+            "black": 412,
+            "blue": 397,
+            "silver": 363,
+            "green": 337,
+            "red": 284
+          }
+        }
+      ]
+    }
+  }
+}

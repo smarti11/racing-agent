@@ -19,7 +19,7 @@
     <header class="top">
       <div class="brand-lockup">
         <img class="club-logo" src="wyndgate-logo.png" alt="The Wyndgate" />
-        <div class="sub">Golf map · Black tees</div>
+        <div class="sub" id="brand-sub">Golf map · Black tees</div>
       </div>
       <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
     </header>
@@ -28,6 +28,7 @@
       <div id="map" role="application" aria-label="The Wyndgate golf course map"></div>
       <div class="map-actions">
         <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-video" class="fly-btn" hidden>Video</button>
         <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
@@ -53,7 +54,25 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over, or say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+      <p class="score-hint" id="score-hint">Pick your tee. The number under each hole is its handicap. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+
+      <div class="card-picks">
+        <label>Tee
+          <select id="tee-select">
+            <option value="black">Black</option>
+            <option value="blue">Blue</option>
+            <option value="silver">Silver</option>
+            <option value="green">Green</option>
+            <option value="red">Red</option>
+          </select>
+        </label>
+        <label>Handicap
+          <select id="hcp-select">
+            <option value="men">Men's</option>
+            <option value="women">Women's</option>
+          </select>
+        </label>
+      </div>
 
       <div class="hole-lists">
         <section id="course-wyndgate">
@@ -89,6 +108,16 @@
 
       <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
     </aside>
+  </div>
+
+  <div id="video-modal" class="video-modal" hidden>
+    <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
+      <div class="video-bar">
+        <div id="video-title">Flyover</div>
+        <button type="button" id="video-close" class="fly-btn">Close</button>
+      </div>
+      <video id="hole-video" controls playsinline preload="none"></video>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

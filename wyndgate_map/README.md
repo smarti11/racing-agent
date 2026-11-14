@@ -6,18 +6,19 @@ This site is separate from the Oakland University golf map. It has its own folde
 
 ## Features
 
-- Satellite map of the 18-hole course, black tees only (par 72, 7,329 yards, 76.2/148)
-- Tap a hole to see par and black-tee yardage, then **Fly over** from tee to green
+- Satellite map of the 18-hole course (par 72). Pick Black, Blue, Silver, Green, or Red. Black is 7,329 yards
+- Tap a hole to see par, handicap, and the yardage for the tee you picked, then **Fly over** from tee to green on the map
+- **Video** plays a satellite flyover of that hole. A Scottish voice names the hole, the par, and the yardage from the tee you picked
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
 - Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
-- Scorecard: say the strokes or type them. Out, In, and the full 18. Scores stay in this browser until you tap Clear
+- Scorecard: say the strokes or type them. Out, In, and the full 18. Men's or Women's changes the handicap number under each hole. Scores stay in this browser until you tap Clear
 
 Westwynd, the course on Adams Road, is not included.
 
 ## Data sources
 
 - Hole lines, greens, fairways, tees, pins, and cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
-- Black-tee par and yardage: published Wyndgate scorecard
+- Par, handicap, and tee yardage: the published Wyndgate scorecard for 1975 West Gunn Road. The black row matches the yardage already drawn on the map. Westwynd is a different course and is not this card
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
 - Imagery: Esri World Imagery
 
