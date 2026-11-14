@@ -156,11 +156,37 @@
     return text;
   }
 
+  /**
+   * Scorecard yards adjusted for the rise from the tee to the green.
+   * One yard is added for every three feet uphill, and one yard is
+   * subtracted for every three feet downhill.
+   */
+  function playsLike(yards, teeFt, greenFt) {
+    var y = typeof yards === "number" ? yards : parseInt(yards, 10);
+    var tee = typeof teeFt === "number" ? teeFt : parseFloat(teeFt);
+    var green = typeof greenFt === "number" ? greenFt : parseFloat(greenFt);
+    if (!isFinite(y) || !isFinite(tee) || !isFinite(green)) return null;
+    var deltaFt = Math.round(green - tee);
+    var adjusted = Math.round(y + deltaFt / 3);
+    if (adjusted < 1) adjusted = 1;
+    return { yards: adjusted, deltaFt: deltaFt, flat: y };
+  }
+
+  function formatPlaysLike(info) {
+    if (!info) return "";
+    var hill = "level";
+    if (info.deltaFt > 1) hill = info.deltaFt + " ft up";
+    else if (info.deltaFt < -1) hill = Math.abs(info.deltaFt) + " ft down";
+    return "plays " + info.yards + " · " + hill;
+  }
+
   return {
     clampStrokes: clampStrokes,
     parseSpokenScore: parseSpokenScore,
     nineSummary: nineSummary,
     formatToPar: formatToPar,
     formatStrokes: formatStrokes,
+    playsLike: playsLike,
+    formatPlaysLike: formatPlaysLike,
   };
 });

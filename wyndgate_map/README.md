@@ -11,7 +11,7 @@ This site is separate from the Oakland University golf map. It has its own folde
 - **Video** plays a satellite flyover of that hole. A Scottish voice names the hole, the par, and the yardage from the tee you picked
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
 - Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
-- Scorecard: say the strokes or type them. Out, In, and the full 18. Men's or Women's changes the handicap number under each hole. Scores stay in this browser until you tap Clear
+- Scorecard: say the strokes or type them. Out, In, and the full 18. Men's or Women's changes the handicap number under each hole. The gold number is the plays-like yardage: one yard added for every three feet the green sits above that tee, and one yard subtracted for every three feet it sits below. Elevations are from USGS 3DEP along the mapped hole. Scores stay in this browser until you tap Clear
 
 Westwynd, the course on Adams Road, is not included.
 
@@ -21,6 +21,7 @@ Westwynd, the course on Adams Road, is not included.
 - Par, tee yardage, and ratings: the [GolfCore Wyndgate card](https://www.golfcore.org/courses/wyndgate/#course-map). Men's and women's handicaps: the [18Birdies scorecard](https://18birdies.com/golf-courses/club/b3f9ffc0-86ac-11e4-8c28-020000005b00/the-wyndgate-golf-and-country-club) for the same course. Westwynd is a different course and is not this card
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
 - Imagery: Esri World Imagery
+- Plays-like elevation: USGS 3DEP at the mapped tee and green
 
 A few drawn hole lines are a little shorter or longer than the printed black-tee yardage. The number on the card is the printed yardage. The line on the map follows the OpenStreetMap drawing.
 

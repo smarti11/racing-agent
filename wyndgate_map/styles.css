@@ -334,6 +334,14 @@ html, body {
 
 .score-entry[hidden] { display: none; }
 
+.score-plays {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: #f4e27a;
+}
+
+.score-plays:empty { display: none; }
+
 .score-entry.is-collapsed {
   padding: 8px 10px;
 }

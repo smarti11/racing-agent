@@ -33,6 +33,7 @@
   const scoreInput = document.getElementById("score-input");
   const scoreMic = document.getElementById("score-mic");
   const scoreHeard = document.getElementById("score-heard");
+  const scorePlays = document.getElementById("score-plays");
 
   const teeSelect = document.getElementById("tee-select");
   const hcpSelect = document.getElementById("hcp-select");
@@ -330,8 +331,7 @@
     const hcp = handicapFor(course, hole);
     yhHole.textContent = hcp != null ? `Hole ${hole} · Hcp ${hcp}` : `Hole ${hole}`;
 
-    const cardYards = yardageFor(course, hole);
-    const scorecard = `Par ${t.props.par || "—"} · ${cardYards == null ? t.props.yards || "—" : cardYards} ${teeName(teeId)}`;
+    const scorecard = `Par ${t.props.par || "—"} · ${playsLine(course, hole) || teeName(teeId)}`;
 
     if (!lastUser) {
       yhYards.textContent = "—";
@@ -1049,15 +1049,28 @@
     return info.yards[teeId];
   }
 
+  function playsFor(course, hole) {
+    const info = holeCard(course, hole);
+    if (!info || !info.elevFt) return null;
+    return OUScore.playsLike(info.yards[teeId], info.elevFt[teeId], info.elevFt.green);
+  }
+
+  function playsLine(course, hole) {
+    const yards = yardageFor(course, hole);
+    if (yards == null) return "";
+    const plays = OUScore.formatPlaysLike(playsFor(course, hole));
+    return plays ? teeName(teeId) + " " + yards + " · " + plays : teeName(teeId) + " " + yards;
+  }
+
   function holeFacts(course, hole) {
     const info = holeCard(course, hole);
     const par = (info && info.par) || (pars[course] && pars[course][hole]);
     const hcp = handicapFor(course, hole);
-    const yards = yardageFor(course, hole);
     const bits = [];
     if (par) bits.push("Par " + par);
     if (hcp != null) bits.push("Hcp " + hcp);
-    if (yards != null) bits.push(teeName(teeId) + " " + yards);
+    const line = playsLine(course, hole);
+    if (line) bits.push(line);
     return bits.join(" · ");
   }
 
@@ -1078,6 +1091,7 @@
     const value = scores[course][hole];
     const hcp = handicapFor(course, hole);
     const yards = yardageFor(course, hole);
+    const plays = playsFor(course, hole);
     btn.replaceChildren();
     const num = document.createElement("span");
     num.className = "hb-n";
@@ -1087,7 +1101,7 @@
     hcpMark.textContent = hcp == null ? "" : "H" + hcp;
     const yardsMark = document.createElement("span");
     yardsMark.className = "hb-y";
-    yardsMark.textContent = yards == null ? "" : String(yards);
+    yardsMark.textContent = plays ? String(plays.yards) : yards == null ? "" : String(yards);
     const mark = document.createElement("span");
     mark.className = "hb-s";
     mark.textContent = value == null ? "" : String(value);
@@ -1095,7 +1109,8 @@
     btn.classList.toggle("scored", value != null);
     const bits = ["Hole " + hole];
     if (hcp != null) bits.push("handicap " + hcp);
-    if (yards != null) bits.push(teeName(teeId) + " " + yards + " yards");
+    if (plays) bits.push("plays " + plays.yards);
+    else if (yards != null) bits.push(teeName(teeId) + " " + yards + " yards");
     if (value != null) bits.push(value + " strokes");
     btn.setAttribute("aria-label", bits.join(", "));
   }
@@ -1139,7 +1154,6 @@
     const par = pars[course][hole];
     const saved = scores[course][hole];
     const hcp = handicapFor(course, hole);
-    const yards = yardageFor(course, hole);
     scoreEntry.hidden = false;
     scoreHint.hidden = true;
     scoreKicker.textContent = COURSE_NAMES[course] || course;
@@ -1148,8 +1162,8 @@
       hole +
       (par ? " · Par " + par : "") +
       (hcp != null ? " · Hcp " + hcp : "") +
-      (yards != null ? " · " + teeName(teeId) + " " + yards : "") +
       (scoreCollapsed && saved != null ? " · " + saved : "");
+    if (scorePlays) scorePlays.textContent = playsLine(course, hole);
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";

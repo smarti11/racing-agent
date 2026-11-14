@@ -59,7 +59,7 @@
       "slopeWomen": 125
     }
   ],
-  "source": "Yardages and ratings from the GolfCore Wyndgate card (golfcore.org/courses/wyndgate). Men's and women's stroke indexes match the 18Birdies scorecard for The Wyndgate at 1975 W Gunn Rd. Westwynd is a different course.",
+  "source": "Yardages and ratings from the GolfCore Wyndgate card (golfcore.org/courses/wyndgate). Men's and women's stroke indexes match the 18Birdies scorecard for The Wyndgate at 1975 W Gunn Rd. Westwynd is a different course. Plays-like yardage uses USGS 3DEP elevation at the mapped tee and green: one yard for every three feet of rise or drop.",
   "courses": {
     "wyndgate": {
       "holes": [
@@ -76,6 +76,15 @@
             "green": 326,
             "blackm": 304,
             "gold": 313
+          },
+          "elevFt": {
+            "green": 918,
+            "black": 922,
+            "blue": 921,
+            "silver": 920,
+            "silvergreen": 920,
+            "blackm": 917,
+            "gold": 917
           }
         },
         {
@@ -91,6 +100,15 @@
             "green": 391,
             "blackm": 430,
             "gold": 354
+          },
+          "elevFt": {
+            "green": 899,
+            "black": 878,
+            "blue": 878,
+            "silver": 879,
+            "silvergreen": 879,
+            "blackm": 887,
+            "gold": 907
           }
         },
         {
@@ -106,6 +124,15 @@
             "green": 362,
             "blackm": 327,
             "gold": 335
+          },
+          "elevFt": {
+            "green": 924,
+            "black": 932,
+            "blue": 930,
+            "silver": 929,
+            "silvergreen": 929,
+            "blackm": 910,
+            "gold": 912
           }
         },
         {
@@ -121,6 +148,15 @@
             "green": 453,
             "blackm": 417,
             "gold": 394
+          },
+          "elevFt": {
+            "green": 945,
+            "black": 962,
+            "blue": 959,
+            "silver": 956,
+            "silvergreen": 945,
+            "blackm": 939,
+            "gold": 940
           }
         },
         {
@@ -136,6 +172,15 @@
             "green": 146,
             "blackm": 133,
             "gold": 122
+          },
+          "elevFt": {
+            "green": 915,
+            "black": 925,
+            "blue": 922,
+            "silver": 916,
+            "silvergreen": 916,
+            "blackm": 913,
+            "gold": 911
           }
         },
         {
@@ -151,6 +196,15 @@
             "green": 311,
             "blackm": 284,
             "gold": 302
+          },
+          "elevFt": {
+            "green": 923,
+            "black": 921,
+            "blue": 920,
+            "silver": 917,
+            "silvergreen": 923,
+            "blackm": 924,
+            "gold": 923
           }
         },
         {
@@ -166,6 +220,15 @@
             "green": 344,
             "blackm": 326,
             "gold": 267
+          },
+          "elevFt": {
+            "green": 919,
+            "black": 957,
+            "blue": 957,
+            "silver": 948,
+            "silvergreen": 948,
+            "blackm": 914,
+            "gold": 915
           }
         },
         {
@@ -181,6 +244,15 @@
             "green": 138,
             "blackm": 126,
             "gold": 110
+          },
+          "elevFt": {
+            "green": 897,
+            "black": 895,
+            "blue": 896,
+            "silver": 896,
+            "silvergreen": 896,
+            "blackm": 898,
+            "gold": 900
           }
         },
         {
@@ -196,6 +268,15 @@
             "green": 379,
             "blackm": 354,
             "gold": 335
+          },
+          "elevFt": {
+            "green": 916,
+            "black": 922,
+            "blue": 923,
+            "silver": 920,
+            "silvergreen": 916,
+            "blackm": 914,
+            "gold": 914
           }
         },
         {
@@ -211,6 +292,15 @@
             "green": 361,
             "blackm": 333,
             "gold": 322
+          },
+          "elevFt": {
+            "green": 907,
+            "black": 923,
+            "blue": 923,
+            "silver": 919,
+            "silvergreen": 907,
+            "blackm": 908,
+            "gold": 908
           }
         },
         {
@@ -226,6 +316,15 @@
             "green": 350,
             "blackm": 322,
             "gold": 317
+          },
+          "elevFt": {
+            "green": 917,
+            "black": 924,
+            "blue": 922,
+            "silver": 919,
+            "silvergreen": 917,
+            "blackm": 916,
+            "gold": 916
           }
         },
         {
@@ -241,6 +340,15 @@
             "green": 469,
             "blackm": 448,
             "gold": 420
+          },
+          "elevFt": {
+            "green": 918,
+            "black": 934,
+            "blue": 933,
+            "silver": 923,
+            "silvergreen": 923,
+            "blackm": 914,
+            "gold": 914
           }
         },
         {
@@ -256,6 +364,15 @@
             "green": 284,
             "blackm": 265,
             "gold": 243
+          },
+          "elevFt": {
+            "green": 903,
+            "black": 916,
+            "blue": 916,
+            "silver": 909,
+            "silvergreen": 909,
+            "blackm": 899,
+            "gold": 894
           }
         },
         {
@@ -271,6 +388,15 @@
             "green": 128,
             "blackm": 117,
             "gold": 109
+          },
+          "elevFt": {
+            "green": 903,
+            "black": 917,
+            "blue": 912,
+            "silver": 909,
+            "silvergreen": 909,
+            "blackm": 899,
+            "gold": 897
           }
         },
         {
@@ -286,6 +412,15 @@
             "green": 470,
             "blackm": 492,
             "gold": 410
+          },
+          "elevFt": {
+            "green": 892,
+            "black": 919,
+            "blue": 909,
+            "silver": 899,
+            "silvergreen": 899,
+            "blackm": 899,
+            "gold": 866
           }
         },
         {
@@ -301,6 +436,15 @@
             "green": 150,
             "blackm": 137,
             "gold": 105
+          },
+          "elevFt": {
+            "green": 852,
+            "black": 857,
+            "blue": 857,
+            "silver": 852,
+            "silvergreen": 852,
+            "blackm": 853,
+            "gold": 855
           }
         },
         {
@@ -316,6 +460,15 @@
             "green": 345,
             "blackm": 316,
             "gold": 317
+          },
+          "elevFt": {
+            "green": 849,
+            "black": 863,
+            "blue": 857,
+            "silver": 852,
+            "silvergreen": 849,
+            "blackm": 848,
+            "gold": 848
           }
         },
         {
@@ -331,6 +484,15 @@
             "green": 337,
             "blackm": 307,
             "gold": 284
+          },
+          "elevFt": {
+            "green": 893,
+            "black": 900,
+            "blue": 898,
+            "silver": 897,
+            "silvergreen": 897,
+            "blackm": 888,
+            "gold": 882
           }
         }
       ]
