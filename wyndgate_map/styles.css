@@ -1,8 +1,9 @@
 :root {
-  --bg: #0e1f14;
-  --panel: rgba(10, 22, 14, 0.92);
-  --ink: #f3f6ef;
-  --muted: #c5d2c0;
+  --bg: #0c2344;
+  --navy: #081a34;
+  --panel: rgba(8, 26, 52, 0.94);
+  --ink: #f4f7fb;
+  --muted: #c5d2e0;
   --katke: #3ecf7a;
   --sharf: #4ea1ff;
   --path: #f0c14b;
@@ -36,7 +37,7 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: calc(var(--pad-t) + 6px) var(--pad-r) 8px var(--pad);
-  background: #0c1410;
+  background: var(--navy);
   border-bottom: 1px solid rgba(243, 246, 239, 0.16);
 }
 
@@ -67,7 +68,7 @@ html, body {
 
 .icon-btn {
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  background: rgba(18, 46, 86, 0.75);
   color: var(--ink);
   border-radius: 12px;
   min-height: 42px;
@@ -87,7 +88,7 @@ html, body {
   width: 100%;
   height: 100%;
   min-height: 280px;
-  background: #14261a;
+  background: #123056;
 }
 
 .map-actions {
@@ -103,7 +104,7 @@ html, body {
 
 .fly-btn {
   border: 1px solid rgba(243, 246, 239, 0.28);
-  background: rgba(12, 28, 18, 0.92);
+  background: rgba(10, 32, 64, 0.92);
   color: var(--ink);
   border-radius: 999px;
   min-height: 42px;
@@ -118,7 +119,7 @@ html, body {
 
 .fly-btn[aria-pressed="true"] {
   background: #f7f3e8;
-  color: #14261a;
+  color: var(--navy);
 }
 
 .fly-marker {
@@ -145,7 +146,7 @@ html, body {
   padding: 5px 8px;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(12, 28, 18, 0.92), rgba(18, 42, 28, 0.88));
+    linear-gradient(135deg, rgba(8, 26, 52, 0.94), rgba(16, 48, 92, 0.9));
   border: 1px solid rgba(243, 246, 239, 0.18);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(8px);
@@ -315,7 +316,7 @@ html, body {
 }
 
 .course-switch button[aria-selected="true"] {
-  color: #0e1f14;
+  color: var(--navy);
 }
 
 #play-katke[aria-selected="true"] { background: var(--katke); }
@@ -388,7 +389,7 @@ html, body {
 .step-btn {
   width: 44px;
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(20,40,28,0.75);
+  background: rgba(18, 46, 86, 0.75);
   color: var(--ink);
   font-size: 1.3rem;
 }
@@ -396,7 +397,7 @@ html, body {
 #score-input {
   width: 64px;
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(8,18,12,0.65);
+  background: rgba(8, 24, 48, 0.72);
   color: var(--ink);
   text-align: center;
   font-size: 1.35rem;
@@ -407,7 +408,7 @@ html, body {
   min-width: 108px;
   border: 0;
   background: #f7f3e8;
-  color: #14261a;
+  color: var(--navy);
 }
 
 .mic-btn.listening {
@@ -471,7 +472,7 @@ html, body {
   min-height: 42px;
   border-radius: 12px;
   border: 1px solid rgba(243,246,239,0.25);
-  background: rgba(8,18,12,0.65);
+  background: rgba(8, 24, 48, 0.72);
   color: var(--ink);
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
@@ -578,13 +579,13 @@ html, body {
 .attrib {
   margin: 12px 0 0;
   font-size: 0.72rem;
-  color: rgba(197,210,192,0.75);
+  color: rgba(197, 210, 224, 0.75);
 }
 
-.leaflet-container { font: inherit; background: #14261a; }
+.leaflet-container { font: inherit; background: #123056; }
 
 .hole-label {
-  background: rgba(8,18,12,0.78);
+  background: rgba(8, 26, 52, 0.86);
   border: 2px solid var(--katke);
   color: #fff;
   border-radius: 999px;
@@ -657,7 +658,7 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(6, 14, 9, 0.84);
+  background: rgba(6, 16, 34, 0.84);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -668,7 +669,7 @@ html, body {
 
 .video-card {
   width: min(960px, 100%);
-  background: #0c1410;
+  background: var(--navy);
   border: 1px solid rgba(243, 246, 239, 0.22);
   border-radius: 16px;
   overflow: hidden;
