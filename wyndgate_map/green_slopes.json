@@ -1,0 +1,187 @@
+{
+  "source": "USGS 3DEP 1-meter elevation from the 2016 Oakland County lidar. Arrows point the way a ball rolls. The color is the slope. A small break can be finer than this scan.",
+  "greens": {
+    "wyndgate": {
+      "1": {
+        "image": "slope-wyndgate-1.png",
+        "west": -83.1818214,
+        "south": 42.7379972,
+        "east": -83.1812465,
+        "north": 42.7383601,
+        "fallFt": 2.4,
+        "slopePct": 1.1,
+        "downDeg": 46
+      },
+      "2": {
+        "image": "slope-wyndgate-2.png",
+        "west": -83.184175,
+        "south": 42.7362224,
+        "east": -83.1838156,
+        "north": 42.7366447,
+        "fallFt": 1.9,
+        "slopePct": 0.5,
+        "downDeg": 12
+      },
+      "3": {
+        "image": "slope-wyndgate-3.png",
+        "west": -83.1855853,
+        "south": 42.7348302,
+        "east": -83.1851092,
+        "north": 42.7352921,
+        "fallFt": 3.6,
+        "slopePct": 1.3,
+        "downDeg": 30
+      },
+      "4": {
+        "image": "slope-wyndgate-4.png",
+        "west": -83.1798002,
+        "south": 42.7341836,
+        "east": -83.1792432,
+        "north": 42.7346388,
+        "fallFt": 2.5,
+        "slopePct": 0.9,
+        "downDeg": 220
+      },
+      "5": {
+        "image": "slope-wyndgate-5.png",
+        "west": -83.1816327,
+        "south": 42.7356418,
+        "east": -83.1811477,
+        "north": 42.7360178,
+        "fallFt": 1.9,
+        "slopePct": 0.8,
+        "downDeg": 138
+      },
+      "6": {
+        "image": "slope-wyndgate-6.png",
+        "west": -83.1851631,
+        "south": 42.7334182,
+        "east": -83.1846151,
+        "north": 42.7339064,
+        "fallFt": 4.1,
+        "slopePct": 1.2,
+        "downDeg": 50
+      },
+      "7": {
+        "image": "slope-wyndgate-7.png",
+        "west": -83.182001,
+        "south": 42.7364599,
+        "east": -83.1815519,
+        "north": 42.7367568,
+        "fallFt": 1.4,
+        "slopePct": 0.9,
+        "downDeg": 307
+      },
+      "8": {
+        "image": "slope-wyndgate-8.png",
+        "west": -83.1810578,
+        "south": 42.736902,
+        "east": -83.1805188,
+        "north": 42.7372846,
+        "fallFt": 5.1,
+        "slopePct": 1.8,
+        "downDeg": 330
+      },
+      "9": {
+        "image": "slope-wyndgate-9.png",
+        "west": -83.1771861,
+        "south": 42.735655,
+        "east": -83.1765662,
+        "north": 42.7360772,
+        "fallFt": 2.6,
+        "slopePct": 0.8,
+        "downDeg": 317
+      },
+      "10": {
+        "image": "slope-wyndgate-10.png",
+        "west": -83.1727484,
+        "south": 42.732633,
+        "east": -83.1722453,
+        "north": 42.7330685,
+        "fallFt": 2.4,
+        "slopePct": 1.1,
+        "downDeg": 45
+      },
+      "11": {
+        "image": "slope-wyndgate-11.png",
+        "west": -83.1781113,
+        "south": 42.7346916,
+        "east": -83.1775903,
+        "north": 42.7352525,
+        "fallFt": 2.7,
+        "slopePct": 0.9,
+        "downDeg": 105
+      },
+      "12": {
+        "image": "slope-wyndgate-12.png",
+        "west": -83.1754613,
+        "south": 42.7313529,
+        "east": -83.1747966,
+        "north": 42.7316432,
+        "fallFt": 1.5,
+        "slopePct": 0.7,
+        "downDeg": 156
+      },
+      "13": {
+        "image": "slope-wyndgate-13.png",
+        "west": -83.171356,
+        "south": 42.7328573,
+        "east": -83.170808,
+        "north": 42.7332004,
+        "fallFt": 2.5,
+        "slopePct": 1.2,
+        "downDeg": 145
+      },
+      "14": {
+        "image": "slope-wyndgate-14.png",
+        "west": -83.1703858,
+        "south": 42.7337547,
+        "east": -83.1698109,
+        "north": 42.7340186,
+        "fallFt": 2.2,
+        "slopePct": 0.8,
+        "downDeg": 68
+      },
+      "15": {
+        "image": "slope-wyndgate-15.png",
+        "west": -83.1732784,
+        "south": 42.7374628,
+        "east": -83.1726137,
+        "north": 42.7378851,
+        "fallFt": 2.2,
+        "slopePct": 0.6,
+        "downDeg": 207
+      },
+      "16": {
+        "image": "slope-wyndgate-16.png",
+        "west": -83.1759644,
+        "south": 42.7387428,
+        "east": -83.1752996,
+        "north": 42.7390924,
+        "fallFt": 3.9,
+        "slopePct": 1.4,
+        "downDeg": 119
+      },
+      "17": {
+        "image": "slope-wyndgate-17.png",
+        "west": -83.1733413,
+        "south": 42.7357077,
+        "east": -83.1727035,
+        "north": 42.7361036,
+        "fallFt": 1.8,
+        "slopePct": 0.6,
+        "downDeg": 341
+      },
+      "18": {
+        "image": "slope-wyndgate-18.png",
+        "west": -83.1767729,
+        "south": 42.7378389,
+        "east": -83.1762698,
+        "north": 42.7383535,
+        "fallFt": 3.5,
+        "slopePct": 1.5,
+        "downDeg": 107
+      }
+    }
+  }
+}
