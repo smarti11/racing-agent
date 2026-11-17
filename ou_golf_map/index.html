@@ -34,6 +34,17 @@
         <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
+      <div id="wind-chip" class="wind-chip" aria-live="polite">
+        <div class="wind-arrow" id="wind-arrow" hidden></div>
+        <div class="wind-body">
+          <div class="wind-top">
+            <span class="wind-deg" id="wind-deg">Wind</span>
+            <span class="wind-rh" id="wind-rh"></span>
+          </div>
+          <div class="wind-speed" id="wind-speed">…</div>
+          <div class="wind-from" id="wind-from">at the course</div>
+        </div>
+      </div>
       <div id="yardage-hud" class="yardage-hud" hidden>
         <div class="yh-top">
           <div class="yh-hole" id="yh-hole">Select a hole</div>
@@ -57,7 +68,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
