@@ -15,6 +15,7 @@
   const holeVideo = document.getElementById("hole-video");
   const videoClose = document.getElementById("video-close");
   const btnReset = document.getElementById("btn-reset");
+  const btnBreaks = document.getElementById("btn-breaks");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
@@ -36,6 +37,7 @@
   const scoreMic = document.getElementById("score-mic");
   const scoreHeard = document.getElementById("score-heard");
   const scorePlays = document.getElementById("score-plays");
+  const scoreRoll = document.getElementById("score-roll");
   const teeSelect = document.getElementById("tee-select");
   const hcpSelect = document.getElementById("hcp-select");
 
@@ -186,9 +188,85 @@
     const scoreLine = saved != null ? `<br/>Your score: ${saved}` : "";
     const facts = holeFacts(p.course, p.hole);
     const fallback = `Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
+    const roll = rollPhrase(p.course, p.hole);
+    const rollLine = roll ? `<br/>${roll}` : "";
     return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>${
       facts || fallback
-    }${scoreLine}${live}`;
+    }${rollLine}${scoreLine}${live}`;
+  }
+
+  let greenSlopes = null;
+  let slopeLayer = null;
+
+  function greenSlope(course, hole) {
+    const book = greenSlopes && greenSlopes.greens && greenSlopes.greens[course];
+    return book ? book[String(hole)] : null;
+  }
+
+  function rollPhrase(course, hole) {
+    const info = greenSlope(course, hole);
+    if (!info) return "";
+    const fall = Number(info.fallFt);
+    if (!isFinite(fall)) return "";
+    if (fall < 0.5) return "Green is nearly level";
+    const fallText = fall.toFixed(1).replace(/\.0$/, "") + " ft of fall";
+    const target = greenTargets[course] && greenTargets[course][hole];
+    let shot = null;
+    if (target && target.teeLat != null) {
+      const bearing = bearingDeg(
+        { lat: target.teeLat, lng: target.teeLon },
+        { lat: target.lat, lng: target.lon }
+      );
+      shot = bearing == null ? null : ((bearing % 360) + 360) % 360;
+    }
+    if (shot == null || info.downDeg == null) return "Green has " + fallText;
+    const rel = ((info.downDeg - shot) % 360 + 360) % 360;
+    const away = Math.cos((rel * Math.PI) / 180);
+    const toRight = Math.sin((rel * Math.PI) / 180);
+    const cross = Math.abs(toRight) >= 0.35;
+    const side = toRight >= 0 ? "the right" : "the left";
+    let how = "off to " + side;
+    if (away >= 0.5) how = cross ? "away from you, off to " + side : "away from you";
+    else if (away <= -0.5) how = cross ? "back toward you, off to " + side : "back toward you";
+    return "Ball rolls " + how + " · " + fallText;
+  }
+
+  function showGreenBreak(course, hole) {
+    if (slopeLayer) {
+      map.removeLayer(slopeLayer);
+      slopeLayer = null;
+    }
+    const info = greenSlope(course, hole);
+    if (!info) {
+      if (btnBreaks) btnBreaks.hidden = true;
+      return;
+    }
+    slopeLayer = L.imageOverlay(
+      info.image,
+      [
+        [info.south, info.west],
+        [info.north, info.east],
+      ],
+      { opacity: 1, interactive: false }
+    ).addTo(map);
+    if (btnBreaks) {
+      btnBreaks.hidden = false;
+      btnBreaks.setAttribute("aria-pressed", "false");
+    }
+  }
+
+  function clearGreenBreak() {
+    if (slopeLayer) {
+      map.removeLayer(slopeLayer);
+      slopeLayer = null;
+    }
+    if (btnBreaks) btnBreaks.hidden = true;
+  }
+
+  function zoomGreenBreak() {
+    if (!slopeLayer) return;
+    map.fitBounds(slopeLayer.getBounds(), { padding: [36, 36], maxZoom: 20 });
+    if (btnBreaks) btnBreaks.setAttribute("aria-pressed", "true");
   }
 
   function liveYardsFor(props) {
@@ -797,6 +875,7 @@
     activeHoleBtn = null;
     selectedHole = null;
     markTarget = null;
+    clearGreenBreak();
     lastHole.katke = null;
     lastHole.sharf = null;
     map.closePopup();
@@ -838,6 +917,7 @@
     updateYardageHud();
     showScoreEntry();
     updateFlyButton();
+    showGreenBreak(course, n);
   }
 
   function applyToggles() {
@@ -948,6 +1028,7 @@
       labels,
       pins,
       cardData,
+      slopeData,
     ] = await Promise.all([
       loadJSON("meta.json"),
       loadJSON("boundary.geojson"),
@@ -959,12 +1040,14 @@
       loadJSON("hole_labels.geojson"),
       loadJSON("pins.geojson"),
       loadJSON("card.json"),
+      loadJSON("green_slopes.json"),
     ]);
     card = cardData;
+    greenSlopes = slopeData;
     paintAllScores();
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri · Voice: Alba, University of Edinburgh";
+      meta.attribution + " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {
@@ -1359,6 +1442,7 @@
       (hcp != null ? " · Hcp " + hcp : "") +
       (scoreCollapsed && saved != null ? " · " + saved : "");
     if (scorePlays) scorePlays.textContent = playsLine(course, hole);
+    if (scoreRoll) scoreRoll.textContent = rollPhrase(course, hole);
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
@@ -1683,6 +1767,7 @@
     updateYardageHud();
   });
   btnReset.addEventListener("click", clearHoleSelection);
+  if (btnBreaks) btnBreaks.addEventListener("click", zoomGreenBreak);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
   scorePlus.addEventListener("click", () => bumpScore(1));
   scoreInput.addEventListener("input", () => {

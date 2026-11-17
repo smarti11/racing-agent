@@ -538,6 +538,15 @@ html, body {
   color: #f7f3e8;
 }
 
+.score-roll {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f4e27a;
+}
+
+.score-roll:empty { display: none; }
+
 .score-plays:empty { display: none; }
 
 .score-entry-row {
