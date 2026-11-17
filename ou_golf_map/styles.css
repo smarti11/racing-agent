@@ -538,6 +538,56 @@ html, body {
   color: #f7f3e8;
 }
 
+.score-roll {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f4e27a;
+}
+
+.score-roll:empty { display: none; }
+
+.putt-icon {
+  background: transparent;
+  border: 0;
+}
+
+.putt-ball {
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #e7e7e7 55%, #b9b9b9);
+  border: 2px solid #1c140c;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.putt-flag {
+  position: relative;
+  width: 22px;
+  height: 28px;
+}
+
+.putt-flag i {
+  position: absolute;
+  left: 1px;
+  top: 0;
+  width: 2px;
+  height: 26px;
+  background: #f7f3e8;
+  border-radius: 1px;
+}
+
+.putt-flag::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 12px solid #e23d32;
+}
+
 .score-plays:empty { display: none; }
 
 .score-entry-row {

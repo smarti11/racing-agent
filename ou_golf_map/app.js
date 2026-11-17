@@ -15,6 +15,7 @@
   const holeVideo = document.getElementById("hole-video");
   const videoClose = document.getElementById("video-close");
   const btnReset = document.getElementById("btn-reset");
+  const btnBreaks = document.getElementById("btn-breaks");
   const yardageHud = document.getElementById("yardage-hud");
   const yhHole = document.getElementById("yh-hole");
   const yhYards = document.getElementById("yh-yards");
@@ -36,6 +37,7 @@
   const scoreMic = document.getElementById("score-mic");
   const scoreHeard = document.getElementById("score-heard");
   const scorePlays = document.getElementById("score-plays");
+  const scoreRoll = document.getElementById("score-roll");
   const teeSelect = document.getElementById("tee-select");
   const hcpSelect = document.getElementById("hcp-select");
 
@@ -54,7 +56,7 @@
   const map = L.map(mapEl, {
     zoomControl: false,
     attributionControl: true,
-    maxZoom: 19,
+    maxZoom: 21,
   }).setView([42.6665, -83.203], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -74,7 +76,7 @@
     stopFlyover();
   });
   map.on("click", (e) => {
-    if (!selectedHole || flying) return;
+    if (!selectedHole || flying || ballMarker) return;
     const el = e.originalEvent && e.originalEvent.target;
     if (
       el &&
@@ -90,7 +92,8 @@
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
-      maxZoom: 19,
+      maxZoom: 21,
+      maxNativeZoom: 19,
       attribution: "Tiles © Esri",
     }
   ).addTo(map);
@@ -98,7 +101,8 @@
   L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
     {
-      maxZoom: 19,
+      maxZoom: 21,
+      maxNativeZoom: 19,
       opacity: 0.7,
       attribution: "© OSM © CARTO",
     }
@@ -186,9 +190,366 @@
     const scoreLine = saved != null ? `<br/>Your score: ${saved}` : "";
     const facts = holeFacts(p.course, p.hole);
     const fallback = `Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
+    const roll = rollPhrase(p.course, p.hole);
+    const rollLine = roll ? `<br/>${roll}` : "";
     return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>${
       facts || fallback
-    }${scoreLine}${live}`;
+    }${rollLine}${scoreLine}${live}`;
+  }
+
+  let greenSlopes = null;
+  let greenGrids = null;
+  let slopeLayer = null;
+  let ballMarker = null;
+  let pinMarker = null;
+  let puttLine = null;
+  let puttShade = null;
+  let puttRead = "";
+
+  function greenSlope(course, hole) {
+    const book = greenSlopes && greenSlopes.greens && greenSlopes.greens[course];
+    return book ? book[String(hole)] : null;
+  }
+
+  function rollPhrase(course, hole) {
+    const info = greenSlope(course, hole);
+    if (!info) return "";
+    const fall = Number(info.fallFt);
+    if (!isFinite(fall)) return "";
+    if (fall < 0.5) return "Green is nearly level";
+    const fallText = fall.toFixed(1).replace(/\.0$/, "") + " ft of fall";
+    const target = greenTargets[course] && greenTargets[course][hole];
+    let shot = null;
+    if (target && target.teeLat != null) {
+      const bearing = bearingDeg(
+        { lat: target.teeLat, lng: target.teeLon },
+        { lat: target.lat, lng: target.lon }
+      );
+      shot = bearing == null ? null : ((bearing % 360) + 360) % 360;
+    }
+    if (shot == null || info.downDeg == null) return "Green has " + fallText;
+    const rel = ((info.downDeg - shot) % 360 + 360) % 360;
+    const away = Math.cos((rel * Math.PI) / 180);
+    const toRight = Math.sin((rel * Math.PI) / 180);
+    const cross = Math.abs(toRight) >= 0.35;
+    const side = toRight >= 0 ? "the right" : "the left";
+    let how = "off to " + side;
+    if (away >= 0.5) how = cross ? "away from you, off to " + side : "away from you";
+    else if (away <= -0.5) how = cross ? "back toward you, off to " + side : "back toward you";
+    return "Ball rolls " + how + " · " + fallText;
+  }
+
+  function showGreenBreak(course, hole) {
+    if (slopeLayer) {
+      map.removeLayer(slopeLayer);
+      slopeLayer = null;
+    }
+    const info = greenSlope(course, hole);
+    if (!info) {
+      if (btnBreaks) btnBreaks.hidden = true;
+      return;
+    }
+    slopeLayer = L.imageOverlay(
+      info.image,
+      [
+        [info.south, info.west],
+        [info.north, info.east],
+      ],
+      { opacity: 1, interactive: false }
+    ).addTo(map);
+    if (btnBreaks) {
+      btnBreaks.hidden = false;
+      btnBreaks.setAttribute("aria-pressed", "false");
+    }
+    clearPutt();
+  }
+
+  function clearGreenBreak() {
+    if (slopeLayer) {
+      map.removeLayer(slopeLayer);
+      slopeLayer = null;
+    }
+    if (btnBreaks) btnBreaks.hidden = true;
+    clearPuttMarkers();
+  }
+
+  function zoomGreenBreak() {
+    if (!slopeLayer || !selectedHole) return;
+    map.closePopup();
+    if (btnBreaks) btnBreaks.setAttribute("aria-pressed", "true");
+    setupPutt(selectedHole.course, selectedHole.hole);
+    const frame = ballMarker
+      ? L.latLngBounds([ballMarker.getLatLng(), pinMarker.getLatLng()]).pad(1.1)
+      : slopeLayer.getBounds();
+    map.fitBounds(frame, { padding: [64, 64], maxZoom: 21 });
+  }
+
+  function gridFor(course, hole) {
+    const raw = greenGrids && greenGrids.greens && greenGrids.greens[course] && greenGrids.greens[course][String(hole)];
+    if (!raw) return null;
+    if (!raw.dzdx) {
+      const bytes = Uint8Array.from(atob(raw.dz), (ch) => ch.charCodeAt(0));
+      const view = new DataView(bytes.buffer);
+      const count = raw.cols * raw.rows;
+      raw.dzdx = new Float32Array(count);
+      raw.dzdy = new Float32Array(count);
+      for (let i = 0; i < count; i += 1) {
+        raw.dzdx[i] = view.getInt16(i * 2, true) / 10000;
+        raw.dzdy[i] = view.getInt16((count + i) * 2, true) / 10000;
+      }
+    }
+    return raw;
+  }
+
+  function sampleGrade(info, lat, lon) {
+    const radius = 20037508.342789244;
+    const x = (lon * radius) / 180;
+    const y = Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) * (radius / Math.PI);
+    const step = (greenGrids && greenGrids.stepM) || 1;
+    const col = (x - info.minx) / step;
+    const row = (info.maxy - y) / step;
+    if (col < 0 || row < 0 || col > info.cols - 1 || row > info.rows - 1) return null;
+    const c0 = Math.floor(col);
+    const r0 = Math.floor(row);
+    const c1 = Math.min(c0 + 1, info.cols - 1);
+    const r1 = Math.min(r0 + 1, info.rows - 1);
+    const tc = col - c0;
+    const tr = row - r0;
+    function mix(arr) {
+      const at = (r, c) => arr[r * info.cols + c];
+      return (
+        at(r0, c0) * (1 - tc) * (1 - tr) +
+        at(r0, c1) * tc * (1 - tr) +
+        at(r1, c0) * (1 - tc) * tr +
+        at(r1, c1) * tc * tr
+      );
+    }
+    return { dzdx: mix(info.dzdx), dzdy: mix(info.dzdy) };
+  }
+
+  function moveMeters(lat, lon, bearing, meters) {
+    const rad = (bearing * Math.PI) / 180;
+    const latM = 111320;
+    const lonM = 111320 * Math.cos((lat * Math.PI) / 180);
+    return {
+      lat: lat + (Math.cos(rad) * meters) / latM,
+      lon: lon + (Math.sin(rad) * meters) / lonM,
+    };
+  }
+
+  function pointInRing(lat, lon, ring) {
+    if (!ring || ring.length < 3) return true;
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+      const yi = ring[i][0];
+      const xi = ring[i][1];
+      const yj = ring[j][0];
+      const xj = ring[j][1];
+      const crosses = yi > lat !== yj > lat;
+      if (crosses && lon < ((xj - xi) * (lat - yi)) / (yj - yi || 1e-12) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  function enFrom(lat, lon, originLat, originLon) {
+    const latM = 111320;
+    const lonM = 111320 * Math.cos((originLat * Math.PI) / 180);
+    return { x: (lon - originLon) * lonM, y: (lat - originLat) * latM };
+  }
+
+  function llFrom(x, y, originLat, originLon) {
+    const latM = 111320;
+    const lonM = 111320 * Math.cos((originLat * Math.PI) / 180);
+    return { lat: originLat + y / latM, lon: originLon + x / lonM };
+  }
+
+  function simulatePutt(info, ball, hole, aimDeg, speed) {
+    const originLat = ball.lat;
+    const originLon = ball.lon;
+    let px = 0;
+    let py = 0;
+    const holeM = enFrom(hole.lat, hole.lon, originLat, originLon);
+    const rad = (aimDeg * Math.PI) / 180;
+    let vx = Math.sin(rad) * speed;
+    let vy = Math.cos(rad) * speed;
+    const path = [[ball.lat, ball.lon]];
+    let minDist = Infinity;
+    let endDist = Infinity;
+    const gravity = 9.81;
+    const friction = (1.83 * 1.83) / (2 * 10 * 0.3048);
+    const dt = 0.06;
+    for (let step = 0; step < 240; step += 1) {
+      const here = llFrom(px, py, originLat, originLon);
+      const grade = sampleGrade(info, here.lat, here.lon);
+      const pace = Math.hypot(vx, vy);
+      if (pace < 0.08) break;
+      const dzdx = grade ? grade.dzdx : 0;
+      const dzdy = grade ? grade.dzdy : 0;
+      vx += (-gravity * dzdx - (friction * vx) / pace) * dt;
+      vy += (-gravity * dzdy - (friction * vy) / pace) * dt;
+      px += vx * dt;
+      py += vy * dt;
+      const miss = Math.hypot(px - holeM.x, py - holeM.y);
+      if (miss < minDist) minDist = miss;
+      endDist = miss;
+      if (step % 2 === 0) {
+        const spot = llFrom(px, py, originLat, originLon);
+        path.push([spot.lat, spot.lon]);
+      }
+    }
+    return { path, minDist, endDist };
+  }
+
+  function solvePutt(info, ball, hole) {
+    const dist = metersBetween(ball.lat, ball.lon, hole.lat, hole.lon);
+    if (dist < 0.45) {
+      return { path: [[ball.lat, ball.lon], [hole.lat, hole.lon]], offsetM: 0, dist, minDist: 0 };
+    }
+    const direct = bearingDeg({ lat: ball.lat, lng: ball.lon }, { lat: hole.lat, lng: hole.lon });
+    const friction = (1.83 * 1.83) / (2 * 10 * 0.3048);
+    const flat = Math.sqrt(2 * friction * dist);
+    let best = null;
+    function consider(aim, speed) {
+      const sim = simulatePutt(info, ball, hole, aim, speed);
+      const score = sim.minDist + 0.5 * sim.endDist;
+      if (!best || score < best.score) best = { score, aim, speed, sim };
+    }
+    for (let aim = -36; aim <= 36; aim += 3) {
+      for (let pace = 0.75; pace <= 1.7; pace += 0.15) consider(direct + aim, flat * pace);
+    }
+    const aim0 = best.aim;
+    const speed0 = best.speed;
+    for (let aim = aim0 - 3; aim <= aim0 + 3; aim += 0.75) {
+      for (let pace = 0.88; pace <= 1.12; pace += 0.06) consider(aim, speed0 * pace);
+    }
+    let rel = best.aim - direct;
+    if (rel > 180) rel -= 360;
+    if (rel < -180) rel += 360;
+    const path = best.sim.path.slice();
+    if (best.sim.minDist < 0.5 && best.sim.endDist < 0.9) path.push([hole.lat, hole.lon]);
+    return {
+      path,
+      offsetM: dist * Math.sin((rel * Math.PI) / 180),
+      dist,
+      minDist: best.sim.minDist,
+    };
+  }
+
+  function formatPutt(result) {
+    const lengthFt = result.dist * 3.280839895;
+    const length = lengthFt < 1.5 ? "a tap-in" : Math.round(lengthFt) + " ft putt";
+    if (result.dist < 0.5) return "Ball is at the hole";
+    if (result.minDist > 1.2) return "This slope won't finish in the hole · " + length;
+    const feet = Math.abs(result.offsetM) * 3.280839895;
+    if (feet < 0.4) return "Start it at the hole · " + length;
+    const startSide = result.offsetM > 0 ? "right" : "left";
+    const breakSide = result.offsetM > 0 ? "left" : "right";
+    const amount = feet < 10 ? feet.toFixed(1).replace(/\.0$/, "") : String(Math.round(feet));
+    return "Start it " + amount + " ft " + startSide + " · breaks " + breakSide + " · " + length;
+  }
+
+  function startingBall(course, hole, pinLat, pinLon) {
+    const target = greenTargets[course] && greenTargets[course][hole];
+    if (!target) return { lat: pinLat, lon: pinLon };
+    const away = bearingDeg({ lat: pinLat, lng: pinLon }, { lat: target.teeLat, lng: target.teeLon });
+    let chosen = { lat: pinLat, lon: pinLon };
+    for (let meters = 3; meters <= 16; meters += 1) {
+      const spot = moveMeters(pinLat, pinLon, away, meters);
+      if (target.ring && !pointInRing(spot.lat, spot.lon, target.ring)) break;
+      chosen = spot;
+      if (meters >= 10) break;
+    }
+    return chosen;
+  }
+
+  function drawPutt(path) {
+    if (puttShade) map.removeLayer(puttShade);
+    if (puttLine) map.removeLayer(puttLine);
+    puttShade = L.polyline(path, { color: "#111", weight: 9, opacity: 0.55, interactive: false }).addTo(map);
+    puttLine = L.polyline(path, { color: "#ffe56a", weight: 4, opacity: 1, interactive: false }).addTo(map);
+  }
+
+  function updatePutt() {
+    if (!ballMarker || !pinMarker || !selectedHole) return;
+    const course = selectedHole.course;
+    const hole = selectedHole.hole;
+    const info = gridFor(course, hole);
+    const ball = ballMarker.getLatLng();
+    const pin = pinMarker.getLatLng();
+    const ring = greenTargets[course] && greenTargets[course][hole] && greenTargets[course][hole].ring;
+    if (ring && pointInRing(ball.lat, ball.lng, ring)) ballMarker._good = ball;
+    if (ring && pointInRing(pin.lat, pin.lng, ring)) pinMarker._good = pin;
+    if (!info) return;
+    const result = solvePutt(info, { lat: ball.lat, lon: ball.lng }, { lat: pin.lat, lon: pin.lng });
+    drawPutt(result.path);
+    puttRead = formatPutt(result);
+    if (scoreRoll) scoreRoll.textContent = puttRead;
+  }
+
+  function snapPuttMarker(marker) {
+    const ring = selectedHole && greenTargets[selectedHole.course] && greenTargets[selectedHole.course][selectedHole.hole].ring;
+    const here = marker.getLatLng();
+    if (ring && !pointInRing(here.lat, here.lng, ring) && marker._good) marker.setLatLng(marker._good);
+  }
+
+  function setupPutt(course, hole) {
+    clearPuttMarkers();
+    const target = greenTargets[course] && greenTargets[course][hole];
+    const info = gridFor(course, hole);
+    if (!target || !info) return;
+    const pin = { lat: target.lat, lon: target.lon };
+    const ball = startingBall(course, hole, pin.lat, pin.lon);
+    ballMarker = L.marker([ball.lat, ball.lon], {
+      draggable: true,
+      icon: L.divIcon({
+        className: "putt-icon",
+        html: '<div class="putt-ball"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      }),
+      zIndexOffset: 900,
+      title: "Drag the ball",
+    }).addTo(map);
+    pinMarker = L.marker([pin.lat, pin.lon], {
+      draggable: true,
+      icon: L.divIcon({
+        className: "putt-icon",
+        html: '<div class="putt-flag"><i></i></div>',
+        iconSize: [22, 28],
+        iconAnchor: [3, 26],
+      }),
+      zIndexOffset: 880,
+      title: "Drag the hole",
+    }).addTo(map);
+    ballMarker._good = ballMarker.getLatLng();
+    pinMarker._good = pinMarker.getLatLng();
+    ballMarker.on("drag", updatePutt);
+    pinMarker.on("drag", updatePutt);
+    ballMarker.on("dragend", () => {
+      snapPuttMarker(ballMarker);
+      updatePutt();
+    });
+    pinMarker.on("dragend", () => {
+      snapPuttMarker(pinMarker);
+      updatePutt();
+    });
+    updatePutt();
+  }
+
+  function clearPuttMarkers() {
+    [ballMarker, pinMarker, puttLine, puttShade].forEach((layer) => {
+      if (layer) map.removeLayer(layer);
+    });
+    ballMarker = null;
+    pinMarker = null;
+    puttLine = null;
+    puttShade = null;
+    puttRead = "";
+  }
+
+  function clearPutt() {
+    clearPuttMarkers();
+    if (selectedHole && scoreRoll) scoreRoll.textContent = rollPhrase(selectedHole.course, selectedHole.hole);
   }
 
   function liveYardsFor(props) {
@@ -797,6 +1158,7 @@
     activeHoleBtn = null;
     selectedHole = null;
     markTarget = null;
+    clearGreenBreak();
     lastHole.katke = null;
     lastHole.sharf = null;
     map.closePopup();
@@ -838,6 +1200,7 @@
     updateYardageHud();
     showScoreEntry();
     updateFlyButton();
+    showGreenBreak(course, n);
   }
 
   function applyToggles() {
@@ -948,6 +1311,8 @@
       labels,
       pins,
       cardData,
+      slopeData,
+      gridData,
     ] = await Promise.all([
       loadJSON("meta.json"),
       loadJSON("boundary.geojson"),
@@ -959,12 +1324,17 @@
       loadJSON("hole_labels.geojson"),
       loadJSON("pins.geojson"),
       loadJSON("card.json"),
+      loadJSON("green_slopes.json"),
+      loadJSON("green_grids.json"),
     ]);
     card = cardData;
+    greenSlopes = slopeData;
+    greenGrids = gridData;
+    if (greenGrids) greenGrids.stepM = greenGrids.stepM || 1;
     paintAllScores();
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Imagery © Esri · Voice: Alba, University of Edinburgh";
+      meta.attribution + " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {
@@ -1359,6 +1729,7 @@
       (hcp != null ? " · Hcp " + hcp : "") +
       (scoreCollapsed && saved != null ? " · " + saved : "");
     if (scorePlays) scorePlays.textContent = playsLine(course, hole);
+    if (scoreRoll) scoreRoll.textContent = puttRead || rollPhrase(course, hole);
     scoreInput.value = saved == null ? "" : String(saved);
     scoreNext.disabled = hole >= 18;
     scoreNext.textContent = hole >= 18 ? "Last hole" : "Next hole";
@@ -1683,6 +2054,7 @@
     updateYardageHud();
   });
   btnReset.addEventListener("click", clearHoleSelection);
+  if (btnBreaks) btnBreaks.addEventListener("click", zoomGreenBreak);
   scoreMinus.addEventListener("click", () => bumpScore(-1));
   scorePlus.addEventListener("click", () => bumpScore(1));
   scoreInput.addEventListener("input", () => {
