@@ -32,6 +32,17 @@
         <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
         <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
       </div>
+      <div id="wind-chip" class="wind-chip" aria-live="polite">
+        <div class="wind-arrow" id="wind-arrow" hidden></div>
+        <div class="wind-body">
+          <div class="wind-top">
+            <span class="wind-deg" id="wind-deg">Wind</span>
+            <span class="wind-rh" id="wind-rh"></span>
+          </div>
+          <div class="wind-speed" id="wind-speed">…</div>
+          <div class="wind-from" id="wind-from">at the course</div>
+        </div>
+      </div>
       <div id="yardage-hud" class="yardage-hud" hidden>
         <div class="yh-top">
           <div class="yh-hole" id="yh-hole">Select a hole</div>
@@ -54,7 +65,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Pick your tee. The gold number under each hole is how far it plays from that tee to the green, after the uphill or downhill. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+      <p class="score-hint" id="score-hint">Pick your tee. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. The gold number under each hole is how far it plays from that tee to the green, after the uphill or downhill. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
 
       <div class="card-picks">
         <label>Tee
