@@ -9,6 +9,7 @@ This site is separate from the Oakland University golf map. It has its own folde
 - Satellite map of the 18-hole course (par 72). Pick Black, Blue, Silver, Silver/Green, Green, Black (M), or Gold. Black is 7,329 yards, 76.2/148
 - Tap a hole to see par, handicap, and the yardage for the tee you picked, then **Fly over** from tee to green on the map
 - **Video** plays a satellite flyover of that hole. A Scottish voice names the hole, the par, and the yardage from the tee you picked
+- **Yardage curves** on the selected hole: a thin red line at 100 yards from the middle of the green, white at 150, and blue at 200. The lines are finer than the cart paths. A curve that would fall behind the tee is left off. Reset clears them
 - **Breaks** zooms into the green. A color wash and arrows show which way a ball rolls, from the 2016 government lidar scan of Oakland County. Drag the white ball and the red flag. The gold line is a putt that finishes in the hole, and the words say how far left or right to start it. The scan is smoothed over a few meters, so it shows the general fall, not a break of an inch or two
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
 - Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
