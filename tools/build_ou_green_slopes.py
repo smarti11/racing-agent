@@ -11,8 +11,10 @@ Writes ou_golf_map/green_slopes.json and one PNG per green, sitting next to
 index.html so a Cloudflare upload does not need a folder.
 """
 
+import base64
 import json
 import math
+import struct
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -23,6 +25,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 MAP = ROOT / "ou_golf_map"
 OUT_JSON = MAP / "green_slopes.json"
+OUT_GRIDS = MAP / "green_grids.json"
 SERVICE = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage"
 UA = "ou-golf-map (smarti2006@gmail.com)"
 METERS = 1.0
@@ -244,6 +247,16 @@ def render(slope, mask, down_deg):
     return image
 
 
+def pack_grades(dzdx, dzdy):
+    """Little-endian int16 thousandths of a slope, east grades then north grades."""
+    vals = []
+    for arr in (dzdx, dzdy):
+        for value in arr.reshape(-1):
+            scaled = int(round(float(value) * 10000))
+            vals.append(max(-32767, min(32767, scaled)))
+    return base64.b64encode(struct.pack("<" + "h" * len(vals), *vals)).decode("ascii")
+
+
 def summarize(elev, mask, dzdx, dzdy):
     inside = elev[mask]
     fall_ft = float((inside.max() - inside.min()) * M_TO_FT)
@@ -271,6 +284,7 @@ def main():
         ),
         "greens": {"katke": {}, "sharf": {}},
     }
+    grids = {"stepM": METERS, "scale": 10000, "greens": {"katke": {}, "sharf": {}}}
     for pin, ring in sorted(matched, key=lambda item: (item[0]["course"], item[0]["hole"])):
         xs, ys = [], []
         for lon, lat in ring["ring"]:
@@ -304,6 +318,15 @@ def main():
             "north": round(north, 7),
             **summary,
         }
+        grids["greens"][pin["course"]][str(pin["hole"])] = {
+            "cols": cols,
+            "rows": rows,
+            "minx": round(minx, 2),
+            "miny": round(miny, 2),
+            "maxx": round(maxx, 2),
+            "maxy": round(maxy, 2),
+            "dz": pack_grades(dzdx, dzdy),
+        }
         print(
             f"{pin['course']:5} {pin['hole']:2}  "
             f"fall {summary['fallFt']:4.1f} ft  "
@@ -312,7 +335,9 @@ def main():
             f"cells {int(mask.sum())}"
         )
     OUT_JSON.write_text(json.dumps(book, indent=2) + "\n")
+    OUT_GRIDS.write_text(json.dumps(grids) + "\n")
     print(f"wrote {OUT_JSON}")
+    print(f"wrote {OUT_GRIDS} ({OUT_GRIDS.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":
