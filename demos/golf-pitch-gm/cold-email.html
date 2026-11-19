@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tee Align · Cold email to GMs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #050805;
+    --gold: #d4b145;
+    --gold-bright: #f3d56a;
+    --cream: #f2ebd5;
+    --mist: #9aaf9d;
+    --line: rgba(212, 177, 69, 0.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 70% 50% at 0% 0%, rgba(212,177,69,0.16), transparent 55%),
+      linear-gradient(160deg, #07110a 0%, #050805 100%);
+    color: var(--cream);
+    font-family: Outfit, system-ui, sans-serif;
+    padding: 40px 20px 64px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 28px; }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .brand img {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--gold);
+  }
+  .brand h1 {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 34px; letter-spacing: 0.08em; color: var(--gold-bright);
+  }
+  .brand p { color: var(--mist); font-size: 14px; margin-top: 2px; }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(0,0,0,0.35);
+    padding: 24px;
+  }
+  .panel h2 {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 28px; letter-spacing: 0.04em; margin-bottom: 12px;
+  }
+  .label {
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600; margin-bottom: 8px;
+  }
+  .subject {
+    font-size: 20px; font-weight: 600; color: var(--cream);
+    padding: 14px 16px; border-radius: 12px;
+    background: rgba(212,177,69,0.1); border: 1px solid var(--line);
+  }
+  .alts { margin-top: 12px; display: grid; gap: 8px; }
+  .alts li {
+    list-style: none; font-size: 14px; color: var(--mist);
+    padding-left: 14px; position: relative;
+  }
+  .alts li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+  }
+
+  .email-frame {
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #f7f4ea;
+    color: #1a1a1a;
+  }
+  .email-chrome {
+    background: #0d1a12; color: var(--cream);
+    padding: 14px 18px; display: flex; gap: 12px; align-items: center;
+  }
+  .email-chrome img {
+    width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--gold);
+  }
+  .email-chrome strong {
+    display: block; font-family: "Bebas Neue", sans-serif;
+    letter-spacing: 0.08em; font-size: 20px; color: var(--gold-bright);
+  }
+  .email-chrome span { font-size: 12px; color: var(--mist); }
+  .email-body {
+    padding: 28px 28px 32px;
+    font-size: 15px; line-height: 1.55; color: #222;
+  }
+  .email-body p { margin: 0 0 14px; }
+  .email-body a { color: #8a7020; font-weight: 600; }
+  .sig {
+    margin-top: 22px; padding-top: 18px;
+    border-top: 1px solid #e2d9bf;
+    font-size: 14px; color: #444;
+  }
+  .sig .name { font-weight: 700; color: #111; }
+  .sig .co {
+    font-family: "Bebas Neue", sans-serif;
+    letter-spacing: 0.08em; color: #8a7020; font-size: 18px; margin-top: 4px;
+  }
+
+  .plain {
+    white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; line-height: 1.5; color: var(--mist);
+    background: rgba(0,0,0,0.4); border-radius: 12px; padding: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  button, .btn {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 10px 16px; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 700;
+    background: linear-gradient(180deg, #f3d56a, #d4b145); color: #111; text-decoration: none;
+  }
+  .btn.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+  }
+  .note { font-size: 13px; color: var(--mist); margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <img src="grizzly.png" alt="Tee Align" />
+      <div>
+        <h1>TEE ALIGN</h1>
+        <p>Cold outreach · Metro Detroit course GMs</p>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="label">Primary subject</div>
+      <div class="subject" id="subject">$3,500 to put your course on every phone this season</div>
+      <ul class="alts">
+        <li>Alt: Members already pull yardages — just not yours</li>
+        <li>Alt: 20 minutes on site for Course + Outing Mode</li>
+        <li>Alt: Phone GPS + outing kit — no cart-screen capital project</li>
+      </ul>
+      <div class="actions">
+        <button type="button" id="copySubject">Copy subject</button>
+        <button type="button" id="copyBody" class="btn ghost" style="border:1px solid var(--line);background:transparent;color:var(--cream)">Copy plain-text body</button>
+      </div>
+      <p class="note" id="status"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Branded send preview</h2>
+      <p class="note" style="margin-bottom:14px">Paste into Gmail as plain text (recommended for cold mail). Use the HTML look only if your CRM supports branded templates.</p>
+      <div class="email-frame">
+        <div class="email-chrome">
+          <img src="grizzly.png" alt="" />
+          <div>
+            <strong>TEE ALIGN</strong>
+            <span>Course Mode · Outing Mode · Metro Detroit</span>
+          </div>
+        </div>
+        <div class="email-body">
+          <p>Hi {{First name}},</p>
+          <p>Quick note for {{Course name}} — golfers on your property already open a caddie app for yardages. It’s almost never yours.</p>
+          <p><strong>Tee Align</strong> puts branded GPS and scoring on their phones for the season, then flips an outing skin for classics and charity shotguns — without a cart-screen capital project.</p>
+          <p>
+            Course Mode: <strong>$3,500</strong> / season<br />
+            Outing Mode: <strong>$3,500</strong> / event (season + first outing = $7,000)
+          </p>
+          <p>
+            Live demos you can open now:<br />
+            Course — <a href="https://ou-golf-course.apps.grok.bot">ou-golf-course.apps.grok.bot</a><br />
+            Outing — <a href="https://ou-golf-outing.apps.grok.bot">ou-golf-outing.apps.grok.bot</a>
+          </p>
+          <p>Worth 20 minutes on site with you (and the pro or outing chair if useful) before Apr 15?</p>
+          <p>Best,<br />{{Your name}}</p>
+          <div class="sig">
+            <div class="name">{{Your name}}</div>
+            <div class="co">TEE ALIGN</div>
+            Metro Detroit · Course &amp; Outing<br />
+            {{Phone}} · {{Email}}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="label">Plain text · copy / paste</div>
+      <pre class="plain" id="plainBody">Hi {{First name}},
+
+Quick note for {{Course name}} — golfers on your property already open a caddie app for yardages. It’s almost never yours.
+
+Tee Align puts branded GPS and scoring on their phones for the season, then flips an outing skin for classics and charity shotguns — without a cart-screen capital project.
+
+Course Mode: $3,500 / season
+Outing Mode: $3,500 / event (season + first outing = $7,000)
+
+Live demos:
+Course — https://ou-golf-course.apps.grok.bot
+Outing — https://ou-golf-outing.apps.grok.bot
+
+Worth 20 minutes on site with you (and the pro or outing chair if useful) before Apr 15?
+
+Best,
+{{Your name}}
+Tee Align · Metro Detroit
+{{Phone}} · {{Email}}</pre>
+    </section>
+  </div>
+
+<script>
+  const status = document.getElementById("status");
+  function flash(msg) {
+    status.textContent = msg;
+    setTimeout(() => { status.textContent = ""; }, 2200);
+  }
+  document.getElementById("copySubject").onclick = async () => {
+    await navigator.clipboard.writeText(document.getElementById("subject").textContent.trim());
+    flash("Subject copied.");
+  };
+  document.getElementById("copyBody").onclick = async () => {
+    await navigator.clipboard.writeText(document.getElementById("plainBody").textContent.trim());
+    flash("Email body copied.");
+  };
+</script>
+</body>
+</html>
