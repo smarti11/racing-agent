@@ -649,6 +649,129 @@
   }
   .side-list a:hover { color: var(--ou-gold-bright); }
 
+  .lock-card {
+    border: 1px solid var(--ou-gold-dim);
+    background: rgba(196,160,53,0.08);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .lock-card.viewer {
+    border-color: #444;
+    background: #171717;
+  }
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .role-btn {
+    border: 1px solid #444;
+    background: #121212;
+    color: #eee;
+    border-radius: 10px;
+    padding: 10px 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+  }
+  .role-btn.active {
+    border-color: var(--ou-gold);
+    background: rgba(196,160,53,0.15);
+    color: var(--ou-gold-bright);
+  }
+  .role-btn small {
+    display: block;
+    font-weight: 500;
+    color: var(--ou-muted);
+    margin-top: 3px;
+  }
+  .score-table.locked input,
+  .score-table.locked .score-step {
+    pointer-events: none;
+    opacity: 0.45;
+  }
+  .score-step {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-step button {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    border: 1px solid #555;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .auction-banner {
+    background: linear-gradient(160deg, rgba(196,160,53,0.2), transparent 60%), var(--ou-panel);
+    border: 1px solid #3a3320;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .auction-item {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--ou-panel);
+    border: 1px solid var(--ou-line);
+    margin-bottom: 8px;
+  }
+  .auction-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    background:
+      linear-gradient(145deg, rgba(224,188,74,0.35), transparent 55%),
+      #2a2a2a;
+    border: 1px solid #444;
+    display: grid;
+    place-items: center;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 18px;
+    color: var(--ou-gold-bright);
+  }
+  .auction-item h4 {
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+  .auction-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .auction-meta span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 7px;
+    border-radius: 999px;
+    border: 1px solid #444;
+    color: #ccc;
+  }
+  .auction-meta .view-only {
+    border-color: var(--ou-gold-dim);
+    color: var(--ou-gold-bright);
+  }
+  .bid-disabled {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--ou-muted);
+    font-style: italic;
+  }
+
   @media (max-width: 1100px) {
     body {
       grid-template-columns: 1fr;
@@ -675,10 +798,10 @@
     </div>
     <h2>Use the phone</h2>
     <ul>
-      <li>Bottom tabs: Home · Play · Score · Board · More</li>
-      <li>On Play, step holes with ← → to see each sponsor takeover</li>
-      <li>Tap the sponsor card on a hole to open their homepage</li>
-      <li>Click a sponsor in the right rail to jump to that hole</li>
+      <li>Bottom tabs: Home · Play · Score · Auction · More</li>
+      <li>Score: one scorekeeper per group; others stay view-only</li>
+      <li>Auction: browse silent-auction items (no bidding in app)</li>
+      <li>Play: step holes with ← → for each sponsor takeover</li>
     </ul>
     <div class="note">
       Concept mock for pitching outing branding — not an official Oakland University
@@ -830,6 +953,29 @@
             <div class="outing-pill" id="scoreThru">−5</div>
           </div>
 
+          <div class="lock-card" id="lockCard">
+            <div class="row-between">
+              <strong id="lockTitle" style="font-size:13px">Who is scoring?</strong>
+              <span class="muted" id="lockStatus" style="font-size:11px">Unlocked</span>
+            </div>
+            <p class="muted" id="lockCopy" style="margin-top:6px;line-height:1.45;font-size:12px">
+              One scorekeeper per group. Everyone else watches live — no double entry.
+            </p>
+            <div class="role-grid">
+              <button type="button" class="role-btn active" data-role="keeper" id="roleKeeper">
+                I’m scorekeeper
+                <small>Alex · Cart 14</small>
+              </button>
+              <button type="button" class="role-btn" data-role="viewer" id="roleViewer">
+                View only
+                <small>Watch the card</small>
+              </button>
+            </div>
+            <button type="button" class="btn btn-ghost" id="passKeeperBtn" style="margin-top:8px">
+              Pass scorekeeper to teammate
+            </button>
+          </div>
+
           <div class="card" style="padding:8px">
             <table class="score-table" id="scoreTable">
               <thead>
@@ -845,6 +991,32 @@
             <h3>Contest holes</h3>
             <p class="muted" id="contestList" style="line-height:1.55"></p>
           </div>
+        </section>
+
+        <!-- AUCTION (view only) -->
+        <section class="screen" data-screen="auction">
+          <div class="brand-bar">
+            <div class="brand-mark">
+              <img class="bear" src="grizzly.png" alt="Golden Grizzlies mascot" />
+              <div class="brand-text">
+                <strong>SILENT AUCTION</strong>
+                <span>Browse only · no bidding in app</span>
+              </div>
+            </div>
+            <div class="outing-pill">View</div>
+          </div>
+
+          <div class="auction-banner">
+            <div class="kicker" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ou-gold-bright);font-weight:700">
+              GGGC 2026 · Clubhouse
+            </div>
+            <p style="font-size:13px;line-height:1.45;margin-top:4px">
+              Preview items while you play. Bidding stays at the live tables after the round — this screen is catalog only.
+            </p>
+            <p class="muted" style="margin-top:8px;font-size:12px">Closes at dinner · ~2:30 PM · Steve Sharf Clubhouse</p>
+          </div>
+
+          <div id="auctionList"></div>
         </section>
 
         <!-- BOARD -->
@@ -913,6 +1085,14 @@
               Hole 8 takeover features Golden Grizzlies student-athletes. Snap a photo — auto-tagged to the outing feed.
             </p>
           </div>
+
+          <div class="card">
+            <h3>Live leaderboard</h3>
+            <p class="muted" style="line-height:1.55;margin-bottom:10px">
+              Sharf flight scramble board with Meemic presentership — also on clubhouse TV.
+            </p>
+            <button class="btn btn-ghost" type="button" data-go="board" style="margin:0">Open live board</button>
+          </div>
         </section>
       </div>
 
@@ -920,7 +1100,7 @@
         <button class="tab active" data-tab="home"><span class="ico">⌂</span>Home</button>
         <button class="tab" data-tab="play"><span class="ico">◎</span>Play</button>
         <button class="tab" data-tab="score"><span class="ico">☰</span>Score</button>
-        <button class="tab" data-tab="board"><span class="ico">▤</span>Board</button>
+        <button class="tab" data-tab="auction"><span class="ico">◇</span>Auction</button>
         <button class="tab" data-tab="more"><span class="ico">···</span>More</button>
       </nav>
     </div>
@@ -996,7 +1176,27 @@ const LEADERBOARD = [
 // Illustrative scramble scores for holes 1–7; rest open
 const SCORES = [3,4,2,4,3,4,3, null,null,null,null,null,null,null,null,null,null,null];
 
+const PLAYERS = [
+  { id: "alex", name: "Alex" },
+  { id: "jordan", name: "Jordan" },
+  { id: "sam", name: "Sam" },
+  { id: "casey", name: "Casey" },
+];
+
+const AUCTION_ITEMS = [
+  { code: "01", title: "Round of 4 · R&S Sharf", donor: "OU Golf & Learning Center", value: "$450", note: "Carts included · weekday" },
+  { code: "02", title: "Signed Golden Grizzlies basketball", donor: "OU Athletics", value: "$300", note: "Display case included" },
+  { code: "03", title: "Dinner for 6 · Patti Finnegan’s", donor: "Steve Sharf Clubhouse", value: "$350", note: "Gratuity not included" },
+  { code: "04", title: "Two tickets · Horizon League night", donor: "OU Athletics", value: "$120", note: "Men’s basketball" },
+  { code: "05", title: "Ford Performance merch pack", donor: "Ford Motor Company", value: "$200", note: "Hat · polo · tumbler" },
+  { code: "06", title: "Meemic golf bag & umbrella", donor: "Meemic", value: "$180", note: "Title sponsor gift set" },
+  { code: "07", title: "Corewell Health wellness basket", donor: "Corewell Health", value: "$150", note: "Recovery & wellness" },
+  { code: "08", title: "Staycation night · Rochester", donor: "Local hotel partner", value: "$275", note: "One night · late checkout" },
+];
+
 let holeIdx = 0;
+let scoreRole = "keeper"; // keeper | viewer
+let scorekeeperIdx = 0;
 
 function fmtRel(score, par) {
   if (score == null) return "·";
@@ -1048,34 +1248,92 @@ function renderHole() {
   });
 }
 
+function updateLockUI() {
+  const keeper = PLAYERS[scorekeeperIdx];
+  const isKeeper = scoreRole === "keeper";
+  const lockCard = document.getElementById("lockCard");
+  const table = document.getElementById("scoreTable");
+  lockCard.classList.toggle("viewer", !isKeeper);
+  table.classList.toggle("locked", !isKeeper);
+  document.getElementById("lockTitle").textContent = isKeeper
+    ? `Scorekeeper · ${keeper.name}`
+    : `Viewing · ${keeper.name} is scoring`;
+  document.getElementById("lockStatus").textContent = isKeeper ? "You can edit" : "Locked";
+  document.getElementById("lockCopy").textContent = isKeeper
+    ? "Only your phone can edit this scramble card. Teammates see updates live."
+    : `${keeper.name} holds the card. Scores sync to you — tap “I’m scorekeeper” only if they pass it.`;
+  document.getElementById("roleKeeper").classList.toggle("active", isKeeper);
+  document.getElementById("roleViewer").classList.toggle("active", !isKeeper);
+  document.querySelector("#roleKeeper small").textContent = `${keeper.name} · Cart 14`;
+}
+
+function setScore(holeIndex, next) {
+  if (scoreRole !== "keeper") return;
+  const par = HOLES[holeIndex].par;
+  let val = next;
+  if (val != null) val = Math.max(1, Math.min(par + 6, val));
+  SCORES[holeIndex] = val;
+  renderScore();
+}
+
 function renderScore() {
+  updateLockUI();
   const tbody = document.querySelector("#scoreTable tbody");
   tbody.innerHTML = "";
   let toPar = 0;
   let played = 0;
+  const canEdit = scoreRole === "keeper";
   HOLES.forEach((h, i) => {
     const sc = SCORES[i];
     if (sc != null) { toPar += sc - h.par; played++; }
     const tr = document.createElement("tr");
     if (i === holeIdx) tr.classList.add("current");
+    const scoreCell = canEdit
+      ? `<div class="score-step">
+           <button type="button" data-act="dec" data-i="${i}" aria-label="Lower score">−</button>
+           <strong>${sc == null ? "—" : sc}</strong>
+           <button type="button" data-act="inc" data-i="${i}" aria-label="Raise score">+</button>
+         </div>`
+      : `<strong>${sc == null ? "—" : sc}</strong>`;
     tr.innerHTML = `
       <td class="hole-num">${h.n}</td>
       <td>${h.par}</td>
       <td>${h.yds}</td>
-      <td>${sc == null ? "—" : sc}</td>
+      <td>${scoreCell}</td>
       <td>${fmtRel(sc, h.par)}</td>`;
-    tr.addEventListener("click", () => {
-      holeIdx = i;
-      showScreen("play");
-      renderHole();
-    });
     tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = Number(btn.dataset.i);
+      const cur = SCORES[i] == null ? HOLES[i].par : SCORES[i];
+      setScore(i, btn.dataset.act === "inc" ? cur + 1 : cur - 1);
+    });
   });
   document.getElementById("scoreThru").textContent = played ? (toPar === 0 ? "E" : (toPar > 0 ? `+${toPar}` : `${toPar}`)) : "—";
   document.getElementById("contestList").innerHTML = HOLES
     .filter(h => h.contest)
     .map(h => `<b>H${h.n}</b> ${h.contest} · ${h.sponsor}`)
     .join("<br>");
+}
+
+function renderAuction() {
+  const root = document.getElementById("auctionList");
+  root.innerHTML = AUCTION_ITEMS.map((item) => `
+    <article class="auction-item">
+      <div class="auction-thumb">${item.code}</div>
+      <div>
+        <h4>${item.title}</h4>
+        <p class="muted" style="font-size:12px;line-height:1.4">Donor: ${item.donor}</p>
+        <div class="auction-meta">
+          <span>Est. ${item.value}</span>
+          <span class="view-only">View only</span>
+        </div>
+        <p class="bid-disabled">${item.note} · Bidding not available in app</p>
+      </div>
+    </article>
+  `).join("");
 }
 
 function renderBoard() {
@@ -1115,6 +1373,7 @@ function showScreen(name) {
   if (name === "score") renderScore();
   if (name === "board") renderBoard();
   if (name === "play") renderHole();
+  if (name === "auction") renderAuction();
 }
 
 document.querySelectorAll(".tab").forEach(tab => {
@@ -1130,6 +1389,19 @@ document.getElementById("prevHole").addEventListener("click", () => {
 document.getElementById("nextHole").addEventListener("click", () => {
   holeIdx = (holeIdx + 1) % 18;
   renderHole();
+});
+document.getElementById("roleKeeper").addEventListener("click", () => {
+  scoreRole = "keeper";
+  renderScore();
+});
+document.getElementById("roleViewer").addEventListener("click", () => {
+  scoreRole = "viewer";
+  renderScore();
+});
+document.getElementById("passKeeperBtn").addEventListener("click", () => {
+  scorekeeperIdx = (scorekeeperIdx + 1) % PLAYERS.length;
+  scoreRole = "viewer";
+  renderScore();
 });
 document.getElementById("shareBtn").addEventListener("click", async () => {
   const text = "Playing the Patrick A. Tooman Memorial Golden Grizzlies Golf Classic at R&S Sharf — supporting OU student-athletes. #GGGC2026 @GoldenGrizzlies";
@@ -1155,6 +1427,7 @@ renderSponsorRail();
 renderHole();
 renderScore();
 renderBoard();
+renderAuction();
 </script>
 </body>
 </html>
