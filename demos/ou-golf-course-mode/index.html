@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>OU Golf · Course Mode · R&S Sharf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ou-black: #0c0c0c;
+    --ou-gold: #c4a035;
+    --ou-gold-bright: #e0bc4a;
+    --ou-gold-dim: #8a7024;
+    --ou-cream: #f3ead0;
+    --ou-panel: #1e1e1e;
+    --ou-line: #333;
+    --ou-muted: #9a9a9a;
+    --ou-ok: #3d9a5f;
+    --phone-w: 390px;
+    --phone-h: 844px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 20% 0%, #2a2414 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, #1a1510 0%, transparent 45%),
+      #0a0a0a;
+    color: #f5f5f5;
+    font-family: "Source Sans 3", system-ui, sans-serif;
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) var(--phone-w) minmax(260px, 1fr);
+    gap: 28px;
+    align-items: start;
+    justify-content: center;
+    padding: 32px 24px 48px;
+  }
+  .deck { max-width: 420px; padding-top: 24px; }
+  .deck h1 {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 40px;
+    letter-spacing: 0.04em;
+    color: var(--ou-gold-bright);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .deck .sub { color: var(--ou-muted); font-size: 14px; line-height: 1.45; margin-bottom: 16px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    border: 1px solid var(--ou-gold-dim);
+    color: var(--ou-cream);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 999px;
+  }
+  .deck ul { padding-left: 18px; color: #cfcfcf; font-size: 13.5px; line-height: 1.5; }
+  .note {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--ou-gold);
+    background: rgba(196, 160, 53, 0.08);
+    font-size: 12.5px;
+    color: var(--ou-cream);
+  }
+  .phone-wrap { position: sticky; top: 24px; display: flex; justify-content: center; }
+  .phone {
+    width: var(--phone-w);
+    height: var(--phone-h);
+    background: var(--ou-black);
+    border: 2px solid #3a3a3a;
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 0 0 10px #111, 0 30px 80px rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 118px; height: 28px; background: #000; border-radius: 18px; z-index: 5;
+  }
+  .status {
+    height: 48px; padding: 16px 22px 0;
+    display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 600; color: #ddd;
+  }
+  .app { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+  .screen { display: none; flex: 1; overflow-y: auto; padding: 8px 16px 88px; }
+  .screen.active { display: block; }
+  .brand-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .brand-mark { display: flex; align-items: center; gap: 10px; }
+  .bear {
+    width: 40px; height: 40px; border-radius: 50%; background: #000;
+    border: 1px solid var(--ou-gold-dim); object-fit: cover;
+  }
+  .brand-text strong { display: block; font-size: 13px; letter-spacing: 0.04em; }
+  .brand-text span { font-size: 11px; color: var(--ou-muted); }
+  .mode-pill {
+    background: var(--ou-gold); color: #111; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px;
+  }
+  .hero-card {
+    background: linear-gradient(160deg, rgba(196,160,53,0.22), transparent 55%), var(--ou-panel);
+    border: 1px solid #3a3320; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+  .hero-card .kicker {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ou-gold-bright); font-weight: 700; margin-bottom: 4px;
+  }
+  .hero-card h2 {
+    font-family: "Bebas Neue", sans-serif; font-size: 28px; letter-spacing: 0.03em;
+    line-height: 1.05; margin-bottom: 6px;
+  }
+  .hero-card p { font-size: 13px; color: #d0d0d0; line-height: 1.4; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .meta {
+    background: rgba(0,0,0,0.35); border: 1px solid #444; border-radius: 8px;
+    padding: 7px 9px; font-size: 11px;
+  }
+  .meta b { color: var(--ou-gold-bright); }
+  .card {
+    background: var(--ou-panel); border: 1px solid var(--ou-line);
+    border-radius: 14px; padding: 14px; margin-bottom: 10px;
+  }
+  .card h3 {
+    font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--ou-gold); margin-bottom: 8px;
+  }
+  .course-lock {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: 12px; background: #141414; border: 1px solid #2e2e2e; margin-bottom: 10px;
+  }
+  .course-lock .dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--ou-ok);
+    box-shadow: 0 0 0 3px rgba(61,154,95,0.2);
+  }
+  .course-lock strong { display: block; font-size: 14px; }
+  .course-lock span { font-size: 11px; color: var(--ou-muted); }
+  .btn {
+    display: block; width: 100%; border: 0; border-radius: 12px; padding: 13px 14px;
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-gold { background: linear-gradient(180deg, var(--ou-gold-bright), var(--ou-gold)); color: #111; }
+  .btn-ghost { background: transparent; border: 1px solid #555; color: #eee; margin-top: 8px; }
+  .hole-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .hole-head h2 { font-family: "Bebas Neue", sans-serif; font-size: 34px; letter-spacing: 0.04em; line-height: 1; }
+  .hole-nav { display: flex; gap: 6px; }
+  .hole-nav button {
+    width: 34px; height: 34px; border-radius: 10px; border: 1px solid #444;
+    background: #272727; color: #fff; font-size: 16px; cursor: pointer;
+  }
+  .muted { color: var(--ou-muted); font-size: 12px; }
+  .map-fake {
+    height: 150px; border-radius: 14px; border: 1px solid #3a3a3a;
+    background:
+      radial-gradient(circle at 70% 35%, rgba(226, 210, 120, 0.35) 0 8%, transparent 9%),
+      linear-gradient(115deg, #1a3a24 0%, #245533 40%, #1c4028 70%, #163520 100%);
+    position: relative; margin-bottom: 10px;
+  }
+  .map-fake::after {
+    content: "R&S SHARF · LIVE GPS";
+    position: absolute; left: 10px; bottom: 8px;
+    font-size: 10px; letter-spacing: 0.1em; color: rgba(255,255,255,0.55);
+  }
+  .pin {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--ou-gold-bright); box-shadow: 0 0 0 4px rgba(224,188,74,0.25);
+    top: 32%; left: 68%;
+  }
+  .player-dot {
+    position: absolute; width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 2px solid #111; top: 68%; left: 28%;
+  }
+  .yard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+  .yard {
+    text-align: center; background: #121212; border: 1px solid #333;
+    border-radius: 12px; padding: 10px 6px;
+  }
+  .yard .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ou-muted); }
+  .yard .val { font-family: "Bebas Neue", sans-serif; font-size: 28px; }
+  .yard.mid { border-color: var(--ou-gold-dim); background: linear-gradient(180deg, rgba(196,160,53,0.18), #121212); }
+  .yard.mid .val { color: var(--ou-gold-bright); font-size: 36px; }
+  .plays-like {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-size: 12px; color: #ccc; margin-bottom: 10px;
+  }
+  .plays-like b { color: var(--ou-gold-bright); }
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .score-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .score-table th, .score-table td {
+    padding: 7px 4px; text-align: center; border-bottom: 1px solid #2c2c2c;
+  }
+  .score-table th { color: var(--ou-muted); font-weight: 600; font-size: 10px; text-transform: uppercase; }
+  .score-table td.hole-num { color: var(--ou-gold-bright); font-weight: 700; }
+  .score-table tr.current { background: rgba(196,160,53,0.12); }
+  .score-step { display: inline-flex; gap: 4px; align-items: center; justify-content: center; }
+  .score-step button {
+    width: 26px; height: 26px; border-radius: 7px; border: 1px solid #555;
+    background: #111; color: #fff; font-size: 14px; cursor: pointer;
+  }
+  .tabbar {
+    position: absolute; left: 12px; right: 12px; bottom: 14px; height: 62px;
+    background: rgba(20,20,20,0.96); border: 1px solid #333; border-radius: 18px;
+    display: grid; grid-template-columns: repeat(4, 1fr); z-index: 4;
+  }
+  .tab {
+    border: 0; background: transparent; color: #888; font-family: inherit;
+    font-size: 10px; font-weight: 600; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; cursor: pointer;
+  }
+  .tab.active { color: var(--ou-gold-bright); }
+  .tab .ico { font-size: 16px; }
+  .side h2 {
+    font-family: "Bebas Neue", sans-serif; letter-spacing: 0.05em;
+    color: var(--ou-gold-bright); font-size: 28px; margin-bottom: 8px;
+  }
+  .side p { color: var(--ou-muted); font-size: 13px; line-height: 1.4; margin-bottom: 12px; }
+  .side table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .side th, .side td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #2a2a2a; }
+  .side th { color: var(--ou-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .side tr { cursor: pointer; }
+  .side tr:hover td, .side tr.active td { color: var(--ou-gold-bright); }
+  .side tr.active td { background: rgba(196,160,53,0.08); }
+  @media (max-width: 1100px) {
+    body { grid-template-columns: 1fr; justify-items: center; }
+    .deck, .side { max-width: var(--phone-w); }
+    .phone-wrap { position: static; }
+  }
+</style>
+</head>
+<body>
+  <aside class="deck">
+    <h1>OU Golf App · Course Mode</h1>
+    <p class="sub">
+      Everyday phone-pull GPS + personal scoring on <b>R&amp;S Sharf</b>.
+      No outing skin, no group scorekeeper lock, no auction — season play at
+      <b>$3,500 / course</b>.
+    </p>
+    <div class="chip-row">
+      <span class="chip">Course mode</span>
+      <span class="chip">On-device scoring</span>
+      <span class="chip">$3,500 / season</span>
+    </div>
+    <ul>
+      <li>Home · Play · Score · More</li>
+      <li>You enter your own scores — no shared group lock</li>
+      <li>Hazard / plays-like yardages on every hole</li>
+    </ul>
+    <div class="note">
+      Pair with Outing Mode for shotgun events. Live outing demo:
+      <a href="https://ou-golf-outing.apps.grok.bot" style="color:var(--ou-gold-bright)">ou-golf-outing.apps.grok.bot</a>
+    </div>
+  </aside>
+
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="status"><span>OU Golf</span><span id="clock">9:58</span></div>
+      <div class="app">
+        <section class="screen active" data-screen="home">
+          <div class="brand-bar">
+            <div class="brand-mark">
+              <img class="bear" src="grizzly.png" alt="Golden Grizzlies mascot" />
+              <div class="brand-text">
+                <strong>OU GOLF</strong>
+                <span>Golf &amp; Learning Center</span>
+              </div>
+            </div>
+            <div class="mode-pill">Course Mode</div>
+          </div>
+          <div class="hero-card">
+            <div class="kicker">Season play</div>
+            <h2>Your round.<br/>Your phone.</h2>
+            <p>Live GPS, plays-like distances, and a personal scorecard — branded for OU Golf, not a consumer app’s ads.</p>
+            <div class="meta-row">
+              <div class="meta"><b>Gold tees</b></div>
+              <div class="meta"><b>Par 72</b></div>
+              <div class="meta"><b>6,683 yds</b></div>
+            </div>
+          </div>
+          <div class="course-lock">
+            <div class="dot"></div>
+            <div>
+              <strong>R&amp;S Sharf Golf Course</strong>
+              <span>Active for this demo · Katke available in full product</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>What’s included</h3>
+            <p class="muted" style="line-height:1.55">
+              Front / middle / back · hazards · plays-like · personal scoring ·
+              round history on device
+            </p>
+          </div>
+          <button class="btn btn-gold" data-go="play">Start round on Sharf</button>
+        </section>
+
+        <section class="screen" data-screen="play">
+          <div class="brand-bar">
+            <div class="brand-mark">
+              <img class="bear" src="grizzly.png" alt="Golden Grizzlies mascot" />
+              <div class="brand-text">
+                <strong>R&amp;S SHARF</strong>
+                <span>Course mode GPS</span>
+              </div>
+            </div>
+            <div class="mode-pill">Live</div>
+          </div>
+          <div class="hole-head">
+            <div>
+              <h2 id="holeTitle">Hole 1</h2>
+              <div class="muted" id="holeMeta">Par 4 · 435 yds · HCP 1</div>
+            </div>
+            <div class="hole-nav">
+              <button type="button" id="prevHole">‹</button>
+              <button type="button" id="nextHole">›</button>
+            </div>
+          </div>
+          <div class="map-fake"><div class="pin"></div><div class="player-dot"></div></div>
+          <div class="yard-grid">
+            <div class="yard"><div class="label">Front</div><div class="val" id="yFront">142</div></div>
+            <div class="yard mid"><div class="label">Middle</div><div class="val" id="yMid">156</div></div>
+            <div class="yard"><div class="label">Back</div><div class="val" id="yBack">171</div></div>
+          </div>
+          <div class="plays-like">
+            <span>Plays like <b id="playsLike">161</b></span>
+            <span id="weatherBits">+5 elev · light headwind</span>
+          </div>
+          <div class="card">
+            <h3>Targets</h3>
+            <div class="row-between" style="margin-bottom:6px"><span class="muted">Carry L bunker</span><strong id="tCarry">218</strong></div>
+            <div class="row-between"><span class="muted">Ideal landing</span><strong id="tLayup">245</strong></div>
+          </div>
+          <button class="btn btn-ghost" data-go="score">Open scorecard</button>
+        </section>
+
+        <section class="screen" data-screen="score">
+          <div class="brand-bar">
+            <div class="brand-mark">
+              <img class="bear" src="grizzly.png" alt="Golden Grizzlies mascot" />
+              <div class="brand-text">
+                <strong>YOUR CARD</strong>
+                <span>Personal stroke play</span>
+              </div>
+            </div>
+            <div class="mode-pill" id="scoreThru">−2</div>
+          </div>
+          <div class="card">
+            <h3>On-device scoring</h3>
+            <p class="muted" style="line-height:1.45">
+              Course mode keeps the card on your phone. No group lock — that’s Outing Mode.
+            </p>
+          </div>
+          <div class="card" style="padding:8px">
+            <table class="score-table" id="scoreTable">
+              <thead><tr><th>Hole</th><th>Par</th><th>Yds</th><th>Score</th><th>+/−</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="more">
+          <div class="brand-bar">
+            <div class="brand-mark">
+              <img class="bear" src="grizzly.png" alt="Golden Grizzlies mascot" />
+              <div class="brand-text">
+                <strong>MORE</strong>
+                <span>Season tools</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Pricing</h3>
+            <p class="muted" style="line-height:1.55">
+              Course Mode from <b style="color:var(--ou-gold-bright)">$3,500</b> / course / Detroit season (Apr 15–Nov 15).
+            </p>
+          </div>
+          <div class="card">
+            <h3>Need an outing?</h3>
+            <p class="muted" style="line-height:1.55;margin-bottom:10px">
+              Shotgun scoring, sponsors, leaderboard, and view-only auction live in Outing Mode.
+            </p>
+            <a class="btn btn-gold" style="text-align:center;text-decoration:none" href="https://ou-golf-outing.apps.grok.bot">Open outing demo</a>
+          </div>
+        </section>
+      </div>
+      <nav class="tabbar">
+        <button class="tab active" data-tab="home"><span class="ico">⌂</span>Home</button>
+        <button class="tab" data-tab="play"><span class="ico">◎</span>Play</button>
+        <button class="tab" data-tab="score"><span class="ico">☰</span>Score</button>
+        <button class="tab" data-tab="more"><span class="ico">···</span>More</button>
+      </nav>
+    </div>
+  </div>
+
+  <aside class="side">
+    <h2>Hole card · Gold tees</h2>
+    <p>Tap a hole to jump in Play. Yardages from published R&amp;S Sharf Gold tee card.</p>
+    <table>
+      <thead><tr><th>#</th><th>Par</th><th>Yds</th><th>HCP</th></tr></thead>
+      <tbody id="holeTable"></tbody>
+    </table>
+  </aside>
+
+<script>
+const HOLES = [
+  { n:1, par:4, yds:435, hcp:1 }, { n:2, par:4, yds:383, hcp:15 },
+  { n:3, par:3, yds:195, hcp:13 }, { n:4, par:4, yds:414, hcp:7 },
+  { n:5, par:4, yds:408, hcp:3 }, { n:6, par:5, yds:522, hcp:9 },
+  { n:7, par:3, yds:144, hcp:17 }, { n:8, par:4, yds:421, hcp:5 },
+  { n:9, par:5, yds:521, hcp:11 }, { n:10, par:5, yds:516, hcp:12 },
+  { n:11, par:4, yds:417, hcp:2 }, { n:12, par:4, yds:278, hcp:16 },
+  { n:13, par:4, yds:369, hcp:4 }, { n:14, par:3, yds:165, hcp:10 },
+  { n:15, par:4, yds:375, hcp:18 }, { n:16, par:3, yds:177, hcp:14 },
+  { n:17, par:4, yds:397, hcp:8 }, { n:18, par:5, yds:546, hcp:6 },
+];
+const SCORES = [4,4,3,4,3,5,2, null,null,null,null,null,null,null,null,null,null,null];
+let holeIdx = 0;
+
+function fmtRel(score, par) {
+  if (score == null) return "·";
+  const d = score - par;
+  if (d === 0) return "E";
+  return d > 0 ? `+${d}` : `${d}`;
+}
+
+function renderHole() {
+  const h = HOLES[holeIdx];
+  const elev = (h.par === 3 ? 2 : 5) + (holeIdx % 3);
+  const wind = ["calm", "light headwind", "crosswind R→L", "helping breeze"][holeIdx % 4];
+  const mid = Math.round(h.yds * 0.36);
+  const front = mid - 12 - (h.par === 3 ? 8 : 0);
+  const back = mid + 14;
+  const plays = mid + elev + (wind.includes("head") ? 4 : wind.includes("help") ? -3 : 0);
+  document.getElementById("holeTitle").textContent = `Hole ${h.n}`;
+  document.getElementById("holeMeta").textContent = `Par ${h.par} · ${h.yds} yds · HCP ${h.hcp}`;
+  document.getElementById("yFront").textContent = front;
+  document.getElementById("yMid").textContent = mid;
+  document.getElementById("yBack").textContent = back;
+  document.getElementById("playsLike").textContent = plays;
+  document.getElementById("weatherBits").textContent = `+${elev} elev · ${wind}`;
+  document.getElementById("tCarry").textContent = Math.round(h.yds * 0.48);
+  document.getElementById("tLayup").textContent = Math.round(h.yds * 0.55);
+  document.querySelectorAll("#holeTable tr").forEach((tr, i) => tr.classList.toggle("active", i === holeIdx));
+}
+
+function renderScore() {
+  const tbody = document.querySelector("#scoreTable tbody");
+  tbody.innerHTML = "";
+  let toPar = 0, played = 0;
+  HOLES.forEach((h, i) => {
+    const sc = SCORES[i];
+    if (sc != null) { toPar += sc - h.par; played++; }
+    const tr = document.createElement("tr");
+    if (i === holeIdx) tr.classList.add("current");
+    tr.innerHTML = `
+      <td class="hole-num">${h.n}</td>
+      <td>${h.par}</td>
+      <td>${h.yds}</td>
+      <td>
+        <div class="score-step">
+          <button type="button" data-act="dec" data-i="${i}">−</button>
+          <strong>${sc == null ? "—" : sc}</strong>
+          <button type="button" data-act="inc" data-i="${i}">+</button>
+        </div>
+      </td>
+      <td>${fmtRel(sc, h.par)}</td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("button[data-act]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.i);
+      const cur = SCORES[i] == null ? HOLES[i].par : SCORES[i];
+      const next = btn.dataset.act === "inc" ? cur + 1 : cur - 1;
+      SCORES[i] = Math.max(1, Math.min(HOLES[i].par + 6, next));
+      renderScore();
+    });
+  });
+  document.getElementById("scoreThru").textContent = played ? (toPar === 0 ? "E" : (toPar > 0 ? `+${toPar}` : `${toPar}`)) : "—";
+}
+
+function renderHoleTable() {
+  const tbody = document.getElementById("holeTable");
+  tbody.innerHTML = HOLES.map((h, i) => `
+    <tr data-idx="${i}"><td>${h.n}</td><td>${h.par}</td><td>${h.yds}</td><td>${h.hcp}</td></tr>`).join("");
+  tbody.querySelectorAll("tr").forEach((tr) => {
+    tr.addEventListener("click", () => {
+      holeIdx = Number(tr.dataset.idx);
+      showScreen("play");
+      renderHole();
+    });
+  });
+}
+
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.dataset.screen === name));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  if (name === "score") renderScore();
+  if (name === "play") renderHole();
+}
+
+document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => showScreen(tab.dataset.tab)));
+document.querySelectorAll("[data-go]").forEach(btn => btn.addEventListener("click", () => showScreen(btn.dataset.go)));
+document.getElementById("prevHole").onclick = () => { holeIdx = (holeIdx + 17) % 18; renderHole(); };
+document.getElementById("nextHole").onclick = () => { holeIdx = (holeIdx + 1) % 18; renderHole(); };
+
+function tickClock() {
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric", minute: "2-digit", timeZone: "America/Detroit"
+  });
+}
+tickClock();
+setInterval(tickClock, 30000);
+renderHoleTable();
+renderHole();
+renderScore();
+</script>
+</body>
+</html>
