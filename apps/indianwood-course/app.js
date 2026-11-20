@@ -48,8 +48,8 @@
   const TEE_IDS = ["black", "gold", "white", "red"];
   const COURSE_NAMES = { old: "Old Course", new: "New Course" };
 
-  const OLD = "#1f6b3a";
-  const NEWC = "#8a5a2b";
+  const OLD = "#236216";
+  const NEWC = "#AF9244";
   const PATH = "#f0c14b";
   const M_TO_YD = 1.0936132983377078;
 

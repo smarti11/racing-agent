@@ -1,12 +1,16 @@
 :root {
-  --bg: #111111;
-  --gold: #bc955c;
-  --panel: rgba(10, 22, 14, 0.92);
-  --ink: #f3f6ef;
-  --muted: #e4d3ae;
-  --old: #1f6b3a;
-  --new: #c4a574;
-  --path: #f0c14b;
+  --bg: #0b1609;
+  --green: #15350E;
+  --green-mid: #236216;
+  --gold: #AF9244;
+  --cream: #EDDBB7;
+  --panel: rgba(21, 53, 14, 0.94);
+  --ink: #f7f3e8;
+  --muted: #EDDBB7;
+  --old: #236216;
+  --new: #AF9244;
+  --path: #EDDBB7;
+  --membership: #CF212A;
   --pad: max(10px, env(safe-area-inset-left));
   --pad-r: max(10px, env(safe-area-inset-right));
   --pad-b: max(12px, env(safe-area-inset-bottom));
@@ -19,7 +23,7 @@ html, body {
   margin: 0;
   height: 100%;
   color: var(--ink);
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   background: var(--bg);
 }
 
@@ -37,8 +41,8 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: calc(var(--pad-t) + 8px) var(--pad-r) 10px var(--pad);
-  background: #000;
-  border-bottom: 3px solid var(--gold);
+  background: var(--green);
+  border-bottom: 2px solid var(--gold);
 }
 
 .brand-lockup {
@@ -49,41 +53,53 @@ html, body {
 }
 
 .mark {
-  width: 46px;
+  width: 42px;
   height: auto;
   flex: 0 0 auto;
+  border-radius: 4px;
 }
 
 .brand {
-  font-family: "Libre Franklin", sans-serif;
-  font-weight: 800;
-  font-size: 1.02rem;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
+  font-family: "Lustria", Georgia, serif;
+  font-weight: 400;
+  font-size: 1.18rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+}
+
+.tag {
+  font-family: "Lustria", Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.2;
   color: var(--gold);
+  letter-spacing: 0.02em;
 }
 
 .sub {
-  font-size: 0.78rem;
-  color: var(--muted);
-  letter-spacing: 0.04em;
+  font-family: "Open Sans", system-ui, sans-serif;
+  font-size: 0.68rem;
+  color: var(--cream);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  margin-top: 2px;
 }
 
 @media (max-width: 380px) {
-  .mark { width: 40px; }
-  .brand { font-size: 0.78rem; }
-  .sub { font-size: 0.62rem; letter-spacing: 0.02em; }
+  .mark { width: 36px; }
+  .brand { font-size: 0.98rem; }
+  .tag { font-size: 0.62rem; }
+  .sub { font-size: 0.56rem; letter-spacing: 0.03em; }
 }
 
 .icon-btn {
   border: 1px solid var(--gold);
-  background: #1a1a1a;
+  background: rgba(0,0,0,0.28);
   color: var(--ink);
   border-radius: 12px;
   min-height: 42px;
   padding: 0 14px;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 700;
 }
 
@@ -119,7 +135,7 @@ html, body {
   border-radius: 999px;
   min-height: 42px;
   padding: 0 16px;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
@@ -137,7 +153,7 @@ html, body {
 }
 
 .yard-pill {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 12px;
   line-height: 18px;
@@ -183,7 +199,7 @@ html, body {
   gap: 12px;
   padding: 10px 12px;
   color: var(--ink);
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
 }
 
@@ -252,7 +268,7 @@ html, body {
 }
 
 .wind-deg {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.78rem;
   letter-spacing: 0.03em;
@@ -265,7 +281,7 @@ html, body {
 }
 
 .wind-speed {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 1.15rem;
   line-height: 1.05;
@@ -321,7 +337,7 @@ html, body {
 }
 
 .yh-hole {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.78rem;
   letter-spacing: -0.02em;
@@ -336,7 +352,7 @@ html, body {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 1.05rem;
   line-height: 1;
@@ -467,7 +483,7 @@ html, body {
   border: 1px solid rgba(243, 246, 239, 0.18);
   background: rgba(243, 246, 239, 0.06);
   color: var(--ink);
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.86rem;
 }
@@ -499,7 +515,7 @@ html, body {
   border: 1px solid rgba(243,246,239,0.25);
   background: rgba(8,18,12,0.65);
   color: var(--ink);
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.95rem;
   padding: 0 8px;
@@ -550,7 +566,7 @@ html, body {
 }
 
 .score-hole {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 1.05rem;
 }
@@ -626,7 +642,7 @@ html, body {
 .mic-btn {
   min-height: 44px;
   border-radius: 12px;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
 }
 
@@ -691,7 +707,7 @@ html, body {
 
 .hole-lists h2 {
   margin: 0;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-size: 0.92rem;
 }
 
@@ -776,7 +792,7 @@ html, body {
 .nine-totals strong {
   display: block;
   margin-top: 2px;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -789,7 +805,7 @@ html, body {
   border-radius: 12px;
   background: #f7f3e8;
   color: #14261a;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.92rem;
 }
@@ -816,7 +832,7 @@ html, body {
   border-radius: 12px;
   background: #000;
   color: var(--gold);
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.92rem;
 }
@@ -843,7 +859,7 @@ html, body {
   height: 28px;
   display: grid;
   place-items: center;
-  font-family: "Libre Franklin", sans-serif;
+  font-family: "Open Sans", system-ui, sans-serif;
   font-weight: 800;
   font-size: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.35);
@@ -904,3 +920,16 @@ html, body {
   }
   .hole-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
+
+
+.club-link {
+  display: inline-block;
+  margin: 4px 0 10px;
+  color: var(--gold);
+  font-family: "Open Sans", system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(175, 146, 68, 0.45);
+}
+.club-link:hover { color: var(--cream); }
