@@ -115,10 +115,8 @@
     padding: 10px 16px; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 700;
     background: linear-gradient(180deg, #f3d56a, #d4b145); color: #111; text-decoration: none;
   }
-  .btn.ghost {
-    background: transparent; border: 1px solid var(--line); color: var(--cream);
-  }
-  .note { font-size: 13px; color: var(--mist); margin-top: 10px; }
+  .note { font-size: 13px; color: var(--mist); margin-top: 10px; line-height: 1.45; }
+  .note a { color: var(--gold-bright); }
 </style>
 </head>
 <body>
@@ -127,57 +125,58 @@
       <img src="grizzly.png" alt="" />
       <div>
         <h1>MY LOOP</h1>
-        <p>Cold outreach · Metro Detroit course GMs</p>
+        <p>Cold outreach · OU / Metro Detroit GMs</p>
       </div>
     </div>
 
     <section class="panel">
       <div class="label">Primary subject</div>
-      <div class="subject" id="subject">$3,500 to put your course on every phone this season</div>
+      <div class="subject" id="subject">Built an OU-branded GPS for Katke and Sharf — can I get 20 minutes?</div>
       <ul class="alts">
-        <li>Alt: Members already pull yardages — just not yours</li>
-        <li>Alt: 20 minutes on site for Course + Outing Mode</li>
-        <li>Alt: Phone GPS + outing kit — no cart-screen capital project</li>
+        <li>Alt: Worked with Connor on maintenance — built something for the golfers’ phones</li>
+        <li>Alt: That GPS screen could show OU’s courses instead of someone else’s ads</li>
       </ul>
       <div class="actions">
         <button type="button" id="copySubject">Copy subject</button>
-        <button type="button" id="copyBody" class="btn ghost" style="border:1px solid var(--line);background:transparent;color:var(--cream)">Copy plain-text body</button>
+        <button type="button" id="copyBody" style="border:1px solid var(--line);background:transparent;color:var(--cream)">Copy plain-text body</button>
       </div>
       <p class="note" id="status"></p>
     </section>
 
     <section class="panel">
+      <h2>One link · your domain</h2>
+      <p class="note" style="margin:0">
+        Yes — host the hub on <strong>collaborease.com</strong> (AWS). Drop the static folder
+        <code style="color:var(--gold-bright)">demos/my-loop-ou/</code> at a path like
+        <a href="https://collaborease.com/my-loop">https://collaborease.com/my-loop</a>
+        (S3 + CloudFront, or whatever already serves the site). The email uses that single URL;
+        the hub opens Course and Outing demos from there.
+      </p>
+    </section>
+
+    <section class="panel">
       <h2>Branded send preview</h2>
-      <p class="note" style="margin-bottom:14px">Paste into Gmail as plain text (recommended for cold mail). Use the HTML look only if your CRM supports branded templates.</p>
+      <p class="note" style="margin-bottom:14px">Paste into Gmail as plain text for cold mail.</p>
       <div class="email-frame">
         <div class="email-chrome">
           <img src="grizzly.png" alt="" />
           <div>
             <strong>MY LOOP</strong>
-            <span>Course Mode · Outing Mode · Metro Detroit</span>
+            <span>Oakland Township · OU Golf</span>
           </div>
         </div>
         <div class="email-body">
           <p>Hi {{First name}},</p>
-          <p>Quick note for {{Course name}} — golfers on your property already open a caddie app for yardages. It’s almost never yours.</p>
-          <p><strong>My Loop</strong> puts branded GPS and scoring on their phones for the season, then flips an outing skin for classics and charity shotguns — without a cart-screen capital project.</p>
-          <p>
-            <strong>Pricing</strong><br />
-            Course Mode — <strong>$3,500</strong> / season (branded GPS + scoring for everyday play)<br />
-            Outing Mode — <strong>$3,500</strong> / event (shotgun skin, scorekeeper lock, live board, auction browse)<br />
-            Most clubs start with <strong>season + first outing = $7,000</strong> — same as buying each à la carte, one conversation for the GM and the outing chair. Extra outings stay $3,500 each.
-          </p>
-          <p>
-            Live demos you can open now:<br />
-            Course — <a href="https://ou-golf-course.apps.grok.bot">ou-golf-course.apps.grok.bot</a><br />
-            Outing — <a href="https://ou-golf-outing.apps.grok.bot">ou-golf-outing.apps.grok.bot</a>
-          </p>
-          <p>Worth 20 minutes on site with you (and the pro or outing chair if useful) before Apr 15?</p>
+          <p>I worked with Connor McBride on the course maintenance team this past fall. As you know, most players already pull up their own GPS app every round, usually one with someone else’s name and ads on it. That screen could be showing OU’s courses, logo, and sponsors instead.</p>
+          <p>So I built one for you. It’s live now with OU branding, hole-by-hole GPS, and digital scoring for both Katke-Cousins and R&amp;S Sharf:</p>
+          <p><a href="https://collaborease.com/my-loop">https://collaborease.com/my-loop</a></p>
+          <p>It runs on golfers’ phones. No cart hardware, no capital project, and a season costs less than a cart-GPS lease. I’ve also built an Outing mode with live leaderboards for shotguns like the Golden Grizzlies Classic.</p>
+          <p>I’m local in Oakland Township. Would 20 minutes at the clubhouse work in the next couple of weeks? I’d like to get your input.</p>
           <p>Best,<br />{{Your name}}</p>
           <div class="sig">
             <div class="name">{{Your name}}</div>
             <div class="co">MY LOOP</div>
-            Metro Detroit · Course Mode &amp; Outing Mode<br />
+            Oakland Township · Metro Detroit<br />
             {{Phone}} · {{Email}}
           </div>
         </div>
@@ -188,24 +187,19 @@
       <div class="label">Plain text · copy / paste</div>
       <pre class="plain" id="plainBody">Hi {{First name}},
 
-Quick note for {{Course name}} — golfers on your property already open a caddie app for yardages. It’s almost never yours.
+I worked with Connor McBride on the course maintenance team this past fall. As you know, most players already pull up their own GPS app every round, usually one with someone else’s name and ads on it. That screen could be showing OU’s courses, logo, and sponsors instead.
 
-My Loop puts branded GPS and scoring on their phones for the season, then flips an outing skin for classics and charity shotguns — without a cart-screen capital project.
+So I built one for you. It’s live now with OU branding, hole-by-hole GPS, and digital scoring for both Katke-Cousins and R&amp;S Sharf:
 
-Pricing
-Course Mode — $3,500 / season (branded GPS + scoring for everyday play)
-Outing Mode — $3,500 / event (shotgun skin, scorekeeper lock, live board, auction browse)
-Most clubs start with season + first outing = $7,000 — same as buying each à la carte, one conversation for the GM and the outing chair. Extra outings stay $3,500 each.
+https://collaborease.com/my-loop
 
-Live demos:
-Course — https://ou-golf-course.apps.grok.bot
-Outing — https://ou-golf-outing.apps.grok.bot
+It runs on golfers’ phones. No cart hardware, no capital project, and a season costs less than a cart-GPS lease. I’ve also built an Outing mode with live leaderboards for shotguns like the Golden Grizzlies Classic.
 
-Worth 20 minutes on site with you (and the pro or outing chair if useful) before Apr 15?
+I’m local in Oakland Township. Would 20 minutes at the clubhouse work in the next couple of weeks? I’d like to get your input.
 
 Best,
 {{Your name}}
-My Loop · Metro Detroit
+My Loop · Oakland Township
 {{Phone}} · {{Email}}</pre>
     </section>
   </div>

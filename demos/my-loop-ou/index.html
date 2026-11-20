@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Loop · Oakland University Golf</title>
+<meta name="description" content="My Loop for OU — branded GPS, digital scoring, and outing mode for Katke-Cousins and R&S Sharf." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #050805;
+    --gold: #d4b145;
+    --gold-bright: #f3d56a;
+    --cream: #f2ebd5;
+    --mist: #9aaf9d;
+    --line: rgba(212, 177, 69, 0.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    color: var(--cream);
+    font-family: Outfit, system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 80% 55% at 15% -10%, rgba(212,177,69,0.2), transparent 55%),
+      radial-gradient(ellipse 60% 45% at 100% 100%, rgba(22,90,48,0.35), transparent 50%),
+      linear-gradient(165deg, #07110a 0%, #050805 100%);
+  }
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    padding: clamp(32px, 6vw, 72px);
+    max-width: 920px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 22px;
+  }
+  .brand img {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid var(--gold);
+  }
+  .brand span {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 32px; letter-spacing: 0.08em; color: var(--gold-bright);
+  }
+  .kicker {
+    font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(52px, 10vw, 96px);
+    line-height: 0.92; letter-spacing: 0.02em;
+    max-width: 12ch;
+  }
+  .gold { color: var(--gold-bright); }
+  .lede {
+    margin-top: 18px;
+    font-size: clamp(16px, 2.2vw, 20px);
+    color: var(--mist); max-width: 42ch; line-height: 1.45; font-weight: 300;
+  }
+  .cta-row {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px;
+  }
+  .cta {
+    display: inline-flex; align-items: center;
+    padding: 14px 20px; border-radius: 999px;
+    background: linear-gradient(180deg, #f3d56a, #d4b145);
+    color: #111; font-weight: 700; text-decoration: none; font-size: 15px;
+  }
+  .cta.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+  }
+  .note {
+    margin-top: 28px; font-size: 13px; color: rgba(154,175,157,0.85);
+    max-width: 48ch; line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+  <main class="hero">
+    <div class="brand"><img src="grizzly.png" alt="" /><span>MY LOOP</span></div>
+    <div class="kicker">Oakland University · Katke-Cousins · R&amp;S Sharf</div>
+    <h1>Your courses<br/>on every<br/><span class="gold">phone.</span></h1>
+    <p class="lede">Hole-by-hole GPS and digital scoring with OU branding — plus Outing Mode for shotguns like the Golden Grizzlies Classic. No cart hardware.</p>
+    <div class="cta-row">
+      <a class="cta" href="https://ou-golf-course.apps.grok.bot">Open course demo</a>
+      <a class="cta ghost" href="https://ou-golf-outing.apps.grok.bot">Open outing demo</a>
+    </div>
+    <p class="note">Host this page on your domain (e.g. collaborease.com/my-loop) and keep one link in outreach. Demo apps can stay where they are or move under the same site later.</p>
+  </main>
+</body>
+</html>
