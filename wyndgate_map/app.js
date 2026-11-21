@@ -63,6 +63,9 @@
   }).setView([42.73513, -83.17693], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
+  const yardagePane = map.createPane("yardage");
+  yardagePane.style.zIndex = 450;
+  yardagePane.style.pointerEvents = "none";
 
   mapEl.addEventListener("pointerdown", () => {
     if (flying) flyPointer = true;
@@ -101,8 +104,14 @@
     }
   ).addTo(map);
 
+  // Basemaps API key (cb1_…), same as OU / Indianwood. A CARTO Developers JWT
+  // in ?key= still returns watermarked tiles (etag wm-*).
+  const CARTO_API_KEY =
+    "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
+
   L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
+      encodeURIComponent(CARTO_API_KEY),
     {
       maxZoom: 21,
       maxNativeZoom: 19,
@@ -969,6 +978,90 @@
     setInterval(run, 10 * 60 * 1000);
   }
 
+  const YARD_RINGS = [
+    { yards: 100, color: "#ff4d4d" },
+    { yards: 150, color: "#ffffff" },
+    { yards: 200, color: "#4da3ff" },
+  ];
+  let yardageRingLayers = [];
+
+  function clearYardageRings() {
+    yardageRingLayers.forEach((layer) => map.removeLayer(layer));
+    yardageRingLayers = [];
+  }
+
+  function moveByYards(origin, bearing, yards) {
+    const radius = 6371000;
+    const dist = yards * 0.9144;
+    const br = (bearing * Math.PI) / 180;
+    const lat1 = (origin.lat * Math.PI) / 180;
+    const lon1 = (origin.lng * Math.PI) / 180;
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(dist / radius) + Math.cos(lat1) * Math.sin(dist / radius) * Math.cos(br)
+    );
+    const lon2 =
+      lon1 +
+      Math.atan2(
+        Math.sin(br) * Math.sin(dist / radius) * Math.cos(lat1),
+        Math.cos(dist / radius) - Math.sin(lat1) * Math.sin(lat2)
+      );
+    return L.latLng((lat2 * 180) / Math.PI, (((lon2 * 180) / Math.PI + 540) % 360) - 180);
+  }
+
+  function greenMiddle(target) {
+    const ring = target.ring;
+    if (!ring || ring.length < 4) return L.latLng(target.lat, target.lon);
+    const n = ring.length - 1;
+    let lat = 0;
+    let lon = 0;
+    for (let i = 0; i < n; i += 1) {
+      lat += ring[i][0];
+      lon += ring[i][1];
+    }
+    return L.latLng(lat / n, lon / n);
+  }
+
+  function showYardageRings(course, hole) {
+    clearYardageRings();
+    const target = greenTargets[course] && greenTargets[course][hole];
+    if (!target || target.teeLat == null) return;
+    const green = greenMiddle(target);
+    const tee = L.latLng(target.teeLat, target.teeLon);
+    const bearing = bearingDeg(green, tee);
+    if (bearing == null) return;
+    const toTee = map.distance(green, tee) * M_TO_YD;
+    YARD_RINGS.forEach((ring) => {
+      if (ring.yards > toTee - 20) return;
+      const pts = [];
+      for (let turn = -58; turn <= 58; turn += 2) pts.push(moveByYards(green, bearing + turn, ring.yards));
+      const shade = L.polyline(pts, {
+        pane: "yardage",
+        color: "#1a1408",
+        weight: 2,
+        opacity: 0.45,
+        interactive: false,
+      }).addTo(map);
+      const line = L.polyline(pts, {
+        pane: "yardage",
+        color: ring.color,
+        weight: 1,
+        opacity: 1,
+        interactive: false,
+      }).addTo(map);
+      const label = L.marker(moveByYards(green, bearing - 50, ring.yards), {
+        pane: "yardage",
+        interactive: false,
+        icon: L.divIcon({
+          className: "yard-ring-icon",
+          html: `<div class="yard-pill y${ring.yards}">${ring.yards}</div>`,
+          iconSize: [36, 20],
+          iconAnchor: [18, 10],
+        }),
+      }).addTo(map);
+      yardageRingLayers.push(shade, line, label);
+    });
+  }
+
   function bearingDeg(a, b) {
     if (map.distance(a, b) < 0.5) return null;
     const φ1 = (a.lat * Math.PI) / 180;
@@ -1163,6 +1256,7 @@
     selectedHole = null;
     markTarget = null;
     clearGreenBreak();
+    clearYardageRings();
     lastHole.wyndgate = null;
     map.closePopup();
     updateYardageHud();
@@ -1203,6 +1297,7 @@
     showScoreEntry();
     updateFlyButton();
     showGreenBreak(course, n);
+    showYardageRings(course, n);
   }
 
   function applyToggles() {
