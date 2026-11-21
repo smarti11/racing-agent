@@ -12,6 +12,7 @@ This site is separate from the Oakland University golf map. It has its own folde
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
 - Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
 - Scorecard: say the strokes or type them. Out, In, and the full 18. Men's or Women's changes the handicap number under each hole. The gold number is the plays-like yardage: one yard added for every three feet the green sits above that tee, and one yard subtracted for every three feet it sits below. Elevations are from USGS 3DEP along the mapped hole. Scores stay in this browser until you tap Clear
+- Live **wind** on the map: speed, the direction it is coming from, humidity, and, once a hole is selected, whether that wind is into you or helping. The reading is the latest observation from Pontiac airport, the National Weather Service station nearest the course, and it refreshes while the map is open.
 
 Westwynd, the course on Adams Road, is not included.
 
@@ -22,6 +23,7 @@ Westwynd, the course on Adams Road, is not included.
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
 - Imagery: Esri World Imagery
 - Plays-like elevation: USGS 3DEP at the mapped tee and green
+- Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 
 A few drawn hole lines are a little shorter or longer than the printed black-tee yardage. The number on the card is the printed yardage. The line on the map follows the OpenStreetMap drawing.
 

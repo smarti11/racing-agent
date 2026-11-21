@@ -301,6 +301,7 @@
   }
 
   function updateYardageHud() {
+    paintWind();
     if (!selectedHole) {
       yardageHud.hidden = true;
       showGreenEdges(null);
@@ -474,6 +475,129 @@
     const a = samples[i];
     const b = samples[i + 1];
     return L.latLng(a.lat + (b.lat - a.lat) * frac, a.lng + (b.lng - a.lng) * frac);
+  }
+
+  const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  let wind = null;
+
+  function compassName(deg) {
+    const turn = ((deg % 360) + 360) % 360;
+    return COMPASS[Math.round(turn / 22.5) % 16];
+  }
+
+  function shotBearing(course, hole) {
+    const t = greenTargets[course] && greenTargets[course][hole];
+    if (!t || t.teeLat == null) return null;
+    const bearing = bearingDeg(
+      { lat: t.teeLat, lng: t.teeLon },
+      { lat: t.lat, lng: t.lon }
+    );
+    return bearing == null ? null : ((bearing % 360) + 360) % 360;
+  }
+
+  function windPhrase() {
+    if (!wind || wind.mph == null) return "";
+    if (wind.mph < 1) return "Calm";
+    const gust =
+      wind.gust != null && wind.gust >= wind.mph + 3 ? ", gusting to " + wind.gust : "";
+    if (wind.deg == null) return "Variable" + gust;
+    let shot = null;
+    if (selectedHole) shot = shotBearing(selectedHole.course, selectedHole.hole);
+    if (shot == null) return "from the " + compassName(wind.deg) + gust;
+    const rel = ((wind.deg - shot) % 360 + 360) % 360;
+    const into = Math.cos((rel * Math.PI) / 180);
+    const fromRight = Math.sin((rel * Math.PI) / 180);
+    const cross = Math.abs(fromRight) >= 0.35;
+    const side = fromRight >= 0 ? "the right" : "the left";
+    let how = "off " + side;
+    if (into >= 0.5) how = cross ? "into you, off " + side : "into you";
+    else if (into <= -0.5) how = cross ? "helping, off " + side : "helping";
+    return how + gust;
+  }
+
+  function paintWind() {
+    const chip = document.getElementById("wind-chip");
+    const arrow = document.getElementById("wind-arrow");
+    const degEl = document.getElementById("wind-deg");
+    const rhEl = document.getElementById("wind-rh");
+    const speedEl = document.getElementById("wind-speed");
+    const fromEl = document.getElementById("wind-from");
+    if (!chip || !speedEl || !fromEl) return;
+    if (!wind) {
+      speedEl.textContent = "…";
+      fromEl.textContent = "at the course";
+      return;
+    }
+    if (wind.mph == null) {
+      speedEl.textContent = "—";
+      fromEl.textContent = "Wind unavailable";
+      if (arrow) arrow.hidden = true;
+      return;
+    }
+    speedEl.replaceChildren();
+    speedEl.append(document.createTextNode(wind.mph < 1 ? "Calm" : String(wind.mph)));
+    if (wind.mph >= 1) {
+      const unit = document.createElement("span");
+      unit.className = "wind-unit";
+      unit.textContent = "mph";
+      speedEl.append(unit);
+    }
+    if (degEl) degEl.textContent = wind.deg == null ? "Wind" : wind.deg + "°";
+    if (rhEl) rhEl.textContent = wind.rh == null ? "" : wind.rh + "% rh";
+    fromEl.textContent = windPhrase();
+    if (arrow) {
+      arrow.hidden = wind.deg == null || wind.mph < 1;
+      if (!arrow.hidden) {
+        arrow.style.transform = "rotate(" + ((wind.deg + 180) % 360) + "deg)";
+      }
+    }
+    const spoken = [
+      wind.mph < 1 ? "Calm" : wind.mph + " miles per hour",
+      wind.deg == null ? "" : "from " + wind.deg + " degrees",
+      wind.rh == null ? "" : wind.rh + " percent humidity",
+      fromEl.textContent,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    chip.setAttribute("aria-label", spoken);
+  }
+
+  function mphFromKmh(value) {
+    const n = Number(value);
+    if (!isFinite(n)) return null;
+    return Math.round(n * 0.621371);
+  }
+
+  async function loadWind() {
+    const res = await fetch("https://api.weather.gov/stations/KPTK/observations/latest", {
+      headers: { Accept: "application/geo+json" },
+    });
+    if (!res.ok) throw new Error("wind");
+    const data = await res.json();
+    const props = data.properties || {};
+    const speed = props.windSpeed && props.windSpeed.value;
+    const gust = props.windGust && props.windGust.value;
+    const dir = props.windDirection && props.windDirection.value;
+    const rh = props.relativeHumidity && props.relativeHumidity.value;
+    wind = {
+      mph: speed == null ? null : mphFromKmh(speed),
+      gust: gust == null ? null : mphFromKmh(gust),
+      deg: dir == null ? null : Math.round(Number(dir)),
+      rh: rh == null ? null : Math.round(Number(rh)),
+    };
+    paintWind();
+  }
+
+  function startWind() {
+    const run = () =>
+      loadWind().catch(() => {
+        if (!wind) {
+          wind = { mph: null, gust: null, deg: null, rh: null };
+          paintWind();
+        }
+      });
+    run();
+    setInterval(run, 10 * 60 * 1000);
   }
 
   function bearingDeg(a, b) {
@@ -888,9 +1012,12 @@
         const coords = feature.geometry.coordinates;
         // OSM hole lines end at the green / pin end.
         const end = coords[coords.length - 1];
+        const start = coords[0];
         greenTargets[p.course][p.hole] = {
           lon: end[0],
           lat: end[1],
+          teeLon: start[0],
+          teeLat: start[1],
           props: p,
         };
         if (p.par) pars[p.course][p.hole] = p.par;
@@ -948,6 +1075,7 @@
     applyCardChoices();
     setPlayingCourse();
     startGps(false);
+    startWind();
   }
 
   function setPlayingCourse() {
