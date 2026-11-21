@@ -17,7 +17,7 @@
       "name": "Forward"
     }
   ],
-  "note": "Handicap and Gold yardages from published Indianwood scorecards. Other tees are estimated from Gold until official multi-tee cards are loaded. Plays-like uses relative elevation when available.",
+  "note": "Handicap and Gold yardages from published Indianwood scorecards. Other tees are estimated from Gold until official multi-tee cards are loaded. Plays-like uses USGS 3DEP elevations (Oakland County 2016 lidar): +1 yd per 3 ft uphill tee\u2192green, \u22121 yd per 3 ft downhill.",
   "courses": {
     "old": {
       "holes": [
@@ -33,11 +33,11 @@
             "red": 398
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1018.9,
+            "black": 1019.8,
+            "gold": 1020.8,
+            "white": 1017.1,
+            "red": 1011.9
           }
         },
         {
@@ -52,11 +52,11 @@
             "red": 307
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1015.3,
+            "black": 1010.2,
+            "gold": 1005.1,
+            "white": 1019.9,
+            "red": 1017.5
           }
         },
         {
@@ -71,11 +71,11 @@
             "red": 128
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1005.7,
+            "black": 1015.0,
+            "gold": 1004.8,
+            "white": 1008.5,
+            "red": 1009.7
           }
         },
         {
@@ -90,11 +90,11 @@
             "red": 346
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1006.9,
+            "black": 1010.1,
+            "gold": 1011.2,
+            "white": 1011.6,
+            "red": 994.8
           }
         },
         {
@@ -109,11 +109,11 @@
             "red": 157
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1014.0,
+            "black": 1008.6,
+            "gold": 1008.6,
+            "white": 1008.1,
+            "red": 1017.0
           }
         },
         {
@@ -128,11 +128,11 @@
             "red": 362
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 990.3,
+            "black": 992.7,
+            "gold": 992.3,
+            "white": 991.5,
+            "red": 991.0
           }
         },
         {
@@ -147,11 +147,11 @@
             "red": 328
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 995.3,
+            "black": 991.6,
+            "gold": 992.7,
+            "white": 992.3,
+            "red": 989.5
           }
         },
         {
@@ -166,11 +166,11 @@
             "red": 326
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1018.8,
+            "black": 1012.1,
+            "gold": 1012.2,
+            "white": 1013.7,
+            "red": 1015.7
           }
         },
         {
@@ -185,11 +185,11 @@
             "red": 285
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1001.3,
+            "black": 1020.8,
+            "gold": 1012.8,
+            "white": 1011.2,
+            "red": 1016.8
           }
         },
         {
@@ -204,11 +204,11 @@
             "red": 286
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 998.1,
+            "black": 1010.5,
+            "gold": 1002.2,
+            "white": 993.0,
+            "red": 993.0
           }
         },
         {
@@ -223,11 +223,11 @@
             "red": 309
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1012.3,
+            "black": 990.1,
+            "gold": 1002.0,
+            "white": 998.9,
+            "red": 987.5
           }
         },
         {
@@ -242,11 +242,11 @@
             "red": 392
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 996.1,
+            "black": 1014.9,
+            "gold": 1014.9,
+            "white": 1010.0,
+            "red": 1003.9
           }
         },
         {
@@ -261,11 +261,11 @@
             "red": 175
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1001.4,
+            "black": 1012.9,
+            "gold": 1012.9,
+            "white": 1006.3,
+            "red": 997.5
           }
         },
         {
@@ -280,11 +280,11 @@
             "red": 348
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1009.8,
+            "black": 988.5,
+            "gold": 1003.4,
+            "white": 993.9,
+            "red": 1004.5
           }
         },
         {
@@ -299,11 +299,11 @@
             "red": 432
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1014.4,
+            "black": 1014.5,
+            "gold": 1014.6,
+            "white": 1012.8,
+            "red": 1008.6
           }
         },
         {
@@ -318,11 +318,11 @@
             "red": 358
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1021.2,
+            "black": 1018.2,
+            "gold": 1018.7,
+            "white": 1016.3,
+            "red": 1017.7
           }
         },
         {
@@ -337,11 +337,11 @@
             "red": 155
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1012.6,
+            "black": 1012.3,
+            "gold": 1012.6,
+            "white": 999.2,
+            "red": 1004.9
           }
         },
         {
@@ -356,11 +356,11 @@
             "red": 370
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1007.0,
+            "black": 1007.1,
+            "gold": 998.4,
+            "white": 1018.7,
+            "red": 1020.0
           }
         }
       ]
@@ -379,11 +379,11 @@
             "red": 305
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1012.5,
+            "black": 1005.8,
+            "gold": 1010.3,
+            "white": 1002.2,
+            "red": 1001.4
           }
         },
         {
@@ -398,11 +398,11 @@
             "red": 325
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1008.1,
+            "black": 1011.6,
+            "gold": 1013.7,
+            "white": 1003.3,
+            "red": 998.1
           }
         },
         {
@@ -417,11 +417,11 @@
             "red": 161
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1005.1,
+            "black": 1014.9,
+            "gold": 1012.1,
+            "white": 1006.5,
+            "red": 1002.3
           }
         },
         {
@@ -436,11 +436,11 @@
             "red": 441
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1004.3,
+            "black": 1002.8,
+            "gold": 1003.5,
+            "white": 1004.4,
+            "red": 1003.5
           }
         },
         {
@@ -455,11 +455,11 @@
             "red": 350
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1009.1,
+            "black": 1011.1,
+            "gold": 1011.0,
+            "white": 1009.0,
+            "red": 1006.6
           }
         },
         {
@@ -474,11 +474,11 @@
             "red": 168
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1013.1,
+            "black": 1014.4,
+            "gold": 1015.3,
+            "white": 1015.7,
+            "red": 1014.8
           }
         },
         {
@@ -493,11 +493,11 @@
             "red": 354
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1005.7,
+            "black": 1013.6,
+            "gold": 1018.4,
+            "white": 1013.9,
+            "red": 1009.5
           }
         },
         {
@@ -512,11 +512,11 @@
             "red": 233
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1018.4,
+            "black": 1007.3,
+            "gold": 1020.2,
+            "white": 1018.7,
+            "red": 1010.4
           }
         },
         {
@@ -531,11 +531,11 @@
             "red": 461
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1028.1,
+            "black": 1008.0,
+            "gold": 1012.5,
+            "white": 1002.4,
+            "red": 1003.3
           }
         },
         {
@@ -550,11 +550,11 @@
             "red": 108
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1022.8,
+            "black": 1005.7,
+            "gold": 1022.2,
+            "white": 1018.0,
+            "red": 1019.7
           }
         },
         {
@@ -569,11 +569,11 @@
             "red": 352
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1003.9,
+            "black": 1006.0,
+            "gold": 1005.7,
+            "white": 1006.5,
+            "red": 999.9
           }
         },
         {
@@ -588,11 +588,11 @@
             "red": 314
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1006.2,
+            "black": 1008.8,
+            "gold": 1008.0,
+            "white": 1007.2,
+            "red": 1006.7
           }
         },
         {
@@ -607,11 +607,11 @@
             "red": 140
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1005.1,
+            "black": 1005.1,
+            "gold": 1007.5,
+            "white": 1011.1,
+            "red": 1009.7
           }
         },
         {
@@ -626,11 +626,11 @@
             "red": 439
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1004.5,
+            "black": 1006.9,
+            "gold": 1005.1,
+            "white": 1005.3,
+            "red": 1000.8
           }
         },
         {
@@ -645,11 +645,11 @@
             "red": 365
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1003.4,
+            "black": 1005.9,
+            "gold": 1019.4,
+            "white": 1017.9,
+            "red": 995.6
           }
         },
         {
@@ -664,11 +664,11 @@
             "red": 291
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1017.7,
+            "black": 1015.0,
+            "gold": 1019.3,
+            "white": 1019.6,
+            "red": 1016.6
           }
         },
         {
@@ -683,11 +683,11 @@
             "red": 297
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1018.8,
+            "black": 1019.1,
+            "gold": 1017.4,
+            "white": 1017.4,
+            "red": 1016.6
           }
         },
         {
@@ -702,11 +702,11 @@
             "red": 420
           },
           "elevFt": {
-            "black": 1000,
-            "gold": 1000,
-            "white": 1000,
-            "red": 1000,
-            "green": 1000
+            "green": 1017.4,
+            "black": 1008.9,
+            "gold": 1017.3,
+            "white": 1016.4,
+            "red": 1017.8
           }
         }
       ]
