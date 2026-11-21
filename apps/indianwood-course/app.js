@@ -195,7 +195,9 @@
     const fallback = `Par ${p.par || "—"} · ${p.yards || "—"} yd (Black)`;
     const roll = rollPhrase(p.course, p.hole);
     const rollLine = roll ? `<br/>${roll}` : "";
-    return `<strong>${p.courseName} · Hole ${p.hole}</strong><br/>${
+    const courseLabel =
+      p.courseName || COURSE_NAMES[p.course] || p.name || p.course || "Course";
+    return `<strong>${courseLabel} · Hole ${p.hole}</strong><br/>${
       facts || fallback
     }${rollLine}${scoreLine}${live}`;
   }
