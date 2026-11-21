@@ -1103,9 +1103,19 @@
     if (!file) return;
     holeVoice.pause();
     holeVoice.src = file;
-    holeVoice.muted = holeVideo.muted;
-    holeVoice.volume = holeVideo.volume;
-    holeVoice.play().catch(() => {});
+    // Keep voice with the video mute/volume controls; default unmuted so
+    // the hole intro is audible when Video is tapped.
+    if (holeVideo) {
+      holeVoice.muted = !!holeVideo.muted;
+      holeVoice.volume = typeof holeVideo.volume === "number" ? holeVideo.volume : 1;
+    } else {
+      holeVoice.muted = false;
+      holeVoice.volume = 1;
+    }
+    const start = () => holeVoice.play().catch(() => {});
+    if (holeVoice.readyState >= 2) start();
+    else holeVoice.addEventListener("canplay", start, { once: true });
+    holeVoice.load();
   }
 
   function closeHoleVideo() {
