@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Indianwood">
+  <circle cx="64" cy="64" r="58" fill="#0c1c14" stroke="#b08d57" stroke-width="4"/>
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#b08d57" stroke-width="1.5" opacity="0.7"/>
+  <text x="64" y="78" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#f0e6d2" letter-spacing="2">IW</text>
+</svg>

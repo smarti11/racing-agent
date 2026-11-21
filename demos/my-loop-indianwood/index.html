@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Loop · Indianwood Golf &amp; Country Club</title>
+<meta name="description" content="My Loop for Indianwood — branded GPS, digital scoring, and outing mode for the Old Course and New Course." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #050805;
+    --brass: #b08d57;
+    --brass-bright: #d4b078;
+    --cream: #f0e6d2;
+    --mist: #9aaf9d;
+    --line: rgba(176, 141, 87, 0.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    color: var(--cream);
+    font-family: Outfit, system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 80% 55% at 15% -10%, rgba(176,141,87,0.18), transparent 55%),
+      radial-gradient(ellipse 60% 45% at 100% 100%, rgba(20,50,35,0.45), transparent 50%),
+      linear-gradient(165deg, #07110a 0%, #050805 100%);
+  }
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    padding: clamp(32px, 6vw, 72px);
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 22px;
+  }
+  .brand img {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 1px solid var(--brass);
+    background: #0c1c14;
+  }
+  .brand span {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 32px; letter-spacing: 0.08em; color: var(--brass-bright);
+  }
+  .kicker {
+    font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--brass); font-weight: 600; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(52px, 10vw, 96px);
+    line-height: 0.92; letter-spacing: 0.02em;
+    max-width: 12ch;
+  }
+  .gold { color: var(--brass-bright); }
+  .lede {
+    margin-top: 18px;
+    font-size: clamp(16px, 2.2vw, 20px);
+    color: var(--mist); max-width: 44ch; line-height: 1.45; font-weight: 300;
+  }
+  .cta-row {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px;
+  }
+  .cta {
+    display: inline-flex; align-items: center;
+    padding: 14px 20px; border-radius: 999px;
+    background: linear-gradient(180deg, #d4b078, #b08d57);
+    color: #111; font-weight: 700; text-decoration: none; font-size: 15px;
+  }
+  .cta.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+  }
+</style>
+</head>
+<body>
+  <main class="hero">
+    <div class="brand"><img src="mark.svg" alt="" /><span>MY LOOP</span></div>
+    <div class="kicker">Indianwood Golf &amp; Country Club · Lake Orion · Old Course · New Course</div>
+    <h1>Your club<br/>on every<br/><span class="gold">phone.</span></h1>
+    <p class="lede">Hole-by-hole GPS and digital scoring with Indianwood branding — plus Outing Mode for Member-Guest shotguns. No cart hardware.</p>
+    <div class="cta-row">
+      <a class="cta" href="course/">Open course mode</a>
+      <a class="cta ghost" href="outing/">Open outing mode</a>
+    </div>
+    <p class="lede" style="margin-top:28px;font-size:14px;max-width:52ch">Separate Cloudflare apps live in <code style="color:var(--brass-bright)">apps/indianwood-course</code> and <code style="color:var(--brass-bright)">apps/indianwood-outing</code> — deploy each with Wrangler like the OU course worker.</p>
+  </main>
+</body>
+</html>
