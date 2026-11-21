@@ -131,6 +131,29 @@ html, body {
 
 .fly-btn[hidden] { display: none; }
 
+.yard-ring-icon {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.yard-pill {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #ffffff;
+  background: #0c1c12;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  width: 36px;
+  height: 20px;
+}
+
+.yard-pill.y100 { color: #ff4d4d; }
+.yard-pill.y150 { color: #ffffff; }
+.yard-pill.y200 { color: #4da3ff; }
+
 .video-modal {
   position: fixed;
   inset: 0;
