@@ -41,11 +41,13 @@ Open `http://localhost:8093`. GPS needs HTTPS or localhost.
 
 ## Deploy
 
-Create a **new** Cloudflare Worker. Do not open `tiny-thunder-291b`.
+Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `wyndgate` and serves this folder as assets.
 
-1. In the Cloudflare dashboard, go to **Workers & Pages**.
-2. **Create** a Worker and name it something like `wyndgate`.
-3. Open that new Worker, then **New deployment**.
-4. Select every file inside `wyndgate_map/` (Command-A in that folder) and upload them together. `index.html` must sit next to `app.js` and the `.geojson` files, not inside another folder.
+```bash
+cd wyndgate_map
+npx wrangler deploy
+```
 
-A new deployment replaces every file in that project, so upload the whole folder each time.
+Do **not** deploy into the OU worker (`tiny-thunder-291b`). First-time setup creates the `wyndgate` worker if it does not exist yet.
+
+Dashboard upload still works: create a Worker named `wyndgate`, then **New deployment** and upload every file inside `wyndgate_map/` so `index.html` sits next to `app.js` and the `.geojson` files.
