@@ -41,7 +41,7 @@ Open `http://localhost:8093`. GPS needs HTTPS or localhost.
 
 ## Deploy
 
-Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `wyndgate` and serves this folder as assets.
+Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `bold-cake-92fe` (the live Workers URL the phone opens) and serves this folder as assets.
 
 On the Mac Mini (repo at `~/racing-agent`):
 
@@ -54,11 +54,11 @@ cd ~/racing-agent/wyndgate_map
 npx wrangler deploy
 ```
 
-Live URL: https://wyndgate.smarti2006.workers.dev
+Live URL: https://bold-cake-92fe.smarti2006.workers.dev/
 
-Do **not** deploy into the OU worker (`tiny-thunder-291b`). First-time setup creates the `wyndgate` worker if it does not exist yet.
+Do **not** deploy into the OU worker (`tiny-thunder-291b`). Do **not** deploy only to a separate `wyndgate` worker name — that leaves `bold-cake-92fe` on the old watermarked build. `npx wrangler deploy` from `wyndgate_map/` updates `bold-cake-92fe` because `wrangler.toml` sets `name = "bold-cake-92fe"`.
 
-Dashboard upload still works: create a Worker named `wyndgate`, then **New deployment** and upload every file inside `wyndgate_map/` so `index.html` sits next to `app.js` and the `.geojson` files. Do **not** use an old `wyndgate_map.zip` from a PR comment — those packages can predate the Basemaps `cb1_…` key.
+Dashboard upload still works: open the existing Worker named `bold-cake-92fe`, then **New deployment** and upload every file inside `wyndgate_map/` so `index.html` sits next to `app.js` and the `.geojson` files. Do **not** use an old `wyndgate_map.zip` from a PR comment — those packages can predate the Basemaps `cb1_…` key.
 
 ### CARTO label watermark
 
