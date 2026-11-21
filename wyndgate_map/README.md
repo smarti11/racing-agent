@@ -9,6 +9,7 @@ This site is separate from the Oakland University golf map. It has its own folde
 - Satellite map of the 18-hole course (par 72). Pick Black, Blue, Silver, Silver/Green, Green, Black (M), or Gold. Black is 7,329 yards, 76.2/148
 - Tap a hole to see par, handicap, and the yardage for the tee you picked, then **Fly over** from tee to green on the map
 - **Video** plays a satellite flyover of that hole. A Scottish voice names the hole, the par, and the yardage from the tee you picked
+- **Breaks** zooms into the green. A color wash and arrows show which way a ball rolls, from the 2016 government lidar scan of Oakland County. Drag the white ball and the red flag. The gold line is a putt that finishes in the hole, and the words say how far left or right to start it. The scan is smoothed over a few meters, so it shows the general fall, not a break of an inch or two
 - **Reset** clears the selected hole and zooms back out. Scores stay saved
 - Front, center, and back of the green from your GPS, in one short bar on a phone. Tap the map to measure to a bunker or a layup. Center puts the number back on the middle of the green.
 - Scorecard: say the strokes or type them. Out, In, and the full 18. Men's or Women's changes the handicap number under each hole. The gold number is the plays-like yardage: one yard added for every three feet the green sits above that tee, and one yard subtracted for every three feet it sits below. Elevations are from USGS 3DEP along the mapped hole. Scores stay in this browser until you tap Clear
@@ -23,6 +24,7 @@ Westwynd, the course on Adams Road, is not included.
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
 - Imagery: Esri World Imagery
 - Plays-like elevation: USGS 3DEP at the mapped tee and green
+- Green slope: USGS 3DEP 1-meter elevation from the 2016 Oakland County lidar, smoothed over about 3 meters
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 
 A few drawn hole lines are a little shorter or longer than the printed black-tee yardage. The number on the card is the printed yardage. The line on the map follows the OpenStreetMap drawing.
