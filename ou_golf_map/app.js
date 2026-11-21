@@ -101,8 +101,12 @@
     }
   ).addTo(map);
 
+  const CARTO_API_KEY =
+    "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfemo2cjQzNWMiLCJqdGkiOiJhZWVmNjhlYWRiMTM3NmVjNjJhNmFiZjg4Mjk4MGJiMSJ9.u2zHsHiNAYKvQORQnqL5gI0l_k_GZXFvHVPfIagjExk";
+
   L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
+      encodeURIComponent(CARTO_API_KEY),
     {
       maxZoom: 21,
       maxNativeZoom: 19,
