@@ -105,7 +105,7 @@
   ).addTo(map);
 
   const CARTO_API_KEY =
-    "eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfemo2cjQzNWMiLCJqdGkiOiJhZWVmNjhlYWRiMTM3NmVjNjJhNmFiZjg4Mjk4MGJiMSJ9.u2zHsHiNAYKvQORQnqL5gI0l_k_GZXFvHVPfIagjExk";
+    "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
 
   L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
