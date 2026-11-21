@@ -38,4 +38,11 @@ Open `http://localhost:8091` (GPS needs HTTPS or localhost).
 
 ## Deploy
 
-Upload the files inside `ou_golf_map/` to the existing Cloudflare Worker (`tiny-thunder-291b`) with **New deployment**. Drag the files themselves so `index.html`, `app.js`, and the `.geojson` files are side by side. Cloudflare does not keep a `data` folder, and the map loads those course files from next to `index.html`.
+Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `tiny-thunder-291b` and serves this folder as assets.
+
+```bash
+cd ou_golf_map
+npx wrangler deploy
+```
+
+Dashboard upload still works: **New deployment** on `tiny-thunder-291b`, then drag the files inside `ou_golf_map/` so `index.html`, `app.js`, and the `.geojson` files are side by side. Cloudflare does not keep a `data` folder, and the map loads those course files from next to `index.html`.
