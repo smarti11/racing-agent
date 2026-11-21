@@ -104,6 +104,8 @@
     }
   ).addTo(map);
 
+  // Basemaps API key (cb1_…), same as OU / Indianwood. A CARTO Developers JWT
+  // in ?key= still returns watermarked tiles (etag wm-*).
   const CARTO_API_KEY =
     "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
 

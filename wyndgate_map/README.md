@@ -43,11 +43,28 @@ Open `http://localhost:8093`. GPS needs HTTPS or localhost.
 
 Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `wyndgate` and serves this folder as assets.
 
+On the Mac Mini (repo at `~/racing-agent`):
+
 ```bash
-cd wyndgate_map
+cd ~/racing-agent
+git fetch origin
+git checkout cursor/wyndgate-yardage-rings-505a
+git pull origin cursor/wyndgate-yardage-rings-505a
+cd ~/racing-agent/wyndgate_map
 npx wrangler deploy
 ```
 
+Live URL: https://wyndgate.smarti2006.workers.dev
+
 Do **not** deploy into the OU worker (`tiny-thunder-291b`). First-time setup creates the `wyndgate` worker if it does not exist yet.
 
-Dashboard upload still works: create a Worker named `wyndgate`, then **New deployment** and upload every file inside `wyndgate_map/` so `index.html` sits next to `app.js` and the `.geojson` files.
+Dashboard upload still works: create a Worker named `wyndgate`, then **New deployment** and upload every file inside `wyndgate_map/` so `index.html` sits next to `app.js` and the `.geojson` files. Do **not** use an old `wyndgate_map.zip` from a PR comment — those packages can predate the Basemaps `cb1_…` key.
+
+### CARTO label watermark
+
+Label tiles use CARTO Basemaps `light_only_labels` with `?key=cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170` (same key as OU). A Developers JWT in `?key=` still returns watermarked tiles.
+
+After deploy, hard-refresh the phone/browser (iOS Safari: open the URL once in Safari, pull to refresh, or clear Website Data for the workers.dev host). Then confirm:
+
+1. View Source / Network for `app.js` — it must contain `cb1_5dhw_…`, not a long `eyJ…` JWT.
+2. Network tile requests to `basemaps.cartocdn.com/.../light_only_labels/...png?key=cb1_…` — response `etag` must **not** start with `wm-`.
