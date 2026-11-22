@@ -13,6 +13,12 @@
   const videoTitle = document.getElementById("video-title");
   const videoClose = document.getElementById("video-close");
   const holeVideo = document.getElementById("hole-video");
+  const videoQuality = document.getElementById("video-quality");
+  const vqAfter = document.getElementById("vq-after");
+  const vqBefore = document.getElementById("vq-before");
+  // Sample holes kept as *-legacy.mp4 for side-by-side quality compare.
+  const LEGACY_COMPARE_HOLES = new Set([1, 9, 18]);
+  let videoQualityMode = "after";
   const btnReset = document.getElementById("btn-reset");
   const btnBreaks = document.getElementById("btn-breaks");
   const yardageHud = document.getElementById("yardage-hud");
@@ -1239,23 +1245,70 @@
     videoModal.hidden = true;
   }
 
-  function playHoleVideo() {
-    if (!selectedHole || !holeVideo || !videoModal) return;
-    if (flying) stopFlyover();
-    videoTitle.textContent = "The Wyndgate · Hole " + selectedHole.hole;
-    // Reset the shared <video> so iOS Safari does not keep showing the previous
-    // hole's last (green) frame when the new src is still loading.
+  function holeHasLegacyCompare(hole) {
+    return LEGACY_COMPARE_HOLES.has(Number(hole));
+  }
+
+  function syncVideoQualityUi(hasLegacy) {
+    if (!videoQuality) return;
+    videoQuality.hidden = !hasLegacy;
+    if (vqAfter) vqAfter.setAttribute("aria-pressed", videoQualityMode === "after" ? "true" : "false");
+    if (vqBefore) vqBefore.setAttribute("aria-pressed", videoQualityMode === "before" ? "true" : "false");
+  }
+
+  function holeFlyoverSrc(hole, quality) {
+    const base = "flyover-wyndgate-" + hole;
+    return quality === "before" ? base + "-legacy.mp4" : base + ".mp4";
+  }
+
+  function loadHoleVideoSrc(src, { playVoice } = { playVoice: false }) {
+    if (!holeVideo) return;
     holeVideo.pause();
-    holeVideo.src = "flyover-wyndgate-" + selectedHole.hole + ".mp4";
+    holeVideo.src = src;
     try {
       holeVideo.currentTime = 0;
     } catch (_) {}
     holeVideo.load();
-    videoModal.hidden = false;
-    playSelectedVoice();
+    if (playVoice) playSelectedVoice();
     const tryPlay = () => holeVideo.play().catch(() => {});
     tryPlay();
     holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
+  }
+
+  function setVideoQualityMode(mode) {
+    videoQualityMode = mode === "before" ? "before" : "after";
+    if (!selectedHole || !holeVideo || !videoModal || videoModal.hidden) {
+      syncVideoQualityUi(selectedHole ? holeHasLegacyCompare(selectedHole.hole) : false);
+      return;
+    }
+    const hasLegacy = holeHasLegacyCompare(selectedHole.hole);
+    if (!hasLegacy) videoQualityMode = "after";
+    syncVideoQualityUi(hasLegacy);
+    const wasPaused = holeVideo.paused;
+    const t = holeVideo.currentTime || 0;
+    loadHoleVideoSrc(holeFlyoverSrc(selectedHole.hole, videoQualityMode), { playVoice: false });
+    if (!wasPaused) {
+      const resume = () => {
+        try {
+          holeVideo.currentTime = t;
+        } catch (_) {}
+        holeVideo.play().catch(() => {});
+      };
+      holeVideo.addEventListener("loadeddata", resume, { once: true });
+    }
+  }
+
+  function playHoleVideo() {
+    if (!selectedHole || !holeVideo || !videoModal) return;
+    if (flying) stopFlyover();
+    const hasLegacy = holeHasLegacyCompare(selectedHole.hole);
+    if (!hasLegacy) videoQualityMode = "after";
+    videoTitle.textContent = "The Wyndgate · Hole " + selectedHole.hole;
+    syncVideoQualityUi(hasLegacy);
+    // Reset the shared <video> so iOS Safari does not keep showing the previous
+    // hole's last (green) frame when the new src is still loading.
+    videoModal.hidden = false;
+    loadHoleVideoSrc(holeFlyoverSrc(selectedHole.hole, videoQualityMode), { playVoice: true });
   }
 
   function restoreFlySnap() {
@@ -2098,6 +2151,8 @@
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
   if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
+  if (vqAfter) vqAfter.addEventListener("click", () => setVideoQualityMode("after"));
+  if (vqBefore) vqBefore.addEventListener("click", () => setVideoQualityMode("before"));
   if (holeVideo) {
     holeVideo.addEventListener("pause", () => holeVoice.pause());
     holeVideo.addEventListener("play", () => {

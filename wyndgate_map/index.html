@@ -139,7 +139,13 @@
     <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
       <div class="video-bar">
         <div id="video-title">Flyover</div>
-        <button type="button" id="video-close" class="fly-btn">Close</button>
+        <div class="video-bar-actions">
+          <div id="video-quality" class="video-quality" hidden role="group" aria-label="Compare flyover quality">
+            <button type="button" id="vq-after" class="vq-btn" aria-pressed="true">After (720p)</button>
+            <button type="button" id="vq-before" class="vq-btn" aria-pressed="false">Before (540p)</button>
+          </div>
+          <button type="button" id="video-close" class="fly-btn">Close</button>
+        </div>
       </div>
       <video id="hole-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
@@ -148,6 +154,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
   <!-- ?v= busts stale app.js so a prior Developers JWT (watermarked tiles) cannot linger after deploy -->
-  <script src="app.js?v=imagery-mapbox-styles-1"></script>
+  <script src="app.js?v=flyover-compare-1"></script>
 </body>
 </html>
