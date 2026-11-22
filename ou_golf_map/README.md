@@ -21,7 +21,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 
 - Hole lines, greens, fairways, tees, pins, cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
 - Scorecard yardages / par: [oakland.edu/golf](https://www.oakland.edu/golf/courses/)
-- Imagery: Esri World Imagery
+- Imagery: **USGS NAIP** by default (leaf-on aerial, ~0.6–1 m), with an in-app toggle back to Esri World Imagery for side-by-side comparison. Indianwood / Wyndgate stay on Esri until you choose otherwise.
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 - Green breaks: [USGS 3DEP](https://www.usgs.gov/3d-elevation-program) 1-meter elevation from the 2016 Oakland County lidar (quality level 2)
 

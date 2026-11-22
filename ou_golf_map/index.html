@@ -65,6 +65,12 @@
         <label class="chip"><input type="checkbox" id="tog-sharf" checked /> R&amp;S Sharf</label>
         <label class="chip"><input type="checkbox" id="tog-paths" checked /> Maintenance / cart paths</label>
         <label class="chip"><input type="checkbox" id="tog-fairways" checked /> Fairways &amp; greens</label>
+        <label class="chip">Imagery
+          <select id="imagery-select" aria-label="Satellite imagery source">
+            <option value="naip" selected>USGS NAIP</option>
+            <option value="esri">Esri World Imagery</option>
+          </select>
+        </label>
       </div>
 
       <div class="status" id="gps-status">GPS: waiting…</div>
@@ -144,7 +150,7 @@
 
       <button type="button" id="btn-site" class="site-open">Golf app QR code</button>
 
-      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © USGS NAIP</p>
     </aside>
   </div>
 

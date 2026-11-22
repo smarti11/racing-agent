@@ -8,6 +8,7 @@
   const togSharf = document.getElementById("tog-sharf");
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
+  const imagerySelect = document.getElementById("imagery-select");
   const btnFly = document.getElementById("btn-fly");
   const btnVideo = document.getElementById("btn-video");
   const videoModal = document.getElementById("video-modal");
@@ -92,19 +93,58 @@
     updateYardageHud();
   });
 
-  L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
+  // Web-mercator constants for USGS NAIP exportImage tiles (no public XYZ CDN).
+  const MERC_ORIGIN = 20037508.342789244;
+  const MERC_RES0 = 156543.03392804097;
+
+  const NaipTileLayer = L.TileLayer.extend({
+    getTileUrl: function (coords) {
+      const z = coords.z;
+      const x = coords.x;
+      const y = coords.y;
+      const size = this.getTileSize().x;
+      const res = MERC_RES0 / Math.pow(2, z);
+      const xmin = x * size * res - MERC_ORIGIN;
+      const ymin = MERC_ORIGIN - (y + 1) * size * res;
+      const xmax = (x + 1) * size * res - MERC_ORIGIN;
+      const ymax = MERC_ORIGIN - y * size * res;
+      return (
+        "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer/exportImage" +
+        "?bbox=" +
+        [xmin, ymin, xmax, ymax].join(",") +
+        "&bboxSR=3857&imageSR=3857&size=" +
+        size +
+        "," +
+        size +
+        "&format=jpg&f=image"
+      );
+    },
+  });
+
+  const imageryLayers = {
+    naip: new NaipTileLayer("", {
       maxZoom: 21,
-      maxNativeZoom: 19,
-      attribution: "Tiles © Esri",
-    }
-  ).addTo(map);
+      // NAIP is ~0.6–1 m; past ~18 Leaflet is mostly upscaling.
+      maxNativeZoom: 18,
+      attribution: "Imagery © USGS NAIP",
+      crossOrigin: true,
+    }),
+    esri: L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        attribution: "Tiles © Esri",
+      }
+    ),
+  };
+  let activeImagery = "naip";
+  imageryLayers.naip.addTo(map);
 
   const CARTO_API_KEY =
     "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
 
-  L.tileLayer(
+  const labelsLayer = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
       encodeURIComponent(CARTO_API_KEY),
     {
@@ -114,6 +154,27 @@
       attribution: "© OSM © CARTO",
     }
   ).addTo(map);
+
+  function imageryCredit() {
+    return activeImagery === "naip" ? "Imagery © USGS NAIP" : "Imagery © Esri";
+  }
+
+  function setImagery(kind) {
+    const next = imageryLayers[kind] ? kind : "naip";
+    if (next === activeImagery) return;
+    map.removeLayer(imageryLayers[activeImagery]);
+    imageryLayers[next].addTo(map);
+    // Keep street labels above the satellite layer.
+    if (map.hasLayer(labelsLayer)) labelsLayer.bringToFront();
+    activeImagery = next;
+    if (imagerySelect && imagerySelect.value !== next) imagerySelect.value = next;
+    const foot = document.getElementById("attrib");
+    if (foot && foot.dataset.base) {
+      foot.textContent = foot.dataset.base + " · " + imageryCredit();
+    } else if (foot) {
+      foot.textContent = "Map data © OpenStreetMap · " + imageryCredit();
+    }
+  }
 
   const layers = {
     boundary: L.layerGroup().addTo(map),
@@ -1435,8 +1496,12 @@
     if (greenGrids) greenGrids.stepM = greenGrids.stepM || 1;
     paintAllScores();
 
-    document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
+    const attribEl = document.getElementById("attrib");
+    const attribBase =
+      meta.attribution +
+      " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Voice: Alba, University of Edinburgh";
+    attribEl.dataset.base = attribBase;
+    attribEl.textContent = attribBase + " · " + imageryCredit();
 
     L.geoJSON(boundary, {
       style: {
@@ -2108,6 +2173,9 @@
   togSharf.addEventListener("change", applyToggles);
   togPaths.addEventListener("change", applyToggles);
   togFairways.addEventListener("change", applyToggles);
+  if (imagerySelect) {
+    imagerySelect.addEventListener("change", () => setImagery(imagerySelect.value));
+  }
   document.getElementById("play-katke").addEventListener("click", () => showPlayingCourse("katke"));
   document.getElementById("play-sharf").addEventListener("click", () => showPlayingCourse("sharf"));
   btnLocate.addEventListener("click", () => startGps(true));
