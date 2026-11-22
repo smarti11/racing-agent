@@ -26,6 +26,8 @@ const DEFAULTS = {
   jpeg: 90,
   scale: 2,
   outdir: mapDir,
+  imagery: "esri",
+  suffix: "",
 };
 
 function parseArgs(argv) {
@@ -39,6 +41,8 @@ function parseArgs(argv) {
     else if (a === "--jpeg") opts.jpeg = Number(argv[++i]);
     else if (a === "--scale") opts.scale = Number(argv[++i]);
     else if (a === "--outdir") opts.outdir = path.resolve(argv[++i]);
+    else if (a === "--imagery") opts.imagery = String(argv[++i] || "esri").toLowerCase();
+    else if (a === "--suffix") opts.suffix = String(argv[++i] || "");
     else if (a === "--legacy") {
       opts.width = 960;
       opts.height = 540;
@@ -52,6 +56,10 @@ function parseArgs(argv) {
       opts.holes.push(a);
     }
   }
+  if (opts.imagery !== "esri" && opts.imagery !== "mapbox") {
+    throw new Error("--imagery must be esri or mapbox");
+  }
+  if (opts.imagery === "mapbox" && !opts.suffix) opts.suffix = "-mapbox";
   return opts;
 }
 
@@ -268,7 +276,7 @@ async function main() {
   if (!list.length) throw new Error("No holes matched " + wanted.join(" "));
   await mkdir(opts.outdir, { recursive: true });
   console.log(
-    `Quality: ${opts.width}x${opts.height} @ ${opts.fps}fps, CRF ${opts.crf}, JPEG ${opts.jpeg}, scale ${opts.scale} — ${list.length} hole(s) → ${opts.outdir}`
+    `Quality: ${opts.width}x${opts.height} @ ${opts.fps}fps, CRF ${opts.crf}, JPEG ${opts.jpeg}, scale ${opts.scale}, imagery ${opts.imagery} — ${list.length} hole(s) → ${opts.outdir}`
   );
   const browser = await puppeteer.launch({
     executablePath: "/usr/local/bin/google-chrome",
@@ -288,13 +296,17 @@ async function main() {
     height: opts.height,
     deviceScaleFactor: opts.scale,
   });
-  await page.goto("file://" + stage, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.waitForFunction("window.mapReady === true", { timeout: 30000 });
+  const stageUrl = "file://" + stage + "?imagery=" + encodeURIComponent(opts.imagery);
+  await page.goto(stageUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForFunction("window.mapReady === true", { timeout: 60000 });
   const frameDir = await mkdtemp(path.join(tmpdir(), "indianwood-fly-"));
   try {
     for (const hole of list) {
       const started = Date.now();
-      const outFile = path.join(opts.outdir, "flyover-" + hole.course + "-" + hole.hole + ".mp4");
+      const outFile = path.join(
+        opts.outdir,
+        "flyover-" + hole.course + "-" + hole.hole + opts.suffix + ".mp4"
+      );
       await renderHole(page, hole, frameDir, opts.jpeg);
       await encode(frameDir, hole.frames.length, outFile, opts);
       const { size } = await import("node:fs").then((fs) => fs.promises.stat(outFile));
