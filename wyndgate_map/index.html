@@ -62,15 +62,7 @@
         <label class="chip"><input type="checkbox" id="tog-holes" checked /> Holes</label>
         <label class="chip"><input type="checkbox" id="tog-paths" checked /> Cart paths</label>
         <label class="chip"><input type="checkbox" id="tog-fairways" checked /> Fairways &amp; greens</label>
-        <label class="chip">Imagery
-          <select id="imagery-select" aria-label="Satellite imagery source">
-            <option value="naip" selected>USGS NAIP</option>
-            <option value="esri">Esri World Imagery</option>
-            <option value="mapbox">Mapbox Satellite</option>
-          </select>
-        </label>
       </div>
-      <p class="status" id="imagery-note" hidden aria-live="polite"></p>
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
@@ -131,7 +123,7 @@
         </section>
       </div>
 
-      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © USGS NAIP</p>
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri · Labels © CARTO</p>
     </aside>
   </div>
 
@@ -140,10 +132,6 @@
       <div class="video-bar">
         <div id="video-title">Flyover</div>
         <div class="video-bar-actions">
-          <div id="video-quality" class="video-quality" role="group" aria-label="Compare flyover imagery">
-            <button type="button" id="vq-mapbox" class="vq-btn" aria-pressed="true">Mapbox (720p)</button>
-            <button type="button" id="vq-esri" class="vq-btn" aria-pressed="false">Esri (720p)</button>
-          </div>
           <button type="button" id="video-close" class="fly-btn">Close</button>
         </div>
       </div>
@@ -154,6 +142,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
   <!-- ?v= busts stale app.js so a prior Developers JWT (watermarked tiles) cannot linger after deploy -->
-  <script src="app.js?v=flyover-esri-mapbox-1"></script>
+  <script src="app.js?v=esri-basemap-mapbox-flyover-1"></script>
 </body>
 </html>
