@@ -21,7 +21,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 
 - Hole lines, greens, fairways, tees, pins, cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
 - Scorecard yardages / par: [oakland.edu/golf](https://www.oakland.edu/golf/courses/)
-- Imagery: **USGS NAIP** by default (leaf-on aerial, ~0.6–1 m), with an in-app toggle back to Esri World Imagery for side-by-side comparison. Indianwood / Wyndgate stay on Esri until you choose otherwise.
+- Imagery: **USGS NAIP** by default (leaf-on aerial, ~0.6–1 m), with an in-app toggle to Esri World Imagery or Mapbox Satellite. Mapbox needs a free public token pasted into `MAPBOX_ACCESS_TOKEN` in `app.js` (see https://account.mapbox.com/access-tokens/).
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 - Green breaks: [USGS 3DEP](https://www.usgs.gov/3d-elevation-program) 1-meter elevation from the 2016 Oakland County lidar (quality level 2)
 
@@ -40,8 +40,14 @@ Open `http://localhost:8091` (GPS needs HTTPS or localhost).
 
 Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `tiny-thunder-291b` and serves this folder as assets.
 
+On the Mac Mini (repo at `~/racing-agent`):
+
 ```bash
-cd ou_golf_map
+cd ~/racing-agent
+git fetch origin
+git checkout cursor/ou-yardage-rings-505a
+git pull origin cursor/ou-yardage-rings-505a
+cd ~/racing-agent/ou_golf_map
 npx wrangler deploy
 ```
 

@@ -69,9 +69,11 @@
           <select id="imagery-select" aria-label="Satellite imagery source">
             <option value="naip" selected>USGS NAIP</option>
             <option value="esri">Esri World Imagery</option>
+            <option value="mapbox">Mapbox Satellite</option>
           </select>
         </label>
       </div>
+      <p class="status" id="imagery-note" hidden aria-live="polite"></p>
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
@@ -178,6 +180,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
-  <script src="app.js?v=flyover-ios-1"></script>
+  <script src="app.js?v=imagery-mapbox-1"></script>
 </body>
 </html>

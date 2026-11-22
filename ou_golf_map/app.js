@@ -121,6 +121,10 @@
     },
   });
 
+  // Paste a free public token from https://account.mapbox.com/access-tokens/
+  // Leave empty until pasted — selecting Mapbox then shows a brief status note.
+  const MAPBOX_ACCESS_TOKEN = "";
+
   const imageryLayers = {
     naip: new NaipTileLayer("", {
       maxZoom: 21,
@@ -138,6 +142,16 @@
       }
     ),
   };
+  if (MAPBOX_ACCESS_TOKEN) {
+    imageryLayers.mapbox = L.tileLayer(
+      "https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg?access_token=" +
+        encodeURIComponent(MAPBOX_ACCESS_TOKEN),
+      {
+        maxZoom: 22,
+        attribution: "© Mapbox © Maxar",
+      }
+    );
+  }
   let activeImagery = "naip";
   imageryLayers.naip.addTo(map);
 
@@ -156,10 +170,30 @@
   ).addTo(map);
 
   function imageryCredit() {
-    return activeImagery === "naip" ? "Imagery © USGS NAIP" : "Imagery © Esri";
+    if (activeImagery === "naip") return "Imagery © USGS NAIP";
+    if (activeImagery === "mapbox") return "Imagery © Mapbox © Maxar";
+    return "Imagery © Esri";
+  }
+
+  function noteMapboxToken() {
+    const el = document.getElementById("imagery-note");
+    if (!el) return;
+    el.hidden = false;
+    el.textContent =
+      "Paste a Mapbox token into MAPBOX_ACCESS_TOKEN in app.js (account.mapbox.com/access-tokens).";
+    clearTimeout(noteMapboxToken._t);
+    noteMapboxToken._t = setTimeout(() => {
+      el.hidden = true;
+      el.textContent = "";
+    }, 6000);
   }
 
   function setImagery(kind) {
+    if (kind === "mapbox" && !imageryLayers.mapbox) {
+      if (imagerySelect) imagerySelect.value = activeImagery;
+      noteMapboxToken();
+      return;
+    }
     const next = imageryLayers[kind] ? kind : "naip";
     if (next === activeImagery) return;
     map.removeLayer(imageryLayers[activeImagery]);
