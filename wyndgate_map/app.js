@@ -130,6 +130,12 @@
     "pk.eyJ1Ijoic21hcnRpMjAwNiIsImEiOiJjbXdyYjV1dDAwa2g5",
     "MnpvY2ZjdjI0MjI5In0.9ndr07vIqtCku6uw5TMVwA",
   ].join("");
+  // Guard: join must yield the full pk. token (93 chars). Broken join → blank tiles.
+  if (MAPBOX_ACCESS_TOKEN.length !== 93 || MAPBOX_ACCESS_TOKEN.indexOf("pk.") !== 0) {
+    console.warn(
+      "MAPBOX_ACCESS_TOKEN join looks wrong (len=" + MAPBOX_ACCESS_TOKEN.length + ")"
+    );
+  }
 
   const imageryLayers = {
     naip: new NaipTileLayer("", {
@@ -149,10 +155,14 @@
     ),
   };
   if (MAPBOX_ACCESS_TOKEN) {
+    // Prefer styles API over v4/mapbox.satellite — that classic tileset URL
+    // returns 429 (rate-limit-limit: -1) for this token; styles/v1 works.
     imageryLayers.mapbox = L.tileLayer(
-      "https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg?access_token=" +
+      "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=" +
         encodeURIComponent(MAPBOX_ACCESS_TOKEN),
       {
+        tileSize: 512,
+        zoomOffset: -1,
         maxZoom: 22,
         attribution: "© Mapbox © Maxar",
       }
