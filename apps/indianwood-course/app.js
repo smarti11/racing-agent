@@ -8,18 +8,12 @@
   const togNew = document.getElementById("tog-new");
   const togPaths = document.getElementById("tog-paths");
   const togFairways = document.getElementById("tog-fairways");
-  const imagerySelect = document.getElementById("imagery-select");
   const btnFly = document.getElementById("btn-fly");
   const btnVideo = document.getElementById("btn-video");
   const videoModal = document.getElementById("video-modal");
   const videoTitle = document.getElementById("video-title");
   const holeVideo = document.getElementById("hole-video");
   const videoClose = document.getElementById("video-close");
-  const videoQuality = document.getElementById("video-quality");
-  const vqMapbox = document.getElementById("vq-mapbox");
-  const vqEsri = document.getElementById("vq-esri");
-  // flyover-COURSE-N.mp4 (Esri 720p) vs flyover-COURSE-N-mapbox.mp4 (Mapbox 720p).
-  let videoImageryMode = "mapbox";
   const btnReset = document.getElementById("btn-reset");
   const btnBreaks = document.getElementById("btn-breaks");
   const yardageHud = document.getElementById("yardage-hud");
@@ -98,80 +92,14 @@
     updateYardageHud();
   });
 
-  // Web-mercator constants for USGS NAIP exportImage tiles (no public XYZ CDN).
-  const MERC_ORIGIN = 20037508.342789244;
-  const MERC_RES0 = 156543.03392804097;
-
-  const NaipTileLayer = L.TileLayer.extend({
-    getTileUrl: function (coords) {
-      const z = coords.z;
-      const x = coords.x;
-      const y = coords.y;
-      const size = this.getTileSize().x;
-      const res = MERC_RES0 / Math.pow(2, z);
-      const xmin = x * size * res - MERC_ORIGIN;
-      const ymin = MERC_ORIGIN - (y + 1) * size * res;
-      const xmax = (x + 1) * size * res - MERC_ORIGIN;
-      const ymax = MERC_ORIGIN - y * size * res;
-      return (
-        "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer/exportImage" +
-        "?bbox=" +
-        [xmin, ymin, xmax, ymax].join(",") +
-        "&bboxSR=3857&imageSR=3857&size=" +
-        size +
-        "," +
-        size +
-        "&format=jpg&f=image"
-      );
-    },
-  });
-
-  // Public Mapbox token (client-side, same idea as CARTO_API_KEY).
-  // Split so git push protection does not false-flag the public pk. token.
-  const MAPBOX_ACCESS_TOKEN = [
-    "pk.eyJ1Ijoic21hcnRpMjAwNiIsImEiOiJjbXdyYjV1dDAwa2g5",
-    "MnpvY2ZjdjI0MjI5In0.9ndr07vIqtCku6uw5TMVwA",
-  ].join("");
-  // Guard: join must yield the full pk. token (93 chars). Broken join → blank tiles.
-  if (MAPBOX_ACCESS_TOKEN.length !== 93 || MAPBOX_ACCESS_TOKEN.indexOf("pk.") !== 0) {
-    console.warn(
-      "MAPBOX_ACCESS_TOKEN join looks wrong (len=" + MAPBOX_ACCESS_TOKEN.length + ")"
-    );
-  }
-
-  const imageryLayers = {
-    naip: new NaipTileLayer("", {
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
       maxZoom: 21,
-      // NAIP is ~0.6–1 m; past ~18 Leaflet is mostly upscaling.
-      maxNativeZoom: 18,
-      attribution: "Imagery © USGS NAIP",
-      crossOrigin: true,
-    }),
-    esri: L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      {
-        maxZoom: 21,
-        maxNativeZoom: 19,
-        attribution: "Tiles © Esri",
-      }
-    ),
-  };
-  if (MAPBOX_ACCESS_TOKEN) {
-    // Prefer styles API over v4/mapbox.satellite — that classic tileset URL
-    // returns 429 (rate-limit-limit: -1) for this token; styles/v1 works.
-    imageryLayers.mapbox = L.tileLayer(
-      "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=" +
-        encodeURIComponent(MAPBOX_ACCESS_TOKEN),
-      {
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 22,
-        attribution: "© Mapbox © Maxar",
-      }
-    );
-  }
-  let activeImagery = "naip";
-  imageryLayers.naip.addTo(map);
+      maxNativeZoom: 19,
+      attribution: "Tiles © Esri",
+    }
+  ).addTo(map);
 
   const CARTO_API_KEY =
     "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
@@ -186,47 +114,6 @@
       attribution: "© OSM © CARTO",
     }
   ).addTo(map);
-
-  function imageryCredit() {
-    if (activeImagery === "naip") return "Imagery © USGS NAIP";
-    if (activeImagery === "mapbox") return "Imagery © Mapbox © Maxar";
-    return "Imagery © Esri";
-  }
-
-  function noteMapboxToken() {
-    const el = document.getElementById("imagery-note");
-    if (!el) return;
-    el.hidden = false;
-    el.textContent =
-      "Paste a Mapbox token into MAPBOX_ACCESS_TOKEN in app.js (account.mapbox.com/access-tokens).";
-    clearTimeout(noteMapboxToken._t);
-    noteMapboxToken._t = setTimeout(() => {
-      el.hidden = true;
-      el.textContent = "";
-    }, 6000);
-  }
-
-  function setImagery(kind) {
-    if (kind === "mapbox" && !imageryLayers.mapbox) {
-      if (imagerySelect) imagerySelect.value = activeImagery;
-      noteMapboxToken();
-      return;
-    }
-    const next = imageryLayers[kind] ? kind : "naip";
-    if (next === activeImagery) return;
-    map.removeLayer(imageryLayers[activeImagery]);
-    imageryLayers[next].addTo(map);
-    // Keep street labels above the satellite layer.
-    if (map.hasLayer(labelsLayer)) labelsLayer.bringToFront();
-    activeImagery = next;
-    if (imagerySelect && imagerySelect.value !== next) imagerySelect.value = next;
-    const foot = document.getElementById("attrib");
-    if (foot && foot.dataset.base) {
-      foot.textContent = foot.dataset.base + " · " + imageryCredit();
-    } else if (foot) {
-      foot.textContent = "Map data © OpenStreetMap · " + imageryCredit();
-    }
-  }
 
   const layers = {
     boundary: L.layerGroup().addTo(map),
@@ -1248,20 +1135,8 @@
     videoModal.hidden = true;
   }
 
-  function syncVideoImageryUi() {
-    if (!videoQuality) return;
-    videoQuality.hidden = false;
-    if (vqMapbox) {
-      vqMapbox.setAttribute("aria-pressed", videoImageryMode === "mapbox" ? "true" : "false");
-    }
-    if (vqEsri) {
-      vqEsri.setAttribute("aria-pressed", videoImageryMode === "esri" ? "true" : "false");
-    }
-  }
-
-  function holeFlyoverSrc(course, hole, imagery) {
-    const base = "flyover-" + course + "-" + hole;
-    return imagery === "mapbox" ? base + "-mapbox.mp4" : base + ".mp4";
+  function holeFlyoverSrc(course, hole) {
+    return "flyover-" + course + "-" + hole + ".mp4";
   }
 
   function loadHoleVideoSrc(src, { playVoice } = { playVoice: false }) {
@@ -1278,36 +1153,16 @@
     holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
   }
 
-  function setVideoImageryMode(mode) {
-    videoImageryMode = mode === "esri" ? "esri" : "mapbox";
-    syncVideoImageryUi();
-    if (!selectedHole || !holeVideo || !videoModal || videoModal.hidden) return;
-    const course = selectedHole.course === "new" ? "new" : "old";
-    const wasPaused = holeVideo.paused;
-    const t = holeVideo.currentTime || 0;
-    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoImageryMode), { playVoice: false });
-    if (!wasPaused) {
-      const resume = () => {
-        try {
-          holeVideo.currentTime = t;
-        } catch (_) {}
-        holeVideo.play().catch(() => {});
-      };
-      holeVideo.addEventListener("loadeddata", resume, { once: true });
-    }
-  }
-
   function playHoleVideo() {
     if (!selectedHole || !holeVideo || !videoModal) return;
     if (flying) stopFlyover();
     const course = selectedHole.course === "new" ? "new" : "old";
     const name = course === "old" ? "Old" : "New";
     videoTitle.textContent = name + " hole " + selectedHole.hole;
-    syncVideoImageryUi();
     // Reset the shared <video> so iOS Safari does not keep showing the previous
     // hole's last (green) frame when the new src is still loading.
     videoModal.hidden = false;
-    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoImageryMode), { playVoice: true });
+    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole), { playVoice: true });
   }
 
   function restoreFlySnap() {
@@ -2276,16 +2131,11 @@
   togNew.addEventListener("change", applyToggles);
   togPaths.addEventListener("change", applyToggles);
   togFairways.addEventListener("change", applyToggles);
-  if (imagerySelect) {
-    imagerySelect.addEventListener("change", () => setImagery(imagerySelect.value));
-  }
   document.getElementById("play-old").addEventListener("click", () => showPlayingCourse("old"));
   document.getElementById("play-new").addEventListener("click", () => showPlayingCourse("new"));
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
   if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
-  if (vqMapbox) vqMapbox.addEventListener("click", () => setVideoImageryMode("mapbox"));
-  if (vqEsri) vqEsri.addEventListener("click", () => setVideoImageryMode("esri"));
   if (holeVideo) {
     holeVideo.addEventListener("pause", () => holeVoice.pause());
     holeVideo.addEventListener("play", () => {
