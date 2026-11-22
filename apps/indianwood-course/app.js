@@ -1137,13 +1137,23 @@
 
   function playHoleVideo() {
     if (!selectedHole || !holeVideo || !videoModal) return;
+    if (flying) stopFlyover();
     const course = selectedHole.course === "new" ? "new" : "old";
     const name = course === "old" ? "Old" : "New";
     videoTitle.textContent = name + " hole " + selectedHole.hole;
+    // Reset the shared <video> so iOS Safari does not keep showing the previous
+    // hole's last (green) frame when the new src is still loading.
+    holeVideo.pause();
     holeVideo.src = "flyover-" + course + "-" + selectedHole.hole + ".mp4";
+    try {
+      holeVideo.currentTime = 0;
+    } catch (_) {}
+    holeVideo.load();
     videoModal.hidden = false;
     playSelectedVoice();
-    holeVideo.play().catch(() => {});
+    const tryPlay = () => holeVideo.play().catch(() => {});
+    tryPlay();
+    holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
   }
 
   function restoreFlySnap() {
@@ -1176,15 +1186,14 @@
     const samples = resamplePath(path, 90);
     if (layer) layer.closePopup();
     const meters = map.distance(samples[0], samples[samples.length - 1]);
-    const reduceMotion =
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // "Fly over" is an explicit user action. Do not honor prefers-reduced-motion
+    // by skipping the flight — that zeroed dive/cruise (common on iPhone with
+    // Settings → Accessibility → Motion → Reduce Motion) and teleported the
+    // camera to the green, looking like a stale end-of-hole view.
     const closeZoom = Math.min(19, map.getMaxZoom() || 19);
     const startZoom = map.getZoom();
-    const dive = reduceMotion ? 0 : 1600;
-    const cruise = reduceMotion
-      ? 0
-      : Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
+    const dive = 1600;
+    const cruise = Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
     const duration = Math.max(1, dive + cruise);
     if (flySnap == null) flySnap = map.options.zoomSnap;
     map.options.zoomSnap = 0;
