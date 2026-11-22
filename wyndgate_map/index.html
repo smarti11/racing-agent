@@ -133,13 +133,13 @@
         <div id="video-title">Flyover</div>
         <button type="button" id="video-close" class="fly-btn">Close</button>
       </div>
-      <video id="hole-video" controls playsinline preload="none"></video>
+      <video id="hole-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
   <!-- ?v= busts stale app.js so a prior Developers JWT (watermarked tiles) cannot linger after deploy -->
-  <script src="app.js?v=basemaps-cb1"></script>
+  <script src="app.js?v=flyover-ios-1"></script>
 </body>
 </html>
