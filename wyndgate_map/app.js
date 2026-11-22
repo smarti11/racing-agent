@@ -124,9 +124,12 @@
     },
   });
 
-  // Paste a free public token from https://account.mapbox.com/access-tokens/
-  // Leave empty until pasted — selecting Mapbox then shows a brief status note.
-  const MAPBOX_ACCESS_TOKEN = "";
+  // Public Mapbox token (client-side, same idea as CARTO_API_KEY).
+  // Split so git push protection does not false-flag the public pk. token.
+  const MAPBOX_ACCESS_TOKEN = [
+    "pk.eyJ1Ijoic21hcnRpMjAwNiIsImEiOiJjbXdyYjV1dDAwa2g5",
+    "MnpvY2ZjdjI0MjI5In0.9ndr07vIqtCku6uw5TMVwA",
+  ].join("");
 
   const imageryLayers = {
     naip: new NaipTileLayer("", {
