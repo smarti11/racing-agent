@@ -187,6 +187,45 @@ html, body {
   font-weight: 800;
 }
 
+.video-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.video-quality {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(243, 246, 239, 0.18);
+}
+
+.video-quality[hidden] { display: none; }
+
+.vq-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: transparent;
+  color: rgba(243, 246, 239, 0.78);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vq-btn[aria-pressed="true"] {
+  background: #f7f3e8;
+  color: #14261a;
+}
+
 .video-card video {
   display: block;
   width: 100%;
