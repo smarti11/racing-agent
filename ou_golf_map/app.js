@@ -16,11 +16,10 @@
   const holeVideo = document.getElementById("hole-video");
   const videoClose = document.getElementById("video-close");
   const videoQuality = document.getElementById("video-quality");
-  const vqAfter = document.getElementById("vq-after");
-  const vqBefore = document.getElementById("vq-before");
-  // Sample holes kept as *-legacy.mp4 for side-by-side quality compare.
-  const LEGACY_COMPARE_HOLES = new Set([1, 9, 18]);
-  let videoQualityMode = "after";
+  const vqMapbox = document.getElementById("vq-mapbox");
+  const vqEsri = document.getElementById("vq-esri");
+  // Flyover files: flyover-COURSE-N.mp4 (Esri 720p) and flyover-COURSE-N-mapbox.mp4 (Mapbox 720p).
+  let videoImageryMode = "mapbox";
   const btnReset = document.getElementById("btn-reset");
   const btnBreaks = document.getElementById("btn-breaks");
   const yardageHud = document.getElementById("yardage-hud");
@@ -1237,20 +1236,20 @@
     videoModal.hidden = true;
   }
 
-  function holeHasLegacyCompare(hole) {
-    return LEGACY_COMPARE_HOLES.has(Number(hole));
-  }
-
-  function syncVideoQualityUi(hasLegacy) {
+  function syncVideoImageryUi() {
     if (!videoQuality) return;
-    videoQuality.hidden = !hasLegacy;
-    if (vqAfter) vqAfter.setAttribute("aria-pressed", videoQualityMode === "after" ? "true" : "false");
-    if (vqBefore) vqBefore.setAttribute("aria-pressed", videoQualityMode === "before" ? "true" : "false");
+    videoQuality.hidden = false;
+    if (vqMapbox) {
+      vqMapbox.setAttribute("aria-pressed", videoImageryMode === "mapbox" ? "true" : "false");
+    }
+    if (vqEsri) {
+      vqEsri.setAttribute("aria-pressed", videoImageryMode === "esri" ? "true" : "false");
+    }
   }
 
-  function holeFlyoverSrc(course, hole, quality) {
+  function holeFlyoverSrc(course, hole, imagery) {
     const base = "flyover-" + course + "-" + hole;
-    return quality === "before" ? base + "-legacy.mp4" : base + ".mp4";
+    return imagery === "mapbox" ? base + "-mapbox.mp4" : base + ".mp4";
   }
 
   function loadHoleVideoSrc(src, { playVoice } = { playVoice: false }) {
@@ -1267,19 +1266,14 @@
     holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
   }
 
-  function setVideoQualityMode(mode) {
-    videoQualityMode = mode === "before" ? "before" : "after";
-    if (!selectedHole || !holeVideo || !videoModal || videoModal.hidden) {
-      syncVideoQualityUi(selectedHole ? holeHasLegacyCompare(selectedHole.hole) : false);
-      return;
-    }
+  function setVideoImageryMode(mode) {
+    videoImageryMode = mode === "esri" ? "esri" : "mapbox";
+    syncVideoImageryUi();
+    if (!selectedHole || !holeVideo || !videoModal || videoModal.hidden) return;
     const course = selectedHole.course === "sharf" ? "sharf" : "katke";
-    const hasLegacy = holeHasLegacyCompare(selectedHole.hole);
-    if (!hasLegacy) videoQualityMode = "after";
-    syncVideoQualityUi(hasLegacy);
     const wasPaused = holeVideo.paused;
     const t = holeVideo.currentTime || 0;
-    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoQualityMode), { playVoice: false });
+    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoImageryMode), { playVoice: false });
     if (!wasPaused) {
       const resume = () => {
         try {
@@ -1296,14 +1290,12 @@
     if (flying) stopFlyover();
     const course = selectedHole.course === "sharf" ? "sharf" : "katke";
     const name = course === "katke" ? "Katke" : "Sharf";
-    const hasLegacy = holeHasLegacyCompare(selectedHole.hole);
-    if (!hasLegacy) videoQualityMode = "after";
     videoTitle.textContent = name + " hole " + selectedHole.hole;
-    syncVideoQualityUi(hasLegacy);
+    syncVideoImageryUi();
     // Reset the shared <video> so iOS Safari does not keep showing the previous
     // hole's last (green) frame when the new src is still loading.
     videoModal.hidden = false;
-    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoQualityMode), { playVoice: true });
+    loadHoleVideoSrc(holeFlyoverSrc(course, selectedHole.hole, videoImageryMode), { playVoice: true });
   }
 
   function restoreFlySnap() {
@@ -2282,8 +2274,8 @@
   btnLocate.addEventListener("click", () => startGps(true));
   btnFly.addEventListener("click", flyOver);
   if (btnVideo) btnVideo.addEventListener("click", playHoleVideo);
-  if (vqAfter) vqAfter.addEventListener("click", () => setVideoQualityMode("after"));
-  if (vqBefore) vqBefore.addEventListener("click", () => setVideoQualityMode("before"));
+  if (vqMapbox) vqMapbox.addEventListener("click", () => setVideoImageryMode("mapbox"));
+  if (vqEsri) vqEsri.addEventListener("click", () => setVideoImageryMode("esri"));
   if (holeVideo) {
     holeVideo.addEventListener("pause", () => holeVoice.pause());
     holeVideo.addEventListener("play", () => {
