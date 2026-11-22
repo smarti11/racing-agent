@@ -23,7 +23,7 @@ Westwynd, the course on Adams Road, is not included.
 - Hole lines, greens, fairways, tees, pins, and cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
 - Par, tee yardage, and ratings: the [GolfCore Wyndgate card](https://www.golfcore.org/courses/wyndgate/#course-map). Men's and women's handicaps: the [18Birdies scorecard](https://18birdies.com/golf-courses/club/b3f9ffc0-86ac-11e4-8c28-020000005b00/the-wyndgate-golf-and-country-club) for the same course. Westwynd is a different course and is not this card
 - The pin on the map is the parking spot OpenStreetMap has for 1975 West Gunn Road
-- Imagery: Esri World Imagery
+- Imagery: **USGS NAIP** by default (leaf-on aerial, ~0.6–1 m), with an in-app toggle back to Esri World Imagery for side-by-side comparison
 - Plays-like elevation: USGS 3DEP at the mapped tee and green
 - Green slope: USGS 3DEP 1-meter elevation from the 2016 Oakland County lidar, smoothed over about 3 meters
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
