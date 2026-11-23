@@ -1176,12 +1176,28 @@
     holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
   }
 
+  function setVideoNowPlaying(title) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title,
+        artist: "OU Golf & Learning Center",
+        artwork: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+        ],
+      });
+    } catch (_) {}
+  }
+
   function playHoleVideo() {
     if (!selectedHole || !holeVideo || !videoModal) return;
     if (flying) stopFlyover();
     const course = selectedHole.course === "sharf" ? "sharf" : "katke";
     const name = course === "katke" ? "Katke" : "Sharf";
-    videoTitle.textContent = name + " hole " + selectedHole.hole;
+    const title = name + " hole " + selectedHole.hole;
+    videoTitle.textContent = title;
+    setVideoNowPlaying(title);
     // Reset the shared <video> so iOS Safari does not keep showing the previous
     // hole's last (green) frame when the new src is still loading.
     videoModal.hidden = false;
