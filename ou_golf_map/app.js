@@ -246,6 +246,40 @@
     return "Ball rolls " + how + " · " + fallText;
   }
 
+  // Esri World Imagery is typically sharp to ~z19; Breaks used to zoom to 21 and
+  // stretch soft tiles. Keep Breaks at native detail and lighten the green fill so
+  // the satellite grass shows through under the slope arrows.
+  const GREEN_FILL = {
+    color: "#b8ff6a",
+    weight: 1,
+    fillColor: "#78d63d",
+    fillOpacity: 0.45,
+  };
+  const GREEN_FILL_BREAKS = {
+    color: "#d7ff9a",
+    weight: 1.25,
+    fillColor: "#78d63d",
+    fillOpacity: 0.12,
+  };
+  let breaksView = false;
+
+  function styleGreensForBreaks(active) {
+    breaksView = !!active;
+    const style = breaksView ? GREEN_FILL_BREAKS : GREEN_FILL;
+    layers.greens.eachLayer((layer) => {
+      if (layer.eachLayer) {
+        layer.eachLayer((feat) => {
+          if (feat.setStyle) feat.setStyle(style);
+        });
+      } else if (layer.setStyle) {
+        layer.setStyle(style);
+      }
+    });
+    if (slopeLayer && slopeLayer.setOpacity) {
+      slopeLayer.setOpacity(breaksView ? 0.72 : 1);
+    }
+  }
+
   function showGreenBreak(course, hole) {
     if (slopeLayer) {
       map.removeLayer(slopeLayer);
@@ -253,6 +287,7 @@
     }
     const info = greenSlope(course, hole);
     if (!info) {
+      styleGreensForBreaks(false);
       if (btnBreaks) btnBreaks.hidden = true;
       return;
     }
@@ -268,6 +303,7 @@
       btnBreaks.hidden = false;
       btnBreaks.setAttribute("aria-pressed", "false");
     }
+    styleGreensForBreaks(false);
     clearPutt();
   }
 
@@ -276,6 +312,7 @@
       map.removeLayer(slopeLayer);
       slopeLayer = null;
     }
+    styleGreensForBreaks(false);
     if (btnBreaks) btnBreaks.hidden = true;
     clearPuttMarkers();
   }
@@ -284,11 +321,13 @@
     if (!slopeLayer || !selectedHole) return;
     map.closePopup();
     if (btnBreaks) btnBreaks.setAttribute("aria-pressed", "true");
+    styleGreensForBreaks(true);
     setupPutt(selectedHole.course, selectedHole.hole);
     const frame = ballMarker
       ? L.latLngBounds([ballMarker.getLatLng(), pinMarker.getLatLng()]).pad(1.1)
       : slopeLayer.getBounds();
-    map.fitBounds(frame, { padding: [64, 64], maxZoom: 21 });
+    // Cap at Esri maxNativeZoom so Breaks does not upscale soft tiles.
+    map.fitBounds(frame, { padding: [64, 64], maxZoom: 19 });
   }
 
   function gridFor(course, hole) {
@@ -1460,12 +1499,7 @@
       fillColor: "#2f8f55",
       fillOpacity: 0.28,
     });
-    addPolygonLayer(greens, layers.greens, {
-      color: "#b8ff6a",
-      weight: 1,
-      fillColor: "#78d63d",
-      fillOpacity: 0.45,
-    });
+    addPolygonLayer(greens, layers.greens, GREEN_FILL);
     addPolygonLayer(tees, layers.tees, {
       color: "#d9c27a",
       weight: 0.5,
