@@ -1459,7 +1459,7 @@
     const attribEl = document.getElementById("attrib");
     const attribBase = meta.attribution + " · Yardages from Indianwood scorecards";
     attribEl.dataset.base = attribBase;
-    attribEl.textContent = attribBase + " · " + imageryCredit();
+    attribEl.textContent = attribBase + " · Imagery © Esri";
 
     L.geoJSON(boundary, {
       style: {
