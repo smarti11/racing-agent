@@ -4,7 +4,11 @@
 Same satellite source as the Mapbox flyover videos, captured once via the
 Static Images API so Breaks does not burn live Mapbox tile quota.
 
-Writes:
+NOTE: Breaks currently uses Esri under the slope overlay. Sharp Mapbox stills
+make OSM green-outline vs photo mismatch obvious; re-enable in the app only
+after green polygons are tightened to the imagery.
+
+Writes (when run):
   ou_golf_map/green-sat-{course}-{hole}.jpg
   ou_golf_map/green_bases.json
 """

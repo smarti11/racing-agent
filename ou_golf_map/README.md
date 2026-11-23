@@ -21,7 +21,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 
 - Hole lines, greens, fairways, tees, pins, cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
 - Scorecard yardages / par: [oakland.edu/golf](https://www.oakland.edu/golf/courses/)
-- Imagery: Esri World Imagery (live map). Hole **Video** flyovers and **Breaks** green stills are Mapbox Satellite captures baked ahead of time (no live Mapbox tile use on playback). Regenerate stills with `python3 tools/capture_ou_green_stills.py`.
+- Imagery: Esri World Imagery (live map). Hole **Video** flyovers are Mapbox Satellite captures baked into MP4s (no live Mapbox tile use on playback).
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 - Green breaks: [USGS 3DEP](https://www.usgs.gov/3d-elevation-program) 1-meter elevation from the 2016 Oakland County lidar (quality level 2)
 
