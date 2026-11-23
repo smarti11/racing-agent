@@ -205,8 +205,10 @@
   }
 
   let greenSlopes = null;
+  let greenBases = null;
   let greenGrids = null;
   let slopeLayer = null;
+  let greenSatLayer = null;
   let ballMarker = null;
   let pinMarker = null;
   let puttLine = null;
@@ -216,6 +218,35 @@
   function greenSlope(course, hole) {
     const book = greenSlopes && greenSlopes.greens && greenSlopes.greens[course];
     return book ? book[String(hole)] : null;
+  }
+
+  function greenBase(course, hole) {
+    const book = greenBases && greenBases.greens && greenBases.greens[course];
+    return book ? book[String(hole)] : null;
+  }
+
+  function clearGreenSat() {
+    if (greenSatLayer) {
+      map.removeLayer(greenSatLayer);
+      greenSatLayer = null;
+    }
+  }
+
+  function showGreenSat(course, hole) {
+    clearGreenSat();
+    const info = greenBase(course, hole);
+    if (!info) return null;
+    greenSatLayer = L.imageOverlay(
+      info.image,
+      [
+        [info.south, info.west],
+        [info.north, info.east],
+      ],
+      { opacity: 1, interactive: false, className: "green-sat" }
+    ).addTo(map);
+    // Keep slope arrows above the baked Mapbox still.
+    if (slopeLayer) slopeLayer.bringToFront();
+    return info;
   }
 
   function rollPhrase(course, hole) {
@@ -275,8 +306,10 @@
         layer.setStyle(style);
       }
     });
+    if (!breaksView) clearGreenSat();
+    // Arrows stay readable on the sharp Mapbox still.
     if (slopeLayer && slopeLayer.setOpacity) {
-      slopeLayer.setOpacity(breaksView ? 0.72 : 1);
+      slopeLayer.setOpacity(breaksView ? 0.88 : 1);
     }
   }
 
@@ -312,6 +345,7 @@
       map.removeLayer(slopeLayer);
       slopeLayer = null;
     }
+    clearGreenSat();
     styleGreensForBreaks(false);
     if (btnBreaks) btnBreaks.hidden = true;
     clearPuttMarkers();
@@ -322,12 +356,19 @@
     map.closePopup();
     if (btnBreaks) btnBreaks.setAttribute("aria-pressed", "true");
     styleGreensForBreaks(true);
+    // Baked Mapbox Satellite still (same source as flyover videos) — no live tiles.
+    const sat = showGreenSat(selectedHole.course, selectedHole.hole);
     setupPutt(selectedHole.course, selectedHole.hole);
     const frame = ballMarker
       ? L.latLngBounds([ballMarker.getLatLng(), pinMarker.getLatLng()]).pad(1.1)
-      : slopeLayer.getBounds();
-    // Cap at Esri maxNativeZoom so Breaks does not upscale soft tiles.
-    map.fitBounds(frame, { padding: [64, 64], maxZoom: 19 });
+      : sat
+        ? L.latLngBounds([
+            [sat.south, sat.west],
+            [sat.north, sat.east],
+          ])
+        : slopeLayer.getBounds();
+    // Static still is ~2–3 cm/px on the green, so a tight zoom stays sharp.
+    map.fitBounds(frame, { padding: [48, 48], maxZoom: 21 });
   }
 
   function gridFor(course, hole) {
@@ -1459,6 +1500,7 @@
       cardData,
       slopeData,
       gridData,
+      baseData,
     ] = await Promise.all([
       loadJSON("meta.json"),
       loadJSON("boundary.geojson"),
@@ -1472,16 +1514,18 @@
       loadJSON("card.json"),
       loadJSON("green_slopes.json"),
       loadJSON("green_grids.json"),
+      loadJSON("green_bases.json"),
     ]);
     card = cardData;
     greenSlopes = slopeData;
     greenGrids = gridData;
+    greenBases = baseData;
     if (greenGrids) greenGrids.stepM = greenGrids.stepM || 1;
     paintAllScores();
 
     document.getElementById("attrib").textContent =
       meta.attribution +
-      " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
+      " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Breaks photo © Mapbox/Maxar · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {

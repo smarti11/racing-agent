@@ -1,0 +1,334 @@
+{
+  "source": "Mapbox Satellite static captures (satellite-v9 @2x), baked for Breaks",
+  "pad_frac": 0.4,
+  "greens": {
+    "katke": {
+      "1": {
+        "image": "green-sat-katke-1.jpg",
+        "west": -83.1994499,
+        "south": 42.6680805,
+        "east": -83.1987061,
+        "north": 42.6687938,
+        "width": 988,
+        "height": 1280
+      },
+      "2": {
+        "image": "green-sat-katke-2.jpg",
+        "west": -83.2006735,
+        "south": 42.6639771,
+        "east": -83.1998811,
+        "north": 42.6647263,
+        "width": 1003,
+        "height": 1280
+      },
+      "3": {
+        "image": "green-sat-katke-3.jpg",
+        "west": -83.2021215,
+        "south": 42.6639283,
+        "east": -83.2013615,
+        "north": 42.6646298,
+        "width": 1027,
+        "height": 1280
+      },
+      "4": {
+        "image": "green-sat-katke-4.jpg",
+        "west": -83.201428,
+        "south": 42.6662283,
+        "east": -83.2007166,
+        "north": 42.6669536,
+        "width": 930,
+        "height": 1280
+      },
+      "5": {
+        "image": "green-sat-katke-5.jpg",
+        "west": -83.2066472,
+        "south": 42.6668546,
+        "east": -83.2056932,
+        "north": 42.6673776,
+        "width": 1280,
+        "height": 948
+      },
+      "6": {
+        "image": "green-sat-katke-6.jpg",
+        "west": -83.2002584,
+        "south": 42.6688942,
+        "east": -83.1993529,
+        "north": 42.6697502,
+        "width": 1003,
+        "height": 1280
+      },
+      "7": {
+        "image": "green-sat-katke-7.jpg",
+        "west": -83.2042991,
+        "south": 42.6708493,
+        "east": -83.2035229,
+        "north": 42.6714676,
+        "width": 1190,
+        "height": 1280
+      },
+      "8": {
+        "image": "green-sat-katke-8.jpg",
+        "west": -83.2023874,
+        "south": 42.6712112,
+        "east": -83.2014011,
+        "north": 42.6716868,
+        "width": 1280,
+        "height": 834
+      },
+      "9": {
+        "image": "green-sat-katke-9.jpg",
+        "west": -83.1989631,
+        "south": 42.6716063,
+        "east": -83.1981869,
+        "north": 42.6722957,
+        "width": 1067,
+        "height": 1280
+      },
+      "10": {
+        "image": "green-sat-katke-10.jpg",
+        "west": -83.1969023,
+        "south": 42.6686631,
+        "east": -83.1959806,
+        "north": 42.6694596,
+        "width": 1097,
+        "height": 1280
+      },
+      "11": {
+        "image": "green-sat-katke-11.jpg",
+        "west": -83.196816,
+        "south": 42.6655572,
+        "east": -83.1959591,
+        "north": 42.6660922,
+        "width": 1280,
+        "height": 1079
+      },
+      "12": {
+        "image": "green-sat-katke-12.jpg",
+        "west": -83.1958459,
+        "south": 42.6649851,
+        "east": -83.1948272,
+        "north": 42.6656272,
+        "width": 1280,
+        "height": 1090
+      },
+      "13": {
+        "image": "green-sat-katke-13.jpg",
+        "west": -83.2003159,
+        "south": 42.6630696,
+        "east": -83.1993134,
+        "north": 42.6635926,
+        "width": 1280,
+        "height": 902
+      },
+      "14": {
+        "image": "green-sat-katke-14.jpg",
+        "west": -83.2027791,
+        "south": 42.6604589,
+        "east": -83.2018089,
+        "north": 42.6610177,
+        "width": 1280,
+        "height": 995
+      },
+      "15": {
+        "image": "green-sat-katke-15.jpg",
+        "west": -83.2056016,
+        "south": 42.6613824,
+        "east": -83.2046638,
+        "north": 42.6619769,
+        "width": 1280,
+        "height": 1096
+      },
+      "16": {
+        "image": "green-sat-katke-16.jpg",
+        "west": -83.2017712,
+        "south": 42.6631409,
+        "east": -83.2010112,
+        "north": 42.6638186,
+        "width": 1063,
+        "height": 1280
+      },
+      "17": {
+        "image": "green-sat-katke-17.jpg",
+        "west": -83.198681,
+        "south": 42.6667594,
+        "east": -83.1977593,
+        "north": 42.6674133,
+        "width": 1280,
+        "height": 1226
+      },
+      "18": {
+        "image": "green-sat-katke-18.jpg",
+        "west": -83.1965052,
+        "south": 42.6719127,
+        "east": -83.1957938,
+        "north": 42.6726498,
+        "width": 915,
+        "height": 1280
+      }
+    },
+    "sharf": {
+      "1": {
+        "image": "green-sat-sharf-1.jpg",
+        "west": -83.1956411,
+        "south": 42.6664662,
+        "east": -83.1946547,
+        "north": 42.667013,
+        "width": 1280,
+        "height": 958
+      },
+      "2": {
+        "image": "green-sat-sharf-2.jpg",
+        "west": -83.1970604,
+        "south": 42.6615105,
+        "east": -83.196074,
+        "north": 42.6620932,
+        "width": 1280,
+        "height": 1021
+      },
+      "3": {
+        "image": "green-sat-sharf-3.jpg",
+        "west": -83.1986487,
+        "south": 42.6606743,
+        "east": -83.1978725,
+        "north": 42.6613638,
+        "width": 1067,
+        "height": 1280
+      },
+      "4": {
+        "image": "green-sat-sharf-4.jpg",
+        "west": -83.2063724,
+        "south": 42.6609028,
+        "east": -83.2055638,
+        "north": 42.6615449,
+        "width": 1194,
+        "height": 1280
+      },
+      "5": {
+        "image": "green-sat-sharf-5.jpg",
+        "west": -83.2102244,
+        "south": 42.6619069,
+        "east": -83.2091409,
+        "north": 42.6626084,
+        "width": 1280,
+        "height": 1119
+      },
+      "6": {
+        "image": "green-sat-sharf-6.jpg",
+        "west": -83.2079605,
+        "south": 42.6666894,
+        "east": -83.2072815,
+        "north": 42.6674503,
+        "width": 846,
+        "height": 1280
+      },
+      "7": {
+        "image": "green-sat-sharf-7.jpg",
+        "west": -83.2086738,
+        "south": 42.6635346,
+        "east": -83.207736,
+        "north": 42.6641647,
+        "width": 1280,
+        "height": 1162
+      },
+      "8": {
+        "image": "green-sat-sharf-8.jpg",
+        "west": -83.2081851,
+        "south": 42.6587571,
+        "east": -83.2073444,
+        "north": 42.659423,
+        "width": 1197,
+        "height": 1280
+      },
+      "9": {
+        "image": "green-sat-sharf-9.jpg",
+        "west": -83.2153178,
+        "south": 42.6563219,
+        "east": -83.2143961,
+        "north": 42.6569167,
+        "width": 1280,
+        "height": 1115
+      },
+      "10": {
+        "image": "green-sat-sharf-10.jpg",
+        "west": -83.2096386,
+        "south": 42.6568148,
+        "east": -83.2087655,
+        "north": 42.6574214,
+        "width": 1280,
+        "height": 1201
+      },
+      "11": {
+        "image": "green-sat-sharf-11.jpg",
+        "west": -83.2167461,
+        "south": 42.6585523,
+        "east": -83.2158244,
+        "north": 42.6592777,
+        "width": 1205,
+        "height": 1280
+      },
+      "12": {
+        "image": "green-sat-sharf-12.jpg",
+        "west": -83.209617,
+        "south": 42.6586461,
+        "east": -83.2089218,
+        "north": 42.6593359,
+        "width": 955,
+        "height": 1280
+      },
+      "13": {
+        "image": "green-sat-sharf-13.jpg",
+        "west": -83.2052405,
+        "south": 42.6583832,
+        "east": -83.2042703,
+        "north": 42.6589183,
+        "width": 1280,
+        "height": 953
+      },
+      "14": {
+        "image": "green-sat-sharf-14.jpg",
+        "west": -83.2071251,
+        "south": 42.6591245,
+        "east": -83.2062844,
+        "north": 42.6599211,
+        "width": 1000,
+        "height": 1280
+      },
+      "15": {
+        "image": "green-sat-sharf-15.jpg",
+        "west": -83.2022976,
+        "south": 42.6592565,
+        "east": -83.2013112,
+        "north": 42.6598154,
+        "width": 1280,
+        "height": 979
+      },
+      "16": {
+        "image": "green-sat-sharf-16.jpg",
+        "west": -83.1997535,
+        "south": 42.6606479,
+        "east": -83.1988966,
+        "north": 42.6613374,
+        "width": 1178,
+        "height": 1280
+      },
+      "17": {
+        "image": "green-sat-sharf-17.jpg",
+        "west": -83.1943745,
+        "south": 42.6636587,
+        "east": -83.1935497,
+        "north": 42.6643841,
+        "width": 1078,
+        "height": 1280
+      },
+      "18": {
+        "image": "green-sat-sharf-18.jpg",
+        "west": -83.1950769,
+        "south": 42.669729,
+        "east": -83.1941229,
+        "north": 42.6703355,
+        "width": 1280,
+        "height": 1099
+      }
+    }
+  }
+}
