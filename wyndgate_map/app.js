@@ -1443,7 +1443,7 @@
     const attribEl = document.getElementById("attrib");
     const attribBase = meta.attribution + " · Green slope: USGS 3DEP";
     attribEl.dataset.base = attribBase;
-    attribEl.textContent = attribBase + " · " + imageryCredit();
+    attribEl.textContent = attribBase + " · Imagery © Esri";
 
     L.geoJSON(boundary, {
       style: {
