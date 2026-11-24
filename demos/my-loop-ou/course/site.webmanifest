@@ -1,0 +1,22 @@
+{
+  "name": "OU Course",
+  "short_name": "OU Course",
+  "start_url": "/my-loop/oaklanduniversity/course/",
+  "display": "standalone",
+  "background_color": "#050805",
+  "theme_color": "#050805",
+  "icons": [
+    {
+      "src": "/my-loop/oaklanduniversity/course/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/my-loop/oaklanduniversity/course/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "My Loop OU",
+  "short_name": "My Loop",
+  "start_url": "/my-loop/oaklanduniversity/",
+  "display": "standalone",
+  "background_color": "#050805",
+  "theme_color": "#050805",
+  "icons": [
+    {
+      "src": "/my-loop/oaklanduniversity/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/my-loop/oaklanduniversity/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "OU Outing",
+  "short_name": "OU Outing",
+  "start_url": "/my-loop/oaklanduniversity/outing/",
+  "display": "standalone",
+  "background_color": "#050805",
+  "theme_color": "#050805",
+  "icons": [
+    {
+      "src": "/my-loop/oaklanduniversity/outing/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/my-loop/oaklanduniversity/outing/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
