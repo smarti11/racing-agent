@@ -1858,11 +1858,91 @@
       next + (next === 1 ? " stroke saved." : " strokes saved.");
   }
 
+
+  function saveDetails(course) {
+    const holes = {};
+    for (let n = 1; n <= 18; n += 1) {
+      const plays = playsFor(course, n);
+      holes[n] = {
+        hcp: handicapFor(course, n),
+        teeName: teeName(teeId),
+        yards: yardageFor(course, n),
+        plays: plays ? plays.yards : null,
+      };
+    }
+    return holes;
+  }
+
+  function setSaveNote(course, message) {
+    const note = document.getElementById("save-note-" + course);
+    if (note) note.textContent = message || "";
+  }
+
+  function downloadScore(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  async function saveCourse(course) {
+    const button = document.getElementById("save-" + course);
+    const name = COURSE_NAMES[course] || course;
+    const round = OUScore.nineSummary(scores[course], pars[course], 1, 18);
+    if (!round.counted) {
+      setSaveNote(course, "Enter a score first.");
+      return;
+    }
+    const now = new Date();
+    const dateLabel = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const text = OUScore.scorecardText(name, scores[course], pars[course], dateLabel, {
+      heading: teeName(teeId) + " tees · " + (hcpSet === "women" ? "women's" : "men's") + " handicap",
+      holes: saveDetails(course),
+    });
+    const filename = OUScore.scorecardFilename(name, now);
+    const file = new File([text], filename, { type: "text/plain" });
+    if (button) button.disabled = true;
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name + " score" });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else if (navigator.share) {
+        await navigator.share({ title: name + " score", text: text });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      try {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      } catch (downloadErr) {
+        setSaveNote(course, "Couldn't save. Try again.");
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   function clearCourse(course) {
     const name = COURSE_NAMES[course] || course;
     if (!window.confirm("Clear all " + name + " scores?")) return;
     scores[course] = {};
     saveScores();
+    setSaveNote(course, "");
     for (let n = 1; n <= 18; n += 1) {
       paintScore(course, n);
       refreshHolePopup(course, n);
@@ -2044,6 +2124,8 @@
     focusHole(selectedHole.course, selectedHole.hole + 1);
   });
   document.getElementById("clear-wyndgate").addEventListener("click", () => clearCourse(COURSE));
+  const saveWyndgate = document.getElementById("save-wyndgate");
+  if (saveWyndgate) saveWyndgate.addEventListener("click", () => saveCourse(COURSE));
   if (teeSelect) {
     teeSelect.value = teeId;
     teeSelect.addEventListener("change", () => {
