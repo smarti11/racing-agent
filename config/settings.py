@@ -42,7 +42,17 @@ EXCLUDED_TRACKS = [
     "Eureka",                # EUR - mixed Paint/QH/TB card; Equibase posts entries but no results or charts
     "Evangeline",            # EVD - removed at user's request 2026-10-22 (weak-signal track)
     "Albuquerque",           # ALB - removed at user's request 2026-10-22
+    # Canadian tracks - all removed at user's request 2026-11-24 (codes are also
+    # filtered via CANADIAN_TRACKS in get_todays_tracks, in case a name differs)
+    "Woodbine",              # WO
+    "Fort Erie",             # FE
+    "Century Downs",         # CTD
+    "Grande Prairie",        # GPR
+    "Hastings",              # HST
 ]
+
+# Skip every track in CANADIAN_TRACKS (user request 2026-11-24).
+EXCLUDE_CANADIAN_TRACKS = True
 
 # Set to True to only fetch priority tracks (faster)
 # Set to False to fetch all tracks (slower but complete)
