@@ -1,9 +1,12 @@
 // Render a phone-playable flyover video for each OU hole.
 // The picture is the same Esri satellite photo the map uses, tilted and flown
 // from the tee to the green. No Google Earth file is required to watch it.
+//
+// Quality defaults (2026-11): 1280×720 @ 15fps, JPEG ~90, libx264 CRF ~26.
+// Prior defaults (kept as CLI overrides): 960×540 @ 8fps, JPEG 76, CRF 30.
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, unlink } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +17,53 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const mapDir = path.join(root, "ou_golf_map");
 const stage = path.join(root, "tools", "flyover_stage.html");
 const EARTH = 6371000;
+
+// --- quality knobs (CLI: --width --height --fps --crf --jpeg --scale --outdir) ---
+const DEFAULTS = {
+  width: 1280,
+  height: 720,
+  fps: 15,
+  crf: 26,
+  jpeg: 90,
+  scale: 2, // deviceScaleFactor; capture at 2× then scale to width×height
+  outdir: mapDir,
+  imagery: "esri", // esri | mapbox — satellite source in flyover_stage.html
+  suffix: "", // e.g. "-mapbox" when imagery=mapbox
+};
+// Old: width 960, height 540, fps 8, crf 30, jpeg 76, scale 1
+
+function parseArgs(argv) {
+  const opts = { ...DEFAULTS, holes: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--width") opts.width = Number(argv[++i]);
+    else if (a === "--height") opts.height = Number(argv[++i]);
+    else if (a === "--fps") opts.fps = Number(argv[++i]);
+    else if (a === "--crf") opts.crf = Number(argv[++i]);
+    else if (a === "--jpeg") opts.jpeg = Number(argv[++i]);
+    else if (a === "--scale") opts.scale = Number(argv[++i]);
+    else if (a === "--outdir") opts.outdir = path.resolve(argv[++i]);
+    else if (a === "--imagery") opts.imagery = String(argv[++i] || "esri").toLowerCase();
+    else if (a === "--suffix") opts.suffix = String(argv[++i] || "");
+    else if (a === "--legacy") {
+      opts.width = 960;
+      opts.height = 540;
+      opts.fps = 8;
+      opts.crf = 30;
+      opts.jpeg = 76;
+      opts.scale = 1;
+    } else if (a.startsWith("-")) {
+      throw new Error("Unknown flag " + a);
+    } else {
+      opts.holes.push(a);
+    }
+  }
+  if (opts.imagery !== "esri" && opts.imagery !== "mapbox") {
+    throw new Error("--imagery must be esri or mapbox");
+  }
+  if (opts.imagery === "mapbox" && !opts.suffix) opts.suffix = "-mapbox";
+  return opts;
+}
 
 function haversine(lon1, lat1, lon2, lat2) {
   const p1 = (lat1 * Math.PI) / 180;
@@ -87,10 +137,9 @@ function pointAlong(coords, distance) {
   return { lon: last[0], lat: last[1], heading: headingAt(coords, coords.length - 1) };
 }
 
-function framesFor(coords) {
+function framesFor(coords, fps) {
   const total = pathLength(coords) || 1;
   const seconds = Math.max(8, Math.min(12, total / 42));
-  const fps = 8;
   const count = Math.round(seconds * fps);
   const frames = [];
   for (let i = 0; i < count; i++) {
@@ -113,7 +162,7 @@ function framesFor(coords) {
   return frames;
 }
 
-async function holes() {
+async function holes(fps) {
   const features = JSON.parse(await readFile(path.join(mapDir, "holes.geojson"), "utf8")).features;
   const tees = JSON.parse(await readFile(path.join(mapDir, "tees.geojson"), "utf8")).features.map((f) => centroid(f.geometry.coordinates[0]));
   const greens = JSON.parse(await readFile(path.join(mapDir, "greens.geojson"), "utf8")).features.map((f) => centroid(f.geometry.coordinates[0]));
@@ -130,28 +179,30 @@ async function holes() {
       hole: props.hole,
       label: (course === "katke" ? "Katke " : "Sharf ") + props.hole,
       coords,
-      frames: framesFor(coords),
+      frames: framesFor(coords, fps),
     };
   });
 }
 
-function encode(frameDir, count, outFile) {
+function encode(frameDir, count, outFile, opts) {
   return new Promise((resolve, reject) => {
-    const proc = spawn("ffmpeg", [
-      "-y", "-framerate", "8", "-start_number", "0",
+    const args = [
+      "-y", "-framerate", String(opts.fps), "-start_number", "0",
       "-i", path.join(frameDir, "frame-%03d.jpg"),
       "-frames:v", String(count),
-      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "30",
+      "-vf", `scale=${opts.width}:${opts.height}`,
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", String(opts.crf),
       "-movflags", "+faststart",
       outFile,
-    ], { stdio: ["ignore", "ignore", "pipe"] });
+    ];
+    const proc = spawn("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
     let err = "";
     proc.stderr.on("data", (chunk) => { err += chunk; });
     proc.on("close", (code) => (code === 0 ? resolve() : reject(new Error(err.slice(-500)))));
   });
 }
 
-async function renderHole(page, hole, frameDir) {
+async function renderHole(page, hole, frameDir, jpegQuality) {
   for (const name of await readdir(frameDir)) {
     if (name.startsWith("frame-")) await unlink(path.join(frameDir, name));
   }
@@ -171,35 +222,48 @@ async function renderHole(page, hole, frameDir) {
     await page.evaluate(() => window.settle());
     await page.screenshot({
       type: "jpeg",
-      quality: 76,
+      quality: jpegQuality,
       path: path.join(frameDir, "frame-" + String(i).padStart(3, "0") + ".jpg"),
     });
   }
 }
 
 async function main() {
-  const wanted = process.argv.slice(2);
-  const all = await holes();
+  const opts = parseArgs(process.argv.slice(2));
+  const wanted = opts.holes;
+  const all = await holes(opts.fps);
   const list = wanted.length
     ? all.filter((hole) => wanted.includes(hole.course + "-" + hole.hole))
     : all;
   if (!list.length) throw new Error("No holes matched " + wanted.join(" "));
+  await mkdir(opts.outdir, { recursive: true });
+  console.log(
+    `Quality: ${opts.width}x${opts.height} @ ${opts.fps}fps, CRF ${opts.crf}, JPEG ${opts.jpeg}, scale ${opts.scale}, imagery ${opts.imagery} — ${list.length} hole(s) → ${opts.outdir}`
+  );
   const browser = await puppeteer.launch({
     executablePath: "/usr/local/bin/google-chrome",
     headless: "new",
     args: ["--no-sandbox", "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader", "--ignore-gpu-blocklist", "--enable-webgl"],
   });
   const page = await browser.newPage();
-  await page.setViewport({ width: 960, height: 540 });
-  await page.goto("file://" + stage, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.waitForFunction("window.mapReady === true", { timeout: 30000 });
+  await page.setViewport({
+    width: opts.width,
+    height: opts.height,
+    deviceScaleFactor: opts.scale,
+  });
+  const stageUrl = "file://" + stage + "?imagery=" + encodeURIComponent(opts.imagery);
+  await page.goto(stageUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForFunction("window.mapReady === true", { timeout: 60000 });
   const frameDir = await mkdtemp(path.join(tmpdir(), "ou-fly-"));
   try {
     for (const hole of list) {
       const started = Date.now();
-      const outFile = path.join(mapDir, "flyover-" + hole.course + "-" + hole.hole + ".mp4");
-      await renderHole(page, hole, frameDir);
-      await encode(frameDir, hole.frames.length, outFile);
+      const outFile = path.join(
+        opts.outdir,
+        "flyover-" + hole.course + "-" + hole.hole + opts.suffix + ".mp4"
+      );
+      await renderHole(page, hole, frameDir, opts.jpeg);
+      await encode(frameDir, hole.frames.length, outFile, opts);
       const { size } = await import("node:fs").then((fs) => fs.promises.stat(outFile));
       console.log(hole.label, hole.frames.length + " frames", Math.round(size / 1024) + "KB", Math.round((Date.now() - started) / 1000) + "s");
     }

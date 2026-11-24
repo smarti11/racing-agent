@@ -4,8 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="OU Golf" />
   <meta name="theme-color" content="#000000" />
   <title>OU Golf &amp; Learning Center</title>
+  <!-- Square dark PNGs so iOS Safari / Dynamic Island do not pad the SVG favicon onto a white box during video. -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
   <link rel="icon" href="grizzly.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -69,7 +73,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Choose the course you are playing. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. Breaks zooms to the green. Drag the white ball and the red flag. The gold line is the putt, bent by the slope, and the words say how far left or right to start it. The slope is from the government elevation scan, so a small break can be finer than that. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
+      <p class="score-hint" id="score-hint">Choose the course you are playing. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. Red, white, and blue curves mark 100, 150, and 200 yards from the middle of the green. Breaks zooms to the green. Drag the white ball and the red flag. The gold line is the putt, bent by the slope, and the words say how far left or right to start it. The slope is from the government elevation scan, so a small break can be finer than that. The number under each hole is its handicap. Pick your tee to see how far the hole plays from that tee to the green. Tap a hole for the front, middle, and back. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="course-switch" role="tablist" aria-label="Course being played">
         <button type="button" id="play-katke" role="tab" aria-selected="true" aria-controls="course-katke">Katke-Cousins</button>
@@ -152,9 +156,11 @@
     <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
       <div class="video-bar">
         <div id="video-title">Flyover</div>
-        <button type="button" id="video-close" class="fly-btn">Close</button>
+        <div class="video-bar-actions">
+          <button type="button" id="video-close" class="fly-btn">Close</button>
+        </div>
       </div>
-      <video id="hole-video" controls playsinline preload="none"></video>
+      <video id="hole-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
   </div>
 
@@ -172,6 +178,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=dark-media-icon-1"></script>
 </body>
 </html>

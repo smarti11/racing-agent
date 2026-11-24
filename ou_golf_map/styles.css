@@ -131,6 +131,29 @@ html, body {
 
 .fly-btn[hidden] { display: none; }
 
+.yard-ring-icon {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.yard-pill {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #ffffff;
+  background: #0c1c12;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  width: 36px;
+  height: 20px;
+}
+
+.yard-pill.y100 { color: #ff4d4d; }
+.yard-pill.y150 { color: #ffffff; }
+.yard-pill.y200 { color: #4da3ff; }
+
 .video-modal {
   position: fixed;
   inset: 0;
@@ -162,6 +185,45 @@ html, body {
   color: var(--ink);
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
+}
+
+.video-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.video-quality {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(243, 246, 239, 0.18);
+}
+
+.video-quality[hidden] { display: none; }
+
+.vq-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: transparent;
+  color: rgba(243, 246, 239, 0.78);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vq-btn[aria-pressed="true"] {
+  background: #f7f3e8;
+  color: #14261a;
 }
 
 .video-card video {

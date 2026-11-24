@@ -60,6 +60,9 @@
   }).setView([42.6665, -83.203], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
+  const yardagePane = map.createPane("yardage");
+  yardagePane.style.zIndex = 450;
+  yardagePane.style.pointerEvents = "none";
 
   mapEl.addEventListener("pointerdown", () => {
     if (flying) flyPointer = true;
@@ -98,8 +101,12 @@
     }
   ).addTo(map);
 
+  const CARTO_API_KEY =
+    "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
+
   L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
+      encodeURIComponent(CARTO_API_KEY),
     {
       maxZoom: 21,
       maxNativeZoom: 19,
@@ -239,6 +246,40 @@
     return "Ball rolls " + how + " · " + fallText;
   }
 
+  // Esri World Imagery is typically sharp to ~z19; Breaks used to zoom to 21 and
+  // stretch soft tiles. Keep Breaks at native detail and lighten the green fill so
+  // the satellite grass shows through under the slope arrows.
+  const GREEN_FILL = {
+    color: "#b8ff6a",
+    weight: 1,
+    fillColor: "#78d63d",
+    fillOpacity: 0.45,
+  };
+  const GREEN_FILL_BREAKS = {
+    color: "#d7ff9a",
+    weight: 1.25,
+    fillColor: "#78d63d",
+    fillOpacity: 0.12,
+  };
+  let breaksView = false;
+
+  function styleGreensForBreaks(active) {
+    breaksView = !!active;
+    const style = breaksView ? GREEN_FILL_BREAKS : GREEN_FILL;
+    layers.greens.eachLayer((layer) => {
+      if (layer.eachLayer) {
+        layer.eachLayer((feat) => {
+          if (feat.setStyle) feat.setStyle(style);
+        });
+      } else if (layer.setStyle) {
+        layer.setStyle(style);
+      }
+    });
+    if (slopeLayer && slopeLayer.setOpacity) {
+      slopeLayer.setOpacity(breaksView ? 0.72 : 1);
+    }
+  }
+
   function showGreenBreak(course, hole) {
     if (slopeLayer) {
       map.removeLayer(slopeLayer);
@@ -246,6 +287,7 @@
     }
     const info = greenSlope(course, hole);
     if (!info) {
+      styleGreensForBreaks(false);
       if (btnBreaks) btnBreaks.hidden = true;
       return;
     }
@@ -261,6 +303,7 @@
       btnBreaks.hidden = false;
       btnBreaks.setAttribute("aria-pressed", "false");
     }
+    styleGreensForBreaks(false);
     clearPutt();
   }
 
@@ -269,6 +312,7 @@
       map.removeLayer(slopeLayer);
       slopeLayer = null;
     }
+    styleGreensForBreaks(false);
     if (btnBreaks) btnBreaks.hidden = true;
     clearPuttMarkers();
   }
@@ -277,11 +321,13 @@
     if (!slopeLayer || !selectedHole) return;
     map.closePopup();
     if (btnBreaks) btnBreaks.setAttribute("aria-pressed", "true");
+    styleGreensForBreaks(true);
     setupPutt(selectedHole.course, selectedHole.hole);
     const frame = ballMarker
       ? L.latLngBounds([ballMarker.getLatLng(), pinMarker.getLatLng()]).pad(1.1)
       : slopeLayer.getBounds();
-    map.fitBounds(frame, { padding: [64, 64], maxZoom: 21 });
+    // Cap at Esri maxNativeZoom so Breaks does not upscale soft tiles.
+    map.fitBounds(frame, { padding: [64, 64], maxZoom: 19 });
   }
 
   function gridFor(course, hole) {
@@ -963,6 +1009,90 @@
     setInterval(run, 10 * 60 * 1000);
   }
 
+  const YARD_RINGS = [
+    { yards: 100, color: "#ff4d4d" },
+    { yards: 150, color: "#ffffff" },
+    { yards: 200, color: "#4da3ff" },
+  ];
+  let yardageRingLayers = [];
+
+  function clearYardageRings() {
+    yardageRingLayers.forEach((layer) => map.removeLayer(layer));
+    yardageRingLayers = [];
+  }
+
+  function moveByYards(origin, bearing, yards) {
+    const radius = 6371000;
+    const dist = yards * 0.9144;
+    const br = (bearing * Math.PI) / 180;
+    const lat1 = (origin.lat * Math.PI) / 180;
+    const lon1 = (origin.lng * Math.PI) / 180;
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(dist / radius) + Math.cos(lat1) * Math.sin(dist / radius) * Math.cos(br)
+    );
+    const lon2 =
+      lon1 +
+      Math.atan2(
+        Math.sin(br) * Math.sin(dist / radius) * Math.cos(lat1),
+        Math.cos(dist / radius) - Math.sin(lat1) * Math.sin(lat2)
+      );
+    return L.latLng((lat2 * 180) / Math.PI, (((lon2 * 180) / Math.PI + 540) % 360) - 180);
+  }
+
+  function greenMiddle(target) {
+    const ring = target.ring;
+    if (!ring || ring.length < 4) return L.latLng(target.lat, target.lon);
+    const n = ring.length - 1;
+    let lat = 0;
+    let lon = 0;
+    for (let i = 0; i < n; i += 1) {
+      lat += ring[i][0];
+      lon += ring[i][1];
+    }
+    return L.latLng(lat / n, lon / n);
+  }
+
+  function showYardageRings(course, hole) {
+    clearYardageRings();
+    const target = greenTargets[course] && greenTargets[course][hole];
+    if (!target || target.teeLat == null) return;
+    const green = greenMiddle(target);
+    const tee = L.latLng(target.teeLat, target.teeLon);
+    const bearing = bearingDeg(green, tee);
+    if (bearing == null) return;
+    const toTee = map.distance(green, tee) * M_TO_YD;
+    YARD_RINGS.forEach((ring) => {
+      if (ring.yards > toTee - 20) return;
+      const pts = [];
+      for (let turn = -58; turn <= 58; turn += 2) pts.push(moveByYards(green, bearing + turn, ring.yards));
+      const shade = L.polyline(pts, {
+        pane: "yardage",
+        color: "#1a1408",
+        weight: 2,
+        opacity: 0.45,
+        interactive: false,
+      }).addTo(map);
+      const line = L.polyline(pts, {
+        pane: "yardage",
+        color: ring.color,
+        weight: 1,
+        opacity: 1,
+        interactive: false,
+      }).addTo(map);
+      const label = L.marker(moveByYards(green, bearing - 50, ring.yards), {
+        pane: "yardage",
+        interactive: false,
+        icon: L.divIcon({
+          className: "yard-ring-icon",
+          html: `<div class="yard-pill y${ring.yards}">${ring.yards}</div>`,
+          iconSize: [36, 20],
+          iconAnchor: [18, 10],
+        }),
+      }).addTo(map);
+      yardageRingLayers.push(shade, line, label);
+    });
+  }
+
   function bearingDeg(a, b) {
     if (map.distance(a, b) < 0.5) return null;
     const φ1 = (a.lat * Math.PI) / 180;
@@ -1032,15 +1162,46 @@
     videoModal.hidden = true;
   }
 
+  function loadHoleVideoSrc(src, { playVoice } = { playVoice: false }) {
+    if (!holeVideo) return;
+    holeVideo.pause();
+    holeVideo.src = src;
+    try {
+      holeVideo.currentTime = 0;
+    } catch (_) {}
+    holeVideo.load();
+    if (playVoice) playSelectedVoice();
+    const tryPlay = () => holeVideo.play().catch(() => {});
+    tryPlay();
+    holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
+  }
+
+  function setVideoNowPlaying(title) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title,
+        artist: "OU Golf & Learning Center",
+        artwork: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+        ],
+      });
+    } catch (_) {}
+  }
+
   function playHoleVideo() {
     if (!selectedHole || !holeVideo || !videoModal) return;
+    if (flying) stopFlyover();
     const course = selectedHole.course === "sharf" ? "sharf" : "katke";
     const name = course === "katke" ? "Katke" : "Sharf";
-    videoTitle.textContent = name + " hole " + selectedHole.hole;
-    holeVideo.src = "flyover-" + course + "-" + selectedHole.hole + ".mp4";
+    const title = name + " hole " + selectedHole.hole;
+    videoTitle.textContent = title;
+    setVideoNowPlaying(title);
+    // Reset the shared <video> so iOS Safari does not keep showing the previous
+    // hole's last (green) frame when the new src is still loading.
     videoModal.hidden = false;
-    playSelectedVoice();
-    holeVideo.play().catch(() => {});
+    loadHoleVideoSrc("flyover-" + course + "-" + selectedHole.hole + ".mp4", { playVoice: true });
   }
 
   function restoreFlySnap() {
@@ -1073,15 +1234,14 @@
     const samples = resamplePath(path, 90);
     if (layer) layer.closePopup();
     const meters = map.distance(samples[0], samples[samples.length - 1]);
-    const reduceMotion =
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // "Fly over" is an explicit user action. Do not honor prefers-reduced-motion
+    // by skipping the flight — that zeroed dive/cruise (common on iPhone with
+    // Settings → Accessibility → Motion → Reduce Motion) and teleported the
+    // camera to the green, looking like a stale end-of-hole view.
     const closeZoom = Math.min(19, map.getMaxZoom() || 19);
     const startZoom = map.getZoom();
-    const dive = reduceMotion ? 0 : 1600;
-    const cruise = reduceMotion
-      ? 0
-      : Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
+    const dive = 1600;
+    const cruise = Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
     const duration = Math.max(1, dive + cruise);
     if (flySnap == null) flySnap = map.options.zoomSnap;
     map.options.zoomSnap = 0;
@@ -1159,6 +1319,7 @@
     selectedHole = null;
     markTarget = null;
     clearGreenBreak();
+    clearYardageRings();
     lastHole.katke = null;
     lastHole.sharf = null;
     map.closePopup();
@@ -1201,6 +1362,7 @@
     showScoreEntry();
     updateFlyButton();
     showGreenBreak(course, n);
+    showYardageRings(course, n);
   }
 
   function applyToggles() {
@@ -1334,7 +1496,8 @@
     paintAllScores();
 
     document.getElementById("attrib").textContent =
-      meta.attribution + " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
+      meta.attribution +
+      " · Yardages from oakland.edu/golf · Green slope: USGS 3DEP · Imagery © Esri · Voice: Alba, University of Edinburgh";
 
     L.geoJSON(boundary, {
       style: {
@@ -1352,12 +1515,7 @@
       fillColor: "#2f8f55",
       fillOpacity: 0.28,
     });
-    addPolygonLayer(greens, layers.greens, {
-      color: "#b8ff6a",
-      weight: 1,
-      fillColor: "#78d63d",
-      fillOpacity: 0.45,
-    });
+    addPolygonLayer(greens, layers.greens, GREEN_FILL);
     addPolygonLayer(tees, layers.tees, {
       color: "#d9c27a",
       weight: 0.5,

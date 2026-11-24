@@ -11,6 +11,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 - Toggle Katke / Sharf / fairways & greens / **maintenance & cart paths**
 - Live **GPS presence** (watch position + accuracy ring)
 - Live **wind** on the map: speed, the direction it is coming from, humidity, and, once a hole is selected, whether that wind is into you or helping. The reading is the latest observation from Pontiac airport, the National Weather Service station nearest the course, and it refreshes while the map is open.
+- **Yardage curves** on the selected hole: a thin red line at 100 yards from the middle of the green, white at 150, and blue at 200. A curve that would fall behind the tee is left off. Reset clears them
 - **Breaks** on each green: a slope picture and arrows showing which way a ball rolls. Drag the ball and the flag and a gold line shows the putt that finishes in the hole, bent by the slope, plus how far left or right to start it. Built from the free USGS 3DEP 1-meter elevation, which comes from the 2016 Oakland County lidar scan. The read is the general fall of the green. A small break can be finer than that scan.
 - Tap a hole number to zoom to that hole (par + black-tee yardage), then **Fly over** to zoom in and follow that hole from the tee to the green. Stop, pick another hole, or drag the map to cancel. **Reset** clears the selected hole on either course and zooms back out. Scores stay saved.
 - **Front, center, and back** of the green from your GPS, in one short bar. Tap the map to measure to a bunker or a layup. **Center** puts the number back on the middle of the green.
@@ -20,7 +21,7 @@ GPS-aware map for Oakland University Golf & Learning Center:
 
 - Hole lines, greens, fairways, tees, pins, cart paths: [OpenStreetMap](https://www.openstreetmap.org/) contributors
 - Scorecard yardages / par: [oakland.edu/golf](https://www.oakland.edu/golf/courses/)
-- Imagery: Esri World Imagery
+- Imagery: Esri World Imagery (live map). Hole **Video** flyovers are Mapbox Satellite captures baked into MP4s (no live Mapbox tile use on playback).
 - Wind: [National Weather Service](https://www.weather.gov/) observation at Pontiac airport (KPTK)
 - Green breaks: [USGS 3DEP](https://www.usgs.gov/3d-elevation-program) 1-meter elevation from the 2016 Oakland County lidar (quality level 2)
 
@@ -37,4 +38,17 @@ Open `http://localhost:8091` (GPS needs HTTPS or localhost).
 
 ## Deploy
 
-Upload the files inside `ou_golf_map/` to the existing Cloudflare Worker (`tiny-thunder-291b`) with **New deployment**. Drag the files themselves so `index.html`, `app.js`, and the `.geojson` files are side by side. Cloudflare does not keep a `data` folder, and the map loads those course files from next to `index.html`.
+Preferred (same pattern as Indianwood): `wrangler.toml` names the worker `tiny-thunder-291b` and serves this folder as assets.
+
+On the Mac Mini (repo at `~/racing-agent`):
+
+```bash
+cd ~/racing-agent
+git fetch origin
+git checkout cursor/ou-yardage-rings-505a
+git pull origin cursor/ou-yardage-rings-505a
+cd ~/racing-agent/ou_golf_map
+npx wrangler deploy
+```
+
+Dashboard upload still works: **New deployment** on `tiny-thunder-291b`, then drag the files inside `ou_golf_map/` so `index.html`, `app.js`, and the `.geojson` files are side by side. Cloudflare does not keep a `data` folder, and the map loads those course files from next to `index.html`.
