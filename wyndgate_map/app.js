@@ -63,6 +63,9 @@
   }).setView([42.73513, -83.17693], 15);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
+  const yardagePane = map.createPane("yardage");
+  yardagePane.style.zIndex = 450;
+  yardagePane.style.pointerEvents = "none";
 
   mapEl.addEventListener("pointerdown", () => {
     if (flying) flyPointer = true;
@@ -101,8 +104,13 @@
     }
   ).addTo(map);
 
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+  // Basemaps API key (cb1_…). A CARTO Developers JWT in ?key= still returns watermarked tiles.
+  const CARTO_API_KEY =
+    "cb1_5dhw_1_df8e4cfc1a9a6aed2d27b170";
+
+  const labelsLayer = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png?key=" +
+      encodeURIComponent(CARTO_API_KEY),
     {
       maxZoom: 21,
       maxNativeZoom: 19,
@@ -969,6 +977,90 @@
     setInterval(run, 10 * 60 * 1000);
   }
 
+  const YARD_RINGS = [
+    { yards: 100, color: "#ff4d4d" },
+    { yards: 150, color: "#ffffff" },
+    { yards: 200, color: "#4da3ff" },
+  ];
+  let yardageRingLayers = [];
+
+  function clearYardageRings() {
+    yardageRingLayers.forEach((layer) => map.removeLayer(layer));
+    yardageRingLayers = [];
+  }
+
+  function moveByYards(origin, bearing, yards) {
+    const radius = 6371000;
+    const dist = yards * 0.9144;
+    const br = (bearing * Math.PI) / 180;
+    const lat1 = (origin.lat * Math.PI) / 180;
+    const lon1 = (origin.lng * Math.PI) / 180;
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(dist / radius) + Math.cos(lat1) * Math.sin(dist / radius) * Math.cos(br)
+    );
+    const lon2 =
+      lon1 +
+      Math.atan2(
+        Math.sin(br) * Math.sin(dist / radius) * Math.cos(lat1),
+        Math.cos(dist / radius) - Math.sin(lat1) * Math.sin(lat2)
+      );
+    return L.latLng((lat2 * 180) / Math.PI, (((lon2 * 180) / Math.PI + 540) % 360) - 180);
+  }
+
+  function greenMiddle(target) {
+    const ring = target.ring;
+    if (!ring || ring.length < 4) return L.latLng(target.lat, target.lon);
+    const n = ring.length - 1;
+    let lat = 0;
+    let lon = 0;
+    for (let i = 0; i < n; i += 1) {
+      lat += ring[i][0];
+      lon += ring[i][1];
+    }
+    return L.latLng(lat / n, lon / n);
+  }
+
+  function showYardageRings(course, hole) {
+    clearYardageRings();
+    const target = greenTargets[course] && greenTargets[course][hole];
+    if (!target || target.teeLat == null) return;
+    const green = greenMiddle(target);
+    const tee = L.latLng(target.teeLat, target.teeLon);
+    const bearing = bearingDeg(green, tee);
+    if (bearing == null) return;
+    const toTee = map.distance(green, tee) * M_TO_YD;
+    YARD_RINGS.forEach((ring) => {
+      if (ring.yards > toTee - 20) return;
+      const pts = [];
+      for (let turn = -58; turn <= 58; turn += 2) pts.push(moveByYards(green, bearing + turn, ring.yards));
+      const shade = L.polyline(pts, {
+        pane: "yardage",
+        color: "#1a1408",
+        weight: 2,
+        opacity: 0.45,
+        interactive: false,
+      }).addTo(map);
+      const line = L.polyline(pts, {
+        pane: "yardage",
+        color: ring.color,
+        weight: 1,
+        opacity: 1,
+        interactive: false,
+      }).addTo(map);
+      const label = L.marker(moveByYards(green, bearing - 50, ring.yards), {
+        pane: "yardage",
+        interactive: false,
+        icon: L.divIcon({
+          className: "yard-ring-icon",
+          html: `<div class="yard-pill y${ring.yards}">${ring.yards}</div>`,
+          iconSize: [36, 20],
+          iconAnchor: [18, 10],
+        }),
+      }).addTo(map);
+      yardageRingLayers.push(shade, line, label);
+    });
+  }
+
   function bearingDeg(a, b) {
     if (map.distance(a, b) < 0.5) return null;
     const φ1 = (a.lat * Math.PI) / 180;
@@ -1038,14 +1130,32 @@
     videoModal.hidden = true;
   }
 
+  function holeFlyoverSrc(hole) {
+    return "flyover-wyndgate-" + hole + ".mp4";
+  }
+
+  function loadHoleVideoSrc(src, { playVoice } = { playVoice: false }) {
+    if (!holeVideo) return;
+    holeVideo.pause();
+    holeVideo.src = src;
+    try {
+      holeVideo.currentTime = 0;
+    } catch (_) {}
+    holeVideo.load();
+    if (playVoice) playSelectedVoice();
+    const tryPlay = () => holeVideo.play().catch(() => {});
+    tryPlay();
+    holeVideo.addEventListener("loadeddata", tryPlay, { once: true });
+  }
+
   function playHoleVideo() {
     if (!selectedHole || !holeVideo || !videoModal) return;
     if (flying) stopFlyover();
     videoTitle.textContent = "The Wyndgate · Hole " + selectedHole.hole;
-    holeVideo.src = "flyover-wyndgate-" + selectedHole.hole + ".mp4";
+    // Reset the shared <video> so iOS Safari does not keep showing the previous
+    // hole's last (green) frame when the new src is still loading.
     videoModal.hidden = false;
-    playSelectedVoice();
-    holeVideo.play().catch(() => {});
+    loadHoleVideoSrc(holeFlyoverSrc(selectedHole.hole), { playVoice: true });
   }
 
   function restoreFlySnap() {
@@ -1078,15 +1188,14 @@
     const samples = resamplePath(path, 90);
     if (layer) layer.closePopup();
     const meters = map.distance(samples[0], samples[samples.length - 1]);
-    const reduceMotion =
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // "Fly over" is an explicit user action. Do not honor prefers-reduced-motion
+    // by skipping the flight — that zeroed dive/cruise (common on iPhone with
+    // Settings → Accessibility → Motion → Reduce Motion) and teleported the
+    // camera to the green, looking like a stale end-of-hole view.
     const closeZoom = Math.min(19, map.getMaxZoom() || 19);
     const startZoom = map.getZoom();
-    const dive = reduceMotion ? 0 : 1600;
-    const cruise = reduceMotion
-      ? 0
-      : Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
+    const dive = 1600;
+    const cruise = Math.max(5200, Math.min(9000, meters * M_TO_YD * 14));
     const duration = Math.max(1, dive + cruise);
     if (flySnap == null) flySnap = map.options.zoomSnap;
     map.options.zoomSnap = 0;
@@ -1163,6 +1272,7 @@
     selectedHole = null;
     markTarget = null;
     clearGreenBreak();
+    clearYardageRings();
     lastHole.wyndgate = null;
     map.closePopup();
     updateYardageHud();
@@ -1203,6 +1313,7 @@
     showScoreEntry();
     updateFlyButton();
     showGreenBreak(course, n);
+    showYardageRings(course, n);
   }
 
   function applyToggles() {
@@ -1329,8 +1440,10 @@
     greenSlopes = slopeData;
     greenGrids = gridData;
 
-    document.getElementById("attrib").textContent =
-      meta.attribution + " · Green slope: USGS 3DEP · Imagery © Esri";
+    const attribEl = document.getElementById("attrib");
+    const attribBase = meta.attribution + " · Green slope: USGS 3DEP";
+    attribEl.dataset.base = attribBase;
+    attribEl.textContent = attribBase + " · Imagery © Esri";
 
     L.geoJSON(boundary, {
       style: {
@@ -1745,11 +1858,91 @@
       next + (next === 1 ? " stroke saved." : " strokes saved.");
   }
 
+
+  function saveDetails(course) {
+    const holes = {};
+    for (let n = 1; n <= 18; n += 1) {
+      const plays = playsFor(course, n);
+      holes[n] = {
+        hcp: handicapFor(course, n),
+        teeName: teeName(teeId),
+        yards: yardageFor(course, n),
+        plays: plays ? plays.yards : null,
+      };
+    }
+    return holes;
+  }
+
+  function setSaveNote(course, message) {
+    const note = document.getElementById("save-note-" + course);
+    if (note) note.textContent = message || "";
+  }
+
+  function downloadScore(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  async function saveCourse(course) {
+    const button = document.getElementById("save-" + course);
+    const name = COURSE_NAMES[course] || course;
+    const round = OUScore.nineSummary(scores[course], pars[course], 1, 18);
+    if (!round.counted) {
+      setSaveNote(course, "Enter a score first.");
+      return;
+    }
+    const now = new Date();
+    const dateLabel = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const text = OUScore.scorecardText(name, scores[course], pars[course], dateLabel, {
+      heading: teeName(teeId) + " tees · " + (hcpSet === "women" ? "women's" : "men's") + " handicap",
+      holes: saveDetails(course),
+    });
+    const filename = OUScore.scorecardFilename(name, now);
+    const file = new File([text], filename, { type: "text/plain" });
+    if (button) button.disabled = true;
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name + " score" });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else if (navigator.share) {
+        await navigator.share({ title: name + " score", text: text });
+        setSaveNote(course, "Saved to the place you picked.");
+      } else {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      try {
+        downloadScore(filename, text);
+        setSaveNote(course, "Score file downloaded.");
+      } catch (downloadErr) {
+        setSaveNote(course, "Couldn't save. Try again.");
+      }
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   function clearCourse(course) {
     const name = COURSE_NAMES[course] || course;
     if (!window.confirm("Clear all " + name + " scores?")) return;
     scores[course] = {};
     saveScores();
+    setSaveNote(course, "");
     for (let n = 1; n <= 18; n += 1) {
       paintScore(course, n);
       refreshHolePopup(course, n);
@@ -1931,6 +2124,8 @@
     focusHole(selectedHole.course, selectedHole.hole + 1);
   });
   document.getElementById("clear-wyndgate").addEventListener("click", () => clearCourse(COURSE));
+  const saveWyndgate = document.getElementById("save-wyndgate");
+  if (saveWyndgate) saveWyndgate.addEventListener("click", () => saveCourse(COURSE));
   if (teeSelect) {
     teeSelect.value = teeId;
     teeSelect.addEventListener("change", () => {

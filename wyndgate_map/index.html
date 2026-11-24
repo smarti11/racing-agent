@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Wyndgate" />
   <meta name="theme-color" content="#161c29" />
   <title>The Wyndgate</title>
-  <link rel="icon" href="wyndgate-icon.png" />
-  <link rel="apple-touch-icon" href="wyndgate-icon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="icon" href="wyndgate-icon.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Libre+Franklin:wght@700;800&display=swap" rel="stylesheet" />
@@ -66,7 +68,7 @@
 
       <div class="status" id="gps-status">GPS: waiting…</div>
 
-      <p class="score-hint" id="score-hint">Pick your tee. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. The gold number under each hole is how far it plays from that tee to the green, after the uphill or downhill. Breaks zooms into the green and shows the slope from a government lidar scan. Drag the white ball and the red flag, and the gold line is the putt that finishes in the hole. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Scores stay saved.</p>
+      <p class="score-hint" id="score-hint">Pick your tee. The wind chip is the live reading from Pontiac airport, the station nearest the course. Pick a hole and it says whether that wind is into you or helping. The gold number under each hole is how far it plays from that tee to the green, after the uphill or downhill. Red, white, and blue curves mark 100, 150, and 200 yards from the middle of the green. Breaks zooms into the green and shows the slope from a government lidar scan. Drag the white ball and the red flag, and the gold line is the putt that finishes in the hole. Tap a hole for the front, middle, and back of the green. Tap the map to measure to a bunker or a layup, then Center to come back to the green. Fly over plays it on this map. Video plays a flyover, and a Scottish voice names the hole, the par, and the yardage from the tee you picked. Say or type your strokes. Reset clears the selected hole. Scores stay saved. Save this score keeps a copy in Files or Notes.</p>
 
       <div class="card-picks">
         <label>Tee
@@ -120,10 +122,12 @@
           </section>
           <div id="list-wyndgate" class="hole-grid"></div>
           <div class="nine-totals" id="totals-wyndgate" aria-live="polite"></div>
+          <button type="button" id="save-wyndgate" class="save-btn">Save this score</button>
+          <p class="save-note" id="save-note-wyndgate" aria-live="polite"></p>
         </section>
       </div>
 
-      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri</p>
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri · Labels © CARTO</p>
     </aside>
   </div>
 
@@ -131,14 +135,17 @@
     <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
       <div class="video-bar">
         <div id="video-title">Flyover</div>
-        <button type="button" id="video-close" class="fly-btn">Close</button>
+        <div class="video-bar-actions">
+          <button type="button" id="video-close" class="fly-btn">Close</button>
+        </div>
       </div>
-      <video id="hole-video" controls playsinline preload="none"></video>
+      <video id="hole-video" controls playsinline webkit-playsinline preload="metadata"></video>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="score.js"></script>
-  <script src="app.js"></script>
+  <!-- ?v= busts stale app.js so a prior Developers JWT (watermarked tiles) cannot linger after deploy -->
+  <script src="app.js?v=home-icon-1"></script>
 </body>
 </html>
