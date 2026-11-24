@@ -1,0 +1,5 @@
+name = "tee-align"
+compatibility_date = "2025-09-14"
+
+[assets]
+directory = "./"
