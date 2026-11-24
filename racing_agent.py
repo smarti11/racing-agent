@@ -140,6 +140,7 @@ def check_scratches() -> int:
 
     race_lookup = {(race["track_code"], race["race_num"]): race["id"] for race in races}
     blocked_tracks = []
+    fanduel_tracks = []
 
     for race in races:
         track_code = race["track_code"]
@@ -155,10 +156,17 @@ def check_scratches() -> int:
                 scratches, unscratches = get_scratches_desktop(track_code)
                 weak_source = "desktop"
             except EquibaseBlocked:
-                # Desktop page is a bot check: fall back to the mobile site.
-                # It lags the real scratch feeds, so this catches some, not all.
+                # Desktop page is a bot check. FanDuel Research marks scratches
+                # explicitly; the mobile diff (last resort) lags by an hour+.
                 blocked_tracks.append(track_code)
-                scratches, unscratches = get_scratches(track_code)
+                fd_found, fd_rev, fd_ok = _fanduel_scratches(track_code, races)
+                scratch_count += fd_found
+                unscratch_count += fd_rev
+                if fd_ok:
+                    fanduel_tracks.append(track_code)
+                    scratches, unscratches = [], []
+                else:
+                    scratches, unscratches = get_scratches(track_code)
                 weak_source = "mobile_diff"
 
         for scratch in scratches:
@@ -197,44 +205,81 @@ def check_scratches() -> int:
 
     logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")
     if blocked_tracks:
+        no_fd = [t for t in blocked_tracks if t not in fanduel_tracks]
         logger.warning(
             f"Scratch feed BLOCKED by Equibase bot check for {len(blocked_tracks)} tracks "
-            f"({', '.join(blocked_tracks)}) — using mobile fallback; verify scratches manually"
+            f"({', '.join(blocked_tracks)}) — FanDuel Research used for "
+            f"{len(fanduel_tracks)}" + (f"; mobile fallback only for {', '.join(no_fd)}" if no_fd else "")
         )
-    _save_scratch_feed_status(blocked_tracks, sorted(checked_tracks))
+    _save_scratch_feed_status(blocked_tracks, sorted(checked_tracks), fanduel_tracks)
     return scratch_count + unscratch_count
+
+
+def _fanduel_scratches(track_code, races):
+    """Apply FanDuel Research scratches for a track's races without results.
+    Returns (new scratches, reversals, ok)."""
+    from core.fanduel_scratches import get_track_scratches
+    from db.database import get_conn
+    ids = [r["id"] for r in races if r["track_code"] == track_code]
+    if not ids:
+        return 0, 0, False
+    with get_conn() as conn:
+        done = {row[0] for row in conn.execute(
+            f"SELECT race_id FROM results WHERE race_id IN ({','.join('?' * len(ids))})", ids)}
+    todo = [(r["id"], r["race_num"]) for r in races
+            if r["track_code"] == track_code and r["id"] not in done]
+    if not todo:
+        return 0, 0, True
+    scr, reinstated, ok = get_track_scratches(track_code, todo, db_get_race_entries)
+    found = rev = 0
+    for race_id, prog in scr:
+        ent = next((e for e in db_get_race_entries(race_id) if str(e["program_num"]) == prog), None)
+        if ent is not None and not ent["scratched"]:
+            mark_scratched(race_id, prog, source="fanduel")
+            found += 1
+            logger.info(f"[SCRATCH FROM FANDUEL] {track_code} race {race_id} #{prog} {ent['horse_name']}")
+    for race_id, prog in reinstated:
+        if mark_unscratched(race_id, prog, source="fanduel", only_if_source="fanduel"):
+            rev += 1
+            logger.info(f"[SCRATCH REVERSED] {track_code} race {race_id} #{prog} — FanDuel shows running")
+    return found, rev, ok
 
 
 SCRATCH_STATUS_PATH = Path(__file__).resolve().parent / "logs" / "scratch_feed_status.json"
 
 
-def _save_scratch_feed_status(blocked_tracks, checked_tracks):
-    """Record whether the www.equibase.com scratch feeds worked this pass so the
-    dashboard can show a warning, and notify once when they first go down."""
+def _save_scratch_feed_status(blocked_tracks, checked_tracks, fanduel_tracks=()):
+    """Record whether scratch feeds worked this pass so the dashboard can show
+    a warning. "uncovered" tracks are blocked on Equibase with no FanDuel data
+    either; notify once when that list goes from empty to non-empty."""
     import json
     try:
-        was_blocked = json.loads(SCRATCH_STATUS_PATH.read_text()).get("blocked", False)
+        prev = json.loads(SCRATCH_STATUS_PATH.read_text())
+        was_uncovered = bool(prev.get("uncovered", prev.get("blocked_tracks")))
     except Exception:
-        was_blocked = False
+        was_uncovered = False
+    uncovered = [t for t in blocked_tracks if t not in fanduel_tracks]
     status = {
         "checked_at": datetime.now(EASTERN).isoformat(timespec="seconds"),
         "blocked": bool(blocked_tracks),
         "blocked_tracks": blocked_tracks,
         "checked_tracks": checked_tracks,
+        "fanduel_tracks": list(fanduel_tracks),
+        "uncovered": uncovered,
     }
     try:
         SCRATCH_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
         SCRATCH_STATUS_PATH.write_text(json.dumps(status, indent=2))
     except Exception as e:
         logger.warning(f"Could not write scratch feed status: {e}")
-    if blocked_tracks and not was_blocked:
+    if uncovered and not was_uncovered:
         try:
             import subprocess
             subprocess.run([
                 "osascript", "-e",
-                'display notification "Equibase is blocking the scratch feed. Using the slower '
-                'mobile fallback, so check scratches before betting." '
-                'with title "Racing agent: scratch feed blocked" sound name "Basso"',
+                'display notification "No working scratch feed for ' + ", ".join(uncovered) +
+                '. Check scratches before betting." '
+                'with title "Racing agent: scratch feed down" sound name "Basso"',
             ], timeout=10, check=False)
         except Exception:
             pass

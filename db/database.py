@@ -408,7 +408,7 @@ def mark_scratched(race_id, program_num, source="mobile_diff"):
 # absence/presence on a regular entries fetch and carries no real signal
 # either way. A strong-sourced scratch may only be reversed by another
 # strong source, never by a diff-based guess.
-STRONG_SCRATCH_SOURCES = {"late_changes", "desktop"}
+STRONG_SCRATCH_SOURCES = {"late_changes", "desktop", "fanduel"}  # fanduel: explicit per-horse flag (2026-11-24)
 
 
 def mark_unscratched(race_id, program_num, source="mobile_diff", only_if_source=None):

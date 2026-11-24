@@ -725,7 +725,7 @@ def get_data_quality_stats(today):
 
 
 def render_scratch_warning_html():
-    """Red banner when the last scratch check hit Equibase's bot-check page."""
+    """Banner when the last scratch check hit Equibase's bot-check page."""
     import json
     from pathlib import Path
     from datetime import datetime
@@ -737,14 +737,20 @@ def render_scratch_warning_html():
     if not st.get("blocked") or st.get("checked_at", "")[:10] != datetime.now().strftime("%Y-%m-%d"):
         return ""
     when = st["checked_at"][11:16]
-    n = len(st.get("blocked_tracks", []))
+    uncovered = st.get("uncovered", st.get("blocked_tracks", []))
+    if uncovered:
+        return (
+            '<div style="background:#3a0d16;border:1px solid #ff4d6d;color:#ffd6dd;'
+            'border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px">'
+            '<b style="color:#ff4d6d">Scratch feed down.</b> At the last scratch check '
+            f'({when}) Equibase was blocked and FanDuel had no data for {", ".join(uncovered)}. '
+            'Scratches there come from the slower mobile site, so picks may include horses '
+            'that have already scratched. Check scratches before betting.</div>'
+        )
     return (
-        '<div style="background:#3a0d16;border:1px solid #ff4d6d;color:#ffd6dd;'
-        'border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px">'
-        '<b style="color:#ff4d6d">Scratch feed blocked.</b> Equibase answered the last '
-        f'scratch check ({when}) with its bot-check page for {n} track(s). Scratches now come '
-        'from the slower mobile site, so picks may include horses that have already scratched. '
-        'Check scratches before betting.</div>'
+        '<div style="background:#1d2330;border:1px solid #3a4560;color:#aab4c8;'
+        'border-radius:8px;padding:8px 14px;margin:12px 0;font-size:13px">'
+        f'Scratches from FanDuel Research (Equibase blocked; last check {when}).</div>'
     )
 
 
