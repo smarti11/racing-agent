@@ -26,8 +26,11 @@ def fetch_track_late_changes(track_code):
                 with no PGM/Horse cells directly under the horse they apply
                 to, so rows are replayed in order and the last status wins.
     Returns ([], []) on any error so caller can continue with other tracks."""
+    from data.equibase import www_blocked, is_bot_challenge, note_www_blocked
     country = "CAN" if track_code in CANADIAN_TRACKS else "USA"
     url = URL_TEMPLATE.format(code=track_code, country=country)
+    if www_blocked():
+        return [], []
     try:
         resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=15)
         if resp.status_code != 200:
@@ -35,6 +38,9 @@ def fetch_track_late_changes(track_code):
             return [], []
     except Exception as e:
         logger.warning(f"[SCRATCH FETCH] {track_code}: {e}")
+        return [], []
+    if is_bot_challenge(resp.content):
+        note_www_blocked(url)
         return [], []
     return parse_late_changes(resp.content)
 

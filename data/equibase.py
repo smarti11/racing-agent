@@ -29,6 +29,42 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
 }
 
+# www.equibase.com (desktop entries + late-changes pages) sits behind Imperva.
+# When it flags us it still answers HTTP 200, but with a "Pardon Our
+# Interruption" challenge page. Parsed naively that reads as "0 scratches",
+# which is how the scratch feed went silently dead on 2026-11-18.
+_BOT_MARKERS = ("Pardon Our Interruption", "_Incapsula_Resource", "reeseSkipExpirationCheck")
+WWW_BLOCK_BACKOFF_SEC = 30 * 60
+_www_blocked_until = 0.0
+
+
+class EquibaseBlocked(Exception):
+    """www.equibase.com served its bot-check page instead of the real page."""
+
+
+def is_bot_challenge(page) -> bool:
+    if isinstance(page, bytes):
+        page = page.decode("utf-8", "ignore")
+    head = page[:20000]
+    return any(m in head for m in _BOT_MARKERS)
+
+
+def www_blocked() -> bool:
+    """True while backing off after a bot-check page (one probe per 30 min
+    instead of hammering the site with requests that can't succeed)."""
+    return time.time() < _www_blocked_until
+
+
+def note_www_blocked(url: str):
+    global _www_blocked_until
+    if not www_blocked():
+        logger.warning(
+            f"Equibase BOT CHECK: {url} returned the 'Pardon Our Interruption' page — "
+            f"www.equibase.com scratch feeds unavailable; backing off "
+            f"{WWW_BLOCK_BACKOFF_SEC // 60} min and using the mobile site instead"
+        )
+    _www_blocked_until = time.time() + WWW_BLOCK_BACKOFF_SEC
+
 # Track code mapping — Equibase mobile codes
 TRACK_CODES = {
     "Aqueduct":                  "AQU",
@@ -105,8 +141,10 @@ def get_todays_tracks():
 
         # Apply excluded tracks blocklist from settings
         try:
-            from config.settings import EXCLUDED_TRACKS
+            from config.settings import EXCLUDED_TRACKS, EXCLUDE_CANADIAN_TRACKS, CANADIAN_TRACKS
             tracks = [t for t in tracks if t["name"] not in EXCLUDED_TRACKS]
+            if EXCLUDE_CANADIAN_TRACKS:
+                tracks = [t for t in tracks if t.get("code") not in CANADIAN_TRACKS]
         except Exception:
             pass
 
@@ -336,7 +374,8 @@ def get_scratches(track_code: str, date_str: str = None):
         if not race:
             continue
 
-        current_nums = {e["program_num"] for e in race.get("entries", [])}
+        # A horse the mobile page itself marks scratched counts as gone.
+        current_nums = {e["program_num"] for e in race.get("entries", []) if not e.get("scratched")}
 
         db_races = get_todays_races()
         for db_race in db_races:
@@ -377,7 +416,7 @@ def get_scratches(track_code: str, date_str: str = None):
                         f"Scratch second-fetch failed: {track_code} R{meta['race_num']} — skipping"
                     )
                     break
-                confirm_nums = {e["program_num"] for e in race2.get("entries", [])}
+                confirm_nums = {e["program_num"] for e in race2.get("entries", []) if not e.get("scratched")}
 
                 for db_entry in false_scr:
                     prog = db_entry["program_num"]
@@ -449,6 +488,8 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
     url = f"https://www.equibase.com/static/entry/{track_code}{mmddyy}USA-EQB.html"
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
 
+    if www_blocked():
+        raise EquibaseBlocked(url)
     try:
         r = requests.get(url, headers=headers, timeout=15)
         if r.status_code != 200:
@@ -457,6 +498,9 @@ def get_scratches_desktop(track_code: str, date_str: str = None):
     except Exception as e:
         logger.warning(f"get_scratches_desktop: request failed {e}")
         return [], []
+    if is_bot_challenge(r.text):
+        note_www_blocked(url)
+        raise EquibaseBlocked(url)
 
     soup = BeautifulSoup(r.text, "html.parser")
     scratch_rows = soup.find_all("tr", class_="scratch")
