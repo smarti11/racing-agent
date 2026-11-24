@@ -724,7 +724,35 @@ def get_data_quality_stats(today):
         return {}
 
 
+def render_scratch_warning_html():
+    """Red banner when the last scratch check hit Equibase's bot-check page."""
+    import json
+    from pathlib import Path
+    from datetime import datetime
+    path = Path(__file__).resolve().parent.parent / "logs" / "scratch_feed_status.json"
+    try:
+        st = json.loads(path.read_text())
+    except Exception:
+        return ""
+    if not st.get("blocked") or st.get("checked_at", "")[:10] != datetime.now().strftime("%Y-%m-%d"):
+        return ""
+    when = st["checked_at"][11:16]
+    n = len(st.get("blocked_tracks", []))
+    return (
+        '<div style="background:#3a0d16;border:1px solid #ff4d6d;color:#ffd6dd;'
+        'border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px">'
+        '<b style="color:#ff4d6d">Scratch feed blocked.</b> Equibase answered the last '
+        f'scratch check ({when}) with its bot-check page for {n} track(s). Scratches now come '
+        'from the slower mobile site, so picks may include horses that have already scratched. '
+        'Check scratches before betting.</div>'
+    )
+
+
 def build_dashboard():
+    try:
+        scratch_warning_html = render_scratch_warning_html()
+    except Exception:
+        scratch_warning_html = ""
     now = datetime.now().strftime("%b %d %Y %I:%M %p")
     races = [dict(r) for r in get_todays_races()]
     pick_record  = get_pick_record()
@@ -1697,6 +1725,7 @@ body{{background:#0a0f1e;color:#c8d8f0;font-family:-apple-system,BlinkMacSystemF
   <div class="stat"><div class="stat-label">Top Pick WPS%</div><div class="stat-val" style="color:#00c896">{agent_stats["top_pick_wps_pct"]}%</div><div class="stat-sub">win/place/show</div></div>
   <div class="stat"><div class="stat-label">Any Pick WPS%</div><div class="stat-val" style="color:#00c896">{agent_stats["any_pick_wps_pct"]}%</div><div class="stat-sub">1 of 3 in top 3</div></div>
 </div>
+{scratch_warning_html}
 {bet_slate_html}
 {actionable_html}
 {value_bets_html}

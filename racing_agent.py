@@ -34,7 +34,10 @@ from config.settings import (
     DASHBOARD_S3_ENABLED,
     DASHBOARD_S3_URI,
 )
-from data.equibase import get_todays_tracks, get_all_entries_today, get_scratches, get_scratches_desktop
+from data.equibase import (
+    get_todays_tracks, get_all_entries_today, get_scratches, get_scratches_desktop,
+    EquibaseBlocked,
+)
 from data.results import get_todays_results_all_tracks
 from data.chart_fetcher import fetch_all_todays_charts
 from core.scratch_fetcher import fetch_track_late_changes
@@ -136,6 +139,7 @@ def check_scratches() -> int:
     unscratch_count = 0
 
     race_lookup = {(race["track_code"], race["race_num"]): race["id"] for race in races}
+    blocked_tracks = []
 
     for race in races:
         track_code = race["track_code"]
@@ -145,10 +149,17 @@ def check_scratches() -> int:
 
         if track_code in CANADIAN_TRACKS:
             scratches, unscratches = get_scratches(track_code)
+            weak_source = "mobile_diff"
         else:
-            scratches, unscratches = get_scratches_desktop(track_code)
-
-        weak_source = "mobile_diff" if track_code in CANADIAN_TRACKS else "desktop"
+            try:
+                scratches, unscratches = get_scratches_desktop(track_code)
+                weak_source = "desktop"
+            except EquibaseBlocked:
+                # Desktop page is a bot check: fall back to the mobile site.
+                # It lags the real scratch feeds, so this catches some, not all.
+                blocked_tracks.append(track_code)
+                scratches, unscratches = get_scratches(track_code)
+                weak_source = "mobile_diff"
 
         for scratch in scratches:
             race_num = scratch.get("race_num")
@@ -185,7 +196,48 @@ def check_scratches() -> int:
                 logger.info(f"[SCRATCH REVERSED] {track_code} R{race_num} #{prog_num} {horse_name} — will run")
 
     logger.info(f"Found {scratch_count} scratches, {unscratch_count} un-scratches")
+    if blocked_tracks:
+        logger.warning(
+            f"Scratch feed BLOCKED by Equibase bot check for {len(blocked_tracks)} tracks "
+            f"({', '.join(blocked_tracks)}) — using mobile fallback; verify scratches manually"
+        )
+    _save_scratch_feed_status(blocked_tracks, sorted(checked_tracks))
     return scratch_count + unscratch_count
+
+
+SCRATCH_STATUS_PATH = Path(__file__).resolve().parent / "logs" / "scratch_feed_status.json"
+
+
+def _save_scratch_feed_status(blocked_tracks, checked_tracks):
+    """Record whether the www.equibase.com scratch feeds worked this pass so the
+    dashboard can show a warning, and notify once when they first go down."""
+    import json
+    try:
+        was_blocked = json.loads(SCRATCH_STATUS_PATH.read_text()).get("blocked", False)
+    except Exception:
+        was_blocked = False
+    status = {
+        "checked_at": datetime.now(EASTERN).isoformat(timespec="seconds"),
+        "blocked": bool(blocked_tracks),
+        "blocked_tracks": blocked_tracks,
+        "checked_tracks": checked_tracks,
+    }
+    try:
+        SCRATCH_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        SCRATCH_STATUS_PATH.write_text(json.dumps(status, indent=2))
+    except Exception as e:
+        logger.warning(f"Could not write scratch feed status: {e}")
+    if blocked_tracks and not was_blocked:
+        try:
+            import subprocess
+            subprocess.run([
+                "osascript", "-e",
+                'display notification "Equibase is blocking the scratch feed. Using the slower '
+                'mobile fallback, so check scratches before betting." '
+                'with title "Racing agent: scratch feed blocked" sound name "Basso"',
+            ], timeout=10, check=False)
+        except Exception:
+            pass
 
 
 def _run_scratch_pipeline() -> int:
