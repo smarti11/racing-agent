@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "GoodCart",
+    "slug": "goodcart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "goodcart",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goodcart.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.goodcart.app"
+    },
+    "plugins": ["expo-router", "expo-notifications"],
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    }
+  }
+}
