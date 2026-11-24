@@ -1,0 +1,31 @@
+{
+  "clubhouse": {
+    "lat": 42.78295,
+    "lon": -83.27097,
+    "name": "Indianwood Clubhouse",
+    "address": "1081 Indianwood Road, Lake Orion, MI 48361",
+    "website": "https://iwgcc.com"
+  },
+  "center": {
+    "lat": 42.78381947025518,
+    "lon": -83.27989062041468
+  },
+  "courses": {
+    "old": {
+      "name": "Old Course",
+      "par": 70,
+      "yards": 6828,
+      "holes": 18,
+      "color": "#236216"
+    },
+    "new": {
+      "name": "New Course",
+      "par": 72,
+      "yards": 6904,
+      "holes": 18,
+      "color": "#AF9244"
+    }
+  },
+  "source": "OpenStreetMap contributors; yardages from published Indianwood scorecards (Gold tees); branding from iwgcc.com",
+  "attribution": "\u00a9 OpenStreetMap contributors"
+}

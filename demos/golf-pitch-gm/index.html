@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Loop · GM Briefing</title>
+<meta name="description" content="My Loop GM briefing — Course Mode and Outing Mode for Metro Detroit 2026." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #050805;
+    --fairway: #0d1f14;
+    --gold: #d4b145;
+    --gold-bright: #f3d56a;
+    --cream: #f2ebd5;
+    --mist: #9aaf9d;
+    --line: rgba(212, 177, 69, 0.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(--cream); font-family: Outfit, system-ui, sans-serif; }
+  .deck { height: 100%; width: 100%; position: relative; }
+  .slide {
+    position: absolute; inset: 0; display: none;
+    padding: clamp(28px, 5vw, 64px);
+    background:
+      radial-gradient(ellipse 80% 60% at 10% -10%, rgba(212,177,69,0.18), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(22,90,48,0.35), transparent 50%),
+      linear-gradient(160deg, #07110a 0%, #0a160e 40%, #050805 100%);
+    overflow: hidden;
+  }
+  .slide.active { display: grid; align-content: center; }
+  .slide::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(212,177,69,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,177,69,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
+    pointer-events: none;
+  }
+
+  .brand-lock {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .brand-lock img {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--gold);
+  }
+  .brand-lock span {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 28px; letter-spacing: 0.08em;
+    color: var(--gold-bright);
+  }
+
+  .kicker {
+    position: relative;
+    font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600; margin-bottom: 16px;
+  }
+  h1 {
+    position: relative;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(48px, 9vw, 104px);
+    line-height: 0.92; letter-spacing: 0.02em; max-width: 14ch;
+  }
+  h2 {
+    position: relative;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(36px, 6vw, 72px);
+    letter-spacing: 0.03em; line-height: 0.95; margin-bottom: 18px;
+  }
+  .lede {
+    position: relative;
+    font-size: clamp(16px, 2vw, 22px);
+    color: var(--mist); max-width: 40ch; line-height: 1.45;
+    font-weight: 300; margin-top: 18px;
+  }
+  .gold { color: var(--gold-bright); }
+
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 28px 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    font-size: 13px; color: var(--mist);
+  }
+  .dots { display: flex; gap: 8px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); border: 0; cursor: pointer;
+  }
+  .dot.active { background: var(--gold); }
+  .nav button.ctrl {
+    background: transparent; border: 1px solid var(--line);
+    color: var(--cream); border-radius: 999px; padding: 8px 14px;
+    font: inherit; cursor: pointer;
+  }
+  .hint {
+    position: fixed; top: 18px; right: 24px; z-index: 20;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(242,235,213,0.45);
+  }
+
+  .layout-2 {
+    position: relative;
+    display: grid; grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(24px, 4vw, 56px); align-items: center;
+    max-width: 1200px; width: 100%; margin: 0 auto;
+  }
+  .layout-center {
+    position: relative; max-width: 1100px; width: 100%; margin: 0 auto;
+  }
+
+  .phone {
+    width: min(300px, 70vw); height: min(620px, 78vh); margin: 0 auto;
+    border-radius: 36px; background: #0b0b0b; border: 2px solid #3a3a3a;
+    box-shadow: 0 0 0 10px #121212, 0 40px 100px rgba(0,0,0,0.55), 0 0 80px rgba(212,177,69,0.12);
+    position: relative; overflow: hidden;
+  }
+  .phone .notch {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 26px; background: #000; border-radius: 16px; z-index: 2;
+  }
+  .phone-ui {
+    height: 100%; padding: 48px 16px 20px;
+    background: linear-gradient(180deg, rgba(212,177,69,0.12), transparent 30%), linear-gradient(180deg, #101810, #0a120d);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .pu-top { display: flex; justify-content: space-between; align-items: center; }
+  .pu-brand { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 600; }
+  .pu-brand img { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--gold); }
+  .pill {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    background: var(--gold); color: #111; padding: 5px 8px; border-radius: 6px;
+  }
+  .map {
+    flex: 1; border-radius: 18px; border: 1px solid rgba(212,177,69,0.25); min-height: 180px;
+    background:
+      radial-gradient(circle at 72% 30%, rgba(243,213,106,0.55) 0 6px, transparent 7px),
+      radial-gradient(circle at 30% 70%, #fff 0 5px, transparent 6px),
+      linear-gradient(125deg, #1a4a2c, #0f2d1c 45%, #1f5a35 80%);
+    position: relative;
+  }
+  .map::after {
+    content: "LIVE GPS";
+    position: absolute; left: 12px; bottom: 10px;
+    font-size: 10px; letter-spacing: 0.18em; color: rgba(255,255,255,0.5);
+  }
+  .yards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .yard {
+    text-align: center; background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 8px 4px;
+  }
+  .yard span { display: block; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mist); }
+  .yard b { font-family: "Bebas Neue", sans-serif; font-size: 28px; }
+  .yard.mid { border-color: rgba(212,177,69,0.5); background: rgba(212,177,69,0.12); }
+  .yard.mid b { color: var(--gold-bright); font-size: 34px; }
+
+  .stat-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-top: 28px; position: relative;
+  }
+  .stat {
+    border: 1px solid var(--line); border-radius: 18px;
+    padding: 18px 16px; background: rgba(0,0,0,0.28);
+  }
+  .stat b {
+    display: block; font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(28px, 4vw, 44px); color: var(--gold-bright); line-height: 1;
+  }
+  .stat span { display: block; margin-top: 6px; font-size: 13px; color: var(--mist); }
+
+  .problem-list {
+    list-style: none; display: grid; gap: 14px; margin-top: 24px; position: relative;
+  }
+  .problem-list li {
+    display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: start;
+    padding: 16px 18px; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);
+  }
+  .problem-list .n { font-family: "Bebas Neue", sans-serif; font-size: 28px; color: var(--gold); }
+  .problem-list strong { display: block; margin-bottom: 4px; }
+  .problem-list p { color: var(--mist); font-size: 14px; line-height: 1.4; font-weight: 300; }
+
+  .price-hero {
+    position: relative; display: grid; grid-template-columns: 1fr 1fr;
+    gap: 18px; margin-top: 8px;
+  }
+  .price-card {
+    border-radius: 24px; padding: 28px 24px; border: 1px solid var(--line);
+    background: linear-gradient(165deg, rgba(212,177,69,0.16), transparent 45%), rgba(0,0,0,0.35);
+    min-height: 260px;
+  }
+  .price-card.featured {
+    border-color: rgba(243,213,106,0.55);
+    box-shadow: 0 0 60px rgba(212,177,69,0.12);
+  }
+  .price-card .label {
+    font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); font-weight: 600;
+  }
+  .price-card .amount {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(48px, 7vw, 76px); line-height: 1; margin: 10px 0 4px;
+  }
+  .price-card .sub { color: var(--mist); font-size: 15px; margin-bottom: 18px; }
+  .price-card ul { list-style: none; display: grid; gap: 8px; }
+  .price-card li {
+    font-size: 14px; color: #d8d8d0; padding-left: 18px; position: relative;
+  }
+  .price-card li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+  }
+
+  .econ {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-top: 28px; position: relative;
+  }
+  .econ div {
+    text-align: center; padding: 20px 10px; border-radius: 16px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07);
+  }
+  .econ b { display: block; font-family: "Bebas Neue", sans-serif; font-size: 36px; color: var(--gold-bright); }
+  .econ span { font-size: 12px; color: var(--mist); }
+
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-top: 22px; position: relative;
+  }
+  .feature {
+    padding: 22px 18px; border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.28);
+    min-height: 150px;
+  }
+  .feature .ico {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(212,177,69,0.15); border: 1px solid var(--line);
+    display: grid; place-items: center; margin-bottom: 14px;
+    font-family: "Bebas Neue", sans-serif; color: var(--gold-bright);
+  }
+  .feature h3 { font-size: 16px; margin-bottom: 8px; }
+  .feature p { font-size: 13px; color: var(--mist); line-height: 1.45; font-weight: 300; }
+
+  .cta-box {
+    position: relative; margin-top: 28px; padding: 28px; border-radius: 24px;
+    border: 1px solid rgba(243,213,106,0.4);
+    background: linear-gradient(120deg, rgba(212,177,69,0.2), rgba(0,0,0,0.35));
+  }
+  .cta-box p { color: var(--mist); margin-top: 8px; max-width: 52ch; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 18px; border-radius: 999px;
+    background: linear-gradient(180deg, #f3d56a, #d4b145);
+    color: #111; font-weight: 700; text-decoration: none; font-size: 14px;
+  }
+  .cta.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+  }
+
+  .checklist {
+    list-style: none; display: grid; gap: 10px; margin-top: 18px; position: relative;
+  }
+  .checklist li {
+    display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start;
+    padding: 14px 16px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);
+    font-size: 15px; color: #d8d8d0;
+  }
+  .checklist .tick {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(212,177,69,0.2); border: 1px solid var(--line);
+    display: grid; place-items: center; color: var(--gold-bright); font-size: 12px;
+  }
+  .checklist strong { color: var(--cream); }
+
+  .fairway-orb {
+    position: absolute; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,177,69,0.2), transparent 65%);
+    right: -80px; top: 10%; pointer-events: none;
+  }
+
+  @media (max-width: 900px) {
+    .layout-2, .price-hero, .feature-grid, .econ { grid-template-columns: 1fr; }
+    .phone { height: min(540px, 60vh); }
+    .slide { align-content: start; overflow: auto; padding-bottom: 90px; }
+  }
+</style>
+</head>
+<body>
+  <div class="hint">← → or click · Esc fullscreen tip: F11</div>
+  <div class="deck" id="deck">
+
+    <!-- 1 TITLE -->
+    <section class="slide active" data-i="0">
+      <div class="fairway-orb"></div>
+      <div class="layout-2">
+        <div>
+          <div class="brand-lock"><img src="grizzly.png" alt="" /><span>MY LOOP</span></div>
+          <div class="kicker">For general managers · Metro Detroit 2026</div>
+          <h1>Your course<br/>on every<br/><span class="gold">phone.</span></h1>
+          <p class="lede">Branded GPS and scoring members open on their own devices — plus a clean outing kit for classics and charity shotguns. No cart-screen capital project.</p>
+          <div class="stat-row">
+            <div class="stat"><b>$3,500</b><span>Course / season</span></div>
+            <div class="stat"><b>$3,500</b><span>Outing all-in</span></div>
+            <div class="stat"><b>16¢</b><span>Per round @ 100/day</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="phone" aria-hidden="true">
+            <div class="notch"></div>
+            <div class="phone-ui">
+              <div class="pu-top">
+                <div class="pu-brand"><img src="grizzly.png" alt="" /> YOUR COURSE</div>
+                <div class="pill">Live</div>
+              </div>
+              <div class="map"></div>
+              <div class="yards">
+                <div class="yard"><span>Front</span><b>135</b></div>
+                <div class="yard mid"><span>Middle</span><b>147</b></div>
+                <div class="yard"><span>Back</span><b>161</b></div>
+              </div>
+              <div style="font-size:12px;color:#9aaf9d">Plays like <b style="color:#f3d56a">153</b> · +6 elev · calm</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 REALITY -->
+    <section class="slide" data-i="1">
+      <div class="layout-center">
+        <div class="kicker">What you already see on property</div>
+        <h2>Members already<br/>pull yardages —<br/><span class="gold">just not yours.</span></h2>
+        <ul class="problem-list">
+          <li>
+            <div class="n">01</div>
+            <div>
+              <strong>Consumer apps own the phone</strong>
+              <p>18Birdies, Golfshot, and Hole19 put distances — and their ads — in every group. Your brand is absent from the round.</p>
+            </div>
+          </li>
+          <li>
+            <div class="n">02</div>
+            <div>
+              <strong>Cart GPS is a capital decision</strong>
+              <p>$12k–$25k a year for screens works for big fleets. Half of walkers and Watch users never see it.</p>
+            </div>
+          </li>
+          <li>
+            <div class="n">03</div>
+            <div>
+              <strong>Outings still lean on paper</strong>
+              <p>Scramble cards collide, boards lag, and a hole sponsor gets a tee sign — not a live presence on hole 8.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3 PRODUCT -->
+    <section class="slide" data-i="2">
+      <div class="layout-2">
+        <div>
+          <div class="kicker">Two modes · one product</div>
+          <h2>Course mode.<br/><span class="gold">Outing mode.</span></h2>
+          <p class="lede">Everyday play stays simple and on-device. Flip an event skin when a classic, member-guest, or charity shotgun lands on your calendar.</p>
+          <div class="feature-grid" style="grid-template-columns:1fr 1fr">
+            <div class="feature">
+              <div class="ico">GPS</div>
+              <h3>Live yardages</h3>
+              <p>Front / middle / back, hazards, plays-like. Their phone. Your chrome.</p>
+            </div>
+            <div class="feature">
+              <div class="ico">SCR</div>
+              <h3>Smart scoring</h3>
+              <p>Personal cards daily. One scorekeeper per group when the outing starts.</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="phone-ui">
+              <div class="pu-top">
+                <div class="pu-brand"><img src="grizzly.png" alt="" /> COURSE</div>
+                <div class="pill">Mode</div>
+              </div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1">Hole 7<br/><span style="color:#f3d56a">Par 4</span></div>
+              <div style="font-size:12px;color:#9aaf9d">Gold tees · Handicap 5</div>
+              <div class="map" style="min-height:140px"></div>
+              <div class="yards">
+                <div class="yard"><span>Front</span><b>312</b></div>
+                <div class="yard mid"><span>Middle</span><b>328</b></div>
+                <div class="yard"><span>Back</span><b>341</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 TRY IT -->
+    <section class="slide" data-i="3">
+      <div class="layout-center">
+        <div class="kicker">Start here in the room</div>
+        <h2>Open it on a phone<br/><span class="gold">before the slides.</span></h2>
+        <p class="lede" style="max-width:48ch">Both demos are live. Course Mode is GPS + personal scoring. Outing Mode adds shotgun flow, scorekeeper lock, live board, and view-only silent auction.</p>
+        <div class="cta-row" style="position:relative">
+          <a class="cta" href="https://ou-golf-course.apps.grok.bot" target="_blank" rel="noopener">Open course demo</a>
+          <a class="cta ghost" href="https://ou-golf-outing.apps.grok.bot" target="_blank" rel="noopener">Open outing demo</a>
+        </div>
+        <div class="feature-grid" style="margin-top:28px">
+          <div class="feature">
+            <div class="ico">1</div>
+            <h3>Course Mode</h3>
+            <p>Walk a hole, tap scores, no outing lock — what members use on a Tuesday.</p>
+          </div>
+          <div class="feature">
+            <div class="ico">2</div>
+            <h3>Outing Mode</h3>
+            <p>Show the shotgun start, one editor per group, and the clubhouse board feed.</p>
+          </div>
+          <div class="feature">
+            <div class="ico">3</div>
+            <h3>Auction browse</h3>
+            <p>View-only catalog on course. Bidding stays at dinner where staff can close.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 COURSE $ -->
+    <section class="slide" data-i="4">
+      <div class="layout-center">
+        <div class="kicker">Course mode · season license</div>
+        <h2><span class="gold">$3,500</span> / course / season</h2>
+        <p class="lede" style="max-width:50ch">Detroit window Apr 15 – Nov 15 · 215 days. Amortized: <b class="gold">$16.28 / day</b>.</p>
+        <div class="econ">
+          <div><b>60</b><span>rounds/day → 27¢</span></div>
+          <div><b>100</b><span>rounds/day → 16¢</span></div>
+          <div><b>150</b><span>rounds/day → 11¢</span></div>
+          <div><b>$500</b><span>≈ monthly over 7 mo</span></div>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><b>No carts</b><span>Phone-pull GPS + scoring</span></div>
+          <div class="stat"><b>Branded</b><span>Your chrome, not their ads</span></div>
+          <div class="stat"><b>On-device</b><span>No DB required for solo play</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 OUTING $ -->
+    <section class="slide" data-i="5">
+      <div class="layout-center">
+        <div class="kicker">Outing mode · add when the calendar needs it</div>
+        <h2>From <span class="gold">$3,500</span> / outing</h2>
+        <div class="price-hero">
+          <div class="price-card featured">
+            <div class="label">All-in event</div>
+            <div class="amount">$3,500</div>
+            <div class="sub">Setup + remote day-of monitoring</div>
+            <ul>
+              <li>Full event skin & shotgun flow</li>
+              <li>Up to 18 hole sponsors + logos</li>
+              <li>Scramble · one scorekeeper / group</li>
+              <li>Live leaderboard for clubhouse / carts</li>
+              <li>View-only silent auction catalog</li>
+            </ul>
+          </div>
+          <div class="price-card">
+            <div class="label">For your outing chairs</div>
+            <div class="amount" style="font-size:52px">1 hole</div>
+            <div class="sub">Often funds the whole invoice</div>
+            <ul>
+              <li>Season of 3 outings · $10,500</li>
+              <li>Season + first outing · $7,000</li>
+              <li>White-glove on-site · +$1,000</li>
+              <li>You keep the relationship with the chair</li>
+              <li>We run the tech under your brand</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 OPS -->
+    <section class="slide" data-i="6">
+      <div class="layout-2">
+        <div>
+          <div class="kicker">What it takes from the club</div>
+          <h2>Light lift.<br/><span class="gold">Ready by thaw.</span></h2>
+          <p class="lede">Aim to be live before Apr 15. Most of the work is assets and a short starter briefing — not a cart-yard install.</p>
+          <ul class="checklist">
+            <li><span class="tick">✓</span><div><strong>You provide:</strong> logo, tee set / hole data, preferred start URL or QR for the starter</div></li>
+            <li><span class="tick">✓</span><div><strong>We provide:</strong> branded course build, outing skin, remote day-of watch, scorekeeper walkthrough</div></li>
+            <li><span class="tick">✓</span><div><strong>Wifi:</strong> helpful in the clubhouse for the board; phones run GPS on cellular on the course</div></li>
+            <li><span class="tick">✓</span><div><strong>Staff time:</strong> ~30 min starter briefing; outing chairs get a 20-min run-of-show call</div></li>
+          </ul>
+        </div>
+        <div>
+          <div class="feature-grid" style="grid-template-columns:1fr">
+            <div class="feature">
+              <div class="ico">Q1</div>
+              <h3>Jan – Mar</h3>
+              <p>Confirm season license. Gather logo + hole map. Soft-launch with staff and a few members.</p>
+            </div>
+            <div class="feature">
+              <div class="ico">APR</div>
+              <h3>Opening day</h3>
+              <p>QR / link at the starter. Course Mode is the default everyday experience.</p>
+            </div>
+            <div class="feature">
+              <div class="ico">EVT</div>
+              <h3>First outing</h3>
+              <p>Flip Outing Mode for the classic. Same phones — event chrome and board for that day only.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 NEXT -->
+    <section class="slide" data-i="7">
+      <div class="layout-2">
+        <div>
+          <div class="brand-lock"><img src="grizzly.png" alt="" /><span>MY LOOP</span></div>
+          <div class="kicker">Next step</div>
+          <h1 style="font-size:clamp(44px,7vw,88px)">Twenty<br/>minutes<br/><span class="gold">on site.</span></h1>
+          <p class="lede">Walk Course Mode on your phone, then Outing Mode against your next shotgun date. Pricing stays flat: $3,500 season · $3,500 outing.</p>
+          <div class="cta-box">
+            <h2 style="font-size:36px;margin:0">Bring the pro / outing chair</h2>
+            <p>One conversation covers everyday play and the first event. Season + outing = $7,000.</p>
+            <div class="cta-row">
+              <a class="cta" href="https://ou-golf-course.apps.grok.bot" target="_blank" rel="noopener">Course demo</a>
+              <a class="cta ghost" href="https://ou-golf-outing.apps.grok.bot" target="_blank" rel="noopener">Outing demo</a>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="phone-ui">
+              <div class="pu-top">
+                <div class="pu-brand"><img src="grizzly.png" alt="" /> OUTING</div>
+                <div class="pill">Live</div>
+              </div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1">Member-Guest<br/>Shotgun</div>
+              <div style="font-size:12px;color:#9aaf9d">Your date · your brand · our tech</div>
+              <div class="map" style="min-height:120px"></div>
+              <div class="yards">
+                <div class="yard mid" style="grid-column:1/-1"><span>Start hole · Cart 14</span><b style="font-size:40px">8</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="nav">
+    <button class="ctrl" id="prev" type="button">Prev</button>
+    <div class="dots" id="dots"></div>
+    <div><span id="pos">1</span> / <span id="total">8</span></div>
+    <button class="ctrl" id="next" type="button">Next</button>
+  </div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  const dots = document.getElementById("dots");
+  const pos = document.getElementById("pos");
+  const total = document.getElementById("total");
+  total.textContent = slides.length;
+  let i = 0;
+  slides.forEach((_, idx) => {
+    const b = document.createElement("button");
+    b.className = "dot" + (idx === 0 ? " active" : "");
+    b.type = "button";
+    b.setAttribute("aria-label", "Go to slide " + (idx + 1));
+    b.addEventListener("click", () => go(idx));
+    dots.appendChild(b);
+  });
+  function go(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    [...dots.children].forEach((d, idx) => d.classList.toggle("active", idx === i));
+    pos.textContent = i + 1;
+  }
+  document.getElementById("prev").onclick = () => go(i - 1);
+  document.getElementById("next").onclick = () => go(i + 1);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); go(i + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); go(i - 1); }
+  });
+  document.getElementById("deck").addEventListener("click", (e) => {
+    if (e.target.closest("a,button,.ctrl,.dot")) return;
+    go(i + 1);
+  });
+</script>
+</body>
+</html>

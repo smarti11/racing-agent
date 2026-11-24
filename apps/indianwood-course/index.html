@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Indianwood" />
+  <meta name="theme-color" content="#15350E" />
+  <title>Indianwood Golf &amp; Country Club · Course GPS</title>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="icon" href="logo.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lustria&family=Open+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand-lockup">
+        <img class="mark" src="logo.png" alt="Indianwood Golf &amp; Country Club" width="44" height="61" />
+        <div>
+          <div class="brand">Indianwood</div>
+          <div class="tag">Golf &amp; Country Club</div>
+          <div class="sub">Old Course · New Course · Est. 1925</div>
+        </div>
+      </div>
+      <button type="button" id="btn-locate" class="icon-btn" aria-label="My location">GPS</button>
+    </header>
+
+    <div class="map-wrap">
+      <div id="map" role="application" aria-label="Indianwood Old and New course map"></div>
+      <div class="map-actions">
+        <button type="button" id="btn-fly" class="fly-btn" hidden aria-pressed="false">Fly over</button>
+        <button type="button" id="btn-video" class="fly-btn" hidden>Video</button>
+        <button type="button" id="btn-center" class="fly-btn" hidden>Center</button>
+        <button type="button" id="btn-breaks" class="fly-btn" hidden>Breaks</button>
+        <button type="button" id="btn-reset" class="fly-btn" hidden>Reset</button>
+      </div>
+      <div id="wind-chip" class="wind-chip" aria-live="polite">
+        <div class="wind-arrow" id="wind-arrow" hidden></div>
+        <div class="wind-body">
+          <div class="wind-top">
+            <span class="wind-deg" id="wind-deg">Wind</span>
+            <span class="wind-rh" id="wind-rh"></span>
+          </div>
+          <div class="wind-speed" id="wind-speed">…</div>
+          <div class="wind-from" id="wind-from">at the course</div>
+        </div>
+      </div>
+      <div id="yardage-hud" class="yardage-hud" hidden>
+        <div class="yh-top">
+          <div class="yh-hole" id="yh-hole">Select a hole</div>
+          <div class="yh-dist" id="yh-dist">
+            <span class="yh-edge" id="yh-front-wrap" hidden><span class="yh-tag">F</span><span id="yh-front"></span></span>
+            <span class="yh-mid"><span id="yh-yards">—</span><span class="yh-unit"> yd</span></span>
+            <span class="yh-edge" id="yh-back-wrap" hidden><span class="yh-tag">B</span><span id="yh-back"></span></span>
+          </div>
+        </div>
+        <div class="yh-meta" id="yh-meta">to green · from your GPS</div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="toggles">
+        <label class="chip"><input type="checkbox" id="tog-old" checked /> Old Course</label>
+        <label class="chip"><input type="checkbox" id="tog-new" checked /> New Course</label>
+        <label class="chip"><input type="checkbox" id="tog-paths" checked /> Maintenance / cart paths</label>
+        <label class="chip"><input type="checkbox" id="tog-fairways" checked /> Fairways &amp; greens</label>
+      </div>
+
+      <div class="status" id="gps-status">GPS: waiting…</div>
+
+      <p class="score-hint" id="score-hint">Choose Old or New. Wind is live from Pontiac (KPTK). Pick a hole for front / middle / back yardages from your GPS. Red, white, and blue rings mark 100, 150, and 200 yards to the green. Drag the ball and flag to measure. Gold yardages and handicaps are from the published Indianwood scorecards. Say or type your strokes, then Save this score.</p>
+
+      <div class="course-switch" role="tablist" aria-label="Course being played">
+        <button type="button" id="play-old" role="tab" aria-selected="true" aria-controls="course-old">Old Course</button>
+        <button type="button" id="play-new" role="tab" aria-selected="false" aria-controls="course-new">New Course</button>
+      </div>
+
+      <div class="card-picks">
+        <label>Tee
+          <select id="tee-select">
+            <option value="black">Championship</option>
+            <option value="gold" selected>Gold</option>
+            <option value="white">White</option>
+            <option value="red">Forward</option>
+          </select>
+        </label>
+        <label>Handicap
+          <select id="hcp-select">
+            <option value="men">Men's</option>
+            <option value="women">Women's</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="score-entry" id="score-entry" hidden>
+        <div class="score-entry-top">
+          <div>
+            <div class="score-kicker" id="score-kicker">Score</div>
+            <div class="score-hole" id="score-hole">Hole</div>
+            <div class="score-plays" id="score-plays"></div>
+            <div class="score-roll" id="score-roll"></div>
+          </div>
+          <div class="score-actions">
+            <button type="button" id="score-collapse" class="text-btn" aria-expanded="true" aria-controls="score-body">Hide</button>
+            <button type="button" id="score-next" class="text-btn">Next hole</button>
+          </div>
+        </div>
+        <div id="score-body">
+        <div class="score-entry-row">
+          <button type="button" id="score-minus" class="step-btn" aria-label="One fewer stroke">−</button>
+          <input id="score-input" inputmode="numeric" autocomplete="off" enterkeyhint="done" aria-label="Strokes for this hole" />
+          <button type="button" id="score-plus" class="step-btn" aria-label="One more stroke">+</button>
+          <button type="button" id="score-mic" class="mic-btn" aria-pressed="false">Say score</button>
+        </div>
+        <p class="score-heard" id="score-heard" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <div class="hole-lists">
+        <section id="course-old" role="tabpanel" aria-labelledby="play-old">
+          <div class="course-head">
+            <h2>Old Course</h2>
+            <button type="button" id="clear-old" class="text-btn">Clear</button>
+          </div>
+          <div id="list-old" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-old" aria-live="polite"></div>
+          <button type="button" id="save-old" class="save-btn">Save this score</button>
+          <p class="save-note" id="save-note-old" aria-live="polite"></p>
+        </section>
+        <section id="course-new" role="tabpanel" aria-labelledby="play-new" hidden>
+          <div class="course-head">
+            <h2>New Course</h2>
+            <button type="button" id="clear-new" class="text-btn">Clear</button>
+          </div>
+          <div id="list-new" class="hole-grid"></div>
+          <div class="nine-totals" id="totals-new" aria-live="polite"></div>
+          <button type="button" id="save-new" class="save-btn">Save this score</button>
+          <p class="save-note" id="save-note-new" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <p class="attrib" id="attrib">Map data © OpenStreetMap · Imagery © Esri · Labels © CARTO</p>
+      <a class="club-link" href="https://iwgcc.com" target="_blank" rel="noopener">iwgcc.com</a>
+    </aside>
+  </div>
+
+  <div id="video-modal" class="video-modal" hidden>
+    <div class="video-card" role="dialog" aria-modal="true" aria-labelledby="video-title">
+      <div class="video-bar">
+        <div id="video-title">Flyover</div>
+        <div class="video-bar-actions">
+          <button type="button" id="video-close" class="fly-btn">Close</button>
+        </div>
+      </div>
+      <video id="hole-video" controls playsinline webkit-playsinline preload="metadata"></video>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="score.js"></script>
+  <script src="app.js?v=home-icon-1"></script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+{
+  "source": "USGS 3DEP 1-meter elevation from the 2016 Oakland County lidar. Arrows point the way a ball rolls. The color is the slope. A small break can be finer than this scan.",
+  "greens": {
+    "old": {
+      "1": {
+        "image": "slope-old-1.png",
+        "west": -83.2743389,
+        "south": 42.7874676,
+        "east": -83.2738179,
+        "north": 42.7877577,
+        "fallFt": 1.5,
+        "slopePct": 0.6,
+        "downDeg": 80
+      },
+      "2": {
+        "image": "slope-old-2.png",
+        "west": -83.2752821,
+        "south": 42.7849031,
+        "east": -83.274833,
+        "north": 42.7852327,
+        "fallFt": 1.3,
+        "slopePct": 0.6,
+        "downDeg": 349
+      },
+      "3": {
+        "image": "slope-old-3.png",
+        "west": -83.274276,
+        "south": 42.7836109,
+        "east": -83.2738987,
+        "north": 42.7839537,
+        "fallFt": 1.9,
+        "slopePct": 1.0,
+        "downDeg": 9
+      },
+      "4": {
+        "image": "slope-old-4.png",
+        "west": -83.2733687,
+        "south": 42.7812769,
+        "east": -83.2729375,
+        "north": 42.781633,
+        "fallFt": 1.6,
+        "slopePct": 0.7,
+        "downDeg": 53
+      },
+      "5": {
+        "image": "slope-old-5.png",
+        "west": -83.2706199,
+        "south": 42.7814418,
+        "east": -83.2701527,
+        "north": 42.7817516,
+        "fallFt": 1.9,
+        "slopePct": 0.8,
+        "downDeg": 260
+      },
+      "6": {
+        "image": "slope-old-6.png",
+        "west": -83.2659037,
+        "south": 42.7834592,
+        "east": -83.2654276,
+        "north": 42.783868,
+        "fallFt": 3.0,
+        "slopePct": 1.1,
+        "downDeg": 188
+      },
+      "7": {
+        "image": "slope-old-7.png",
+        "west": -83.2692724,
+        "south": 42.7821011,
+        "east": -83.2687334,
+        "north": 42.7824307,
+        "fallFt": 1.9,
+        "slopePct": 0.8,
+        "downDeg": 34
+      },
+      "8": {
+        "image": "slope-old-8.png",
+        "west": -83.2665325,
+        "south": 42.7845998,
+        "east": -83.2660744,
+        "north": 42.7849097,
+        "fallFt": 2.1,
+        "slopePct": 1.0,
+        "downDeg": 219
+      },
+      "9": {
+        "image": "slope-old-9.png",
+        "west": -83.2689759,
+        "south": 42.7868479,
+        "east": -83.2685627,
+        "north": 42.787171,
+        "fallFt": 2.7,
+        "slopePct": 1.5,
+        "downDeg": 184
+      },
+      "10": {
+        "image": "slope-old-10.png",
+        "west": -83.2720931,
+        "south": 42.7850349,
+        "east": -83.2716978,
+        "north": 42.785358,
+        "fallFt": 2.5,
+        "slopePct": 1.4,
+        "downDeg": 53
+      },
+      "11": {
+        "image": "slope-old-11.png",
+        "west": -83.2707726,
+        "south": 42.7821604,
+        "east": -83.2703683,
+        "north": 42.7825098,
+        "fallFt": 2.2,
+        "slopePct": 1.1,
+        "downDeg": 350
+      },
+      "12": {
+        "image": "slope-old-12.png",
+        "west": -83.2701707,
+        "south": 42.7858261,
+        "east": -83.2697934,
+        "north": 42.7862018,
+        "fallFt": 3.6,
+        "slopePct": 1.6,
+        "downDeg": 173
+      },
+      "13": {
+        "image": "slope-old-13.png",
+        "west": -83.2690298,
+        "south": 42.7846921,
+        "east": -83.2685447,
+        "north": 42.7850283,
+        "fallFt": 1.8,
+        "slopePct": 0.6,
+        "downDeg": 45
+      },
+      "14": {
+        "image": "slope-old-14.png",
+        "west": -83.2702246,
+        "south": 42.7817253,
+        "east": -83.2697665,
+        "north": 42.7820879,
+        "fallFt": 2.8,
+        "slopePct": 1.3,
+        "downDeg": 46
+      },
+      "15": {
+        "image": "slope-old-15.png",
+        "west": -83.2736741,
+        "south": 42.7855689,
+        "east": -83.2732789,
+        "north": 42.7859118,
+        "fallFt": 2.5,
+        "slopePct": 1.0,
+        "downDeg": 172
+      },
+      "16": {
+        "image": "slope-old-16.png",
+        "west": -83.2723267,
+        "south": 42.7871644,
+        "east": -83.2719044,
+        "north": 42.7874215,
+        "fallFt": 1.0,
+        "slopePct": 0.6,
+        "downDeg": 192
+      },
+      "17": {
+        "image": "slope-old-17.png",
+        "west": -83.2730184,
+        "south": 42.7852327,
+        "east": -83.2725602,
+        "north": 42.7855689,
+        "fallFt": 1.5,
+        "slopePct": 0.8,
+        "downDeg": 328
+      },
+      "18": {
+        "image": "slope-old-18.png",
+        "west": -83.268931,
+        "south": 42.7873951,
+        "east": -83.2681944,
+        "north": 42.7879093,
+        "fallFt": 4.5,
+        "slopePct": 1.2,
+        "downDeg": 215
+      }
+    },
+    "new": {
+      "1": {
+        "image": "slope-new-1.png",
+        "west": -83.2804115,
+        "south": 42.7877841,
+        "east": -83.2799084,
+        "north": 42.7880544,
+        "fallFt": 0.9,
+        "slopePct": 0.3,
+        "downDeg": 132
+      },
+      "2": {
+        "image": "slope-new-2.png",
+        "west": -83.2782106,
+        "south": 42.7852129,
+        "east": -83.2777076,
+        "north": 42.7855821,
+        "fallFt": 4.7,
+        "slopePct": 2.1,
+        "downDeg": 352
+      },
+      "3": {
+        "image": "slope-new-3.png",
+        "west": -83.2801689,
+        "south": 42.7834658,
+        "east": -83.2798545,
+        "north": 42.7837757,
+        "fallFt": 1.2,
+        "slopePct": 0.7,
+        "downDeg": 23
+      },
+      "4": {
+        "image": "slope-new-4.png",
+        "west": -83.2871129,
+        "south": 42.7843559,
+        "east": -83.2864212,
+        "north": 42.7848635,
+        "fallFt": 8.8,
+        "slopePct": 2.0,
+        "downDeg": 85
+      },
+      "5": {
+        "image": "slope-new-5.png",
+        "west": -83.2888557,
+        "south": 42.7808418,
+        "east": -83.2883795,
+        "north": 42.7811912,
+        "fallFt": 1.4,
+        "slopePct": 0.9,
+        "downDeg": 37
+      },
+      "6": {
+        "image": "slope-new-6.png",
+        "west": -83.2867536,
+        "south": 42.780855,
+        "east": -83.2862595,
+        "north": 42.7811846,
+        "fallFt": 1.0,
+        "slopePct": 0.5,
+        "downDeg": 276
+      },
+      "7": {
+        "image": "slope-new-7.png",
+        "west": -83.2884694,
+        "south": 42.7778484,
+        "east": -83.2880921,
+        "north": 42.7782703,
+        "fallFt": 1.6,
+        "slopePct": 0.6,
+        "downDeg": 30
+      },
+      "8": {
+        "image": "slope-new-8.png",
+        "west": -83.2899426,
+        "south": 42.7800835,
+        "east": -83.2896282,
+        "north": 42.7804066,
+        "fallFt": 1.0,
+        "slopePct": 0.7,
+        "downDeg": 152
+      },
+      "9": {
+        "image": "slope-new-9.png",
+        "west": -83.2910206,
+        "south": 42.7845932,
+        "east": -83.2906164,
+        "north": 42.784936,
+        "fallFt": 1.6,
+        "slopePct": 0.8,
+        "downDeg": 136
+      },
+      "10": {
+        "image": "slope-new-10.png",
+        "west": -83.2888377,
+        "south": 42.7839867,
+        "east": -83.2884694,
+        "north": 42.7843361,
+        "fallFt": 0.7,
+        "slopePct": 0.4,
+        "downDeg": 284
+      },
+      "11": {
+        "image": "slope-new-11.png",
+        "west": -83.2872656,
+        "south": 42.7872171,
+        "east": -83.2867716,
+        "north": 42.7875204,
+        "fallFt": 1.5,
+        "slopePct": 0.7,
+        "downDeg": 173
+      },
+      "12": {
+        "image": "slope-new-12.png",
+        "west": -83.2849031,
+        "south": 42.7845537,
+        "east": -83.2844449,
+        "north": 42.784969,
+        "fallFt": 1.6,
+        "slopePct": 0.6,
+        "downDeg": 326
+      },
+      "13": {
+        "image": "slope-new-13.png",
+        "west": -83.28705,
+        "south": 42.7838218,
+        "east": -83.286511,
+        "north": 42.7847712,
+        "fallFt": 2.5,
+        "slopePct": 0.7,
+        "downDeg": 92
+      },
+      "14": {
+        "image": "slope-new-14.png",
+        "west": -83.28122,
+        "south": 42.7828593,
+        "east": -83.2807618,
+        "north": 42.78309,
+        "fallFt": 0.7,
+        "slopePct": 0.4,
+        "downDeg": 232
+      },
+      "15": {
+        "image": "slope-new-15.png",
+        "west": -83.2781927,
+        "south": 42.7803011,
+        "east": -83.2776626,
+        "north": 42.7806703,
+        "fallFt": 1.8,
+        "slopePct": 0.8,
+        "downDeg": 305
+      },
+      "16": {
+        "image": "slope-new-16.png",
+        "west": -83.2761625,
+        "south": 42.7790616,
+        "east": -83.2757582,
+        "north": 42.7794242,
+        "fallFt": 0.9,
+        "slopePct": 0.4,
+        "downDeg": 287
+      },
+      "17": {
+        "image": "slope-new-17.png",
+        "west": -83.2760996,
+        "south": 42.7818176,
+        "east": -83.2757941,
+        "north": 42.7821406,
+        "fallFt": 1.1,
+        "slopePct": 0.7,
+        "downDeg": 151
+      },
+      "18": {
+        "image": "slope-new-18.png",
+        "west": -83.2765757,
+        "south": 42.7857008,
+        "east": -83.2759109,
+        "north": 42.786281,
+        "fallFt": 7.9,
+        "slopePct": 1.6,
+        "downDeg": 189
+      }
+    }
+  }
+}
