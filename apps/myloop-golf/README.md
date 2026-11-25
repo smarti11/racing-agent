@@ -1,6 +1,6 @@
 # MyLoop Golf — myloop.golf
 
-Public homepage for **MyLoop Golf**: Course App (everyday GPS + scoring) and Outing App (tournament / shotgun day).
+Public homepage for **MyLoop Golf**: a club-branded phone experience built for the player. Marketing copy stays high-level on purpose — product details are for private walkthroughs.
 
 ## Local preview
 
@@ -17,12 +17,12 @@ cd ~/racing-agent/apps/myloop-golf
 npx wrangler deploy
 ```
 
-Point **myloop.golf** (and `www`) at this Worker in the Cloudflare dashboard (Custom Domains on the `myloop-golf` worker), or set a CNAME once the Worker is live.
+Point **myloop.golf** (and `www`) at this Worker in the Cloudflare dashboard (Custom Domains on the `myloop-golf` worker).
 
-## What this page covers (product-true)
+## Positioning (keep public copy vague)
 
-- **Course App** — GPS yardages, plays-like, rings, flyovers, breaks, personal scorecard, save to phone
-- **Outing App** — event GPS, one scorekeeper per group, hole sponsors, silent-auction browse
-- **Clubs live today** — OU Golf & Learning Center, The Wyndgate, Indianwood
+- Player-first, club-branded experience
+- Everyday play and outing day — without listing features
+- Partnerships: **under negotiation** (nothing sold yet)
 
-No fake network stats or invented testimonials.
+No named clubs, no feature inventory, no fake network stats.
