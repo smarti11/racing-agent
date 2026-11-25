@@ -23,6 +23,6 @@ Point **myloop.golf** (and `www`) at this Worker in the Cloudflare dashboard (Cu
 
 - Player-first, club-branded experience
 - Everyday play and outing day — without listing features
-- Partnerships: **under negotiation** (nothing sold yet)
+- Partnerships: select / exclusive positioning (no named clubs)
 
 No named clubs, no feature inventory, no fake network stats.
